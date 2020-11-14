@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>298 - Edit </title>
+    <desc>Created with Sketch.</desc>
+    <defs/>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="298---Edit-" fill-rule="nonzero">
+            <path d="M6.27,22.27 L5.95,22.58 L0.7912,23.8112 C0.622224376,23.8515223 0.444429915,23.8012473 0.32159131,23.6784087 C0.198752704,23.5555701 0.148477742,23.3777756 0.1888,23.2088 L1.42,18.05 L1.74,17.74 L6.27,22.27 Z" id="Shape" fill="#55BAFF"/>
+            <rect id="Rectangle-path" fill="#E3E6E8" transform="translate(10.858658, 13.147550) rotate(-45.005200) translate(-10.858658, -13.147550) " x="1.16335827" y="9.94260004" width="19.3906" height="6.4099"/>
+            <path d="M23.0625,5.475 L19.9825,8.555 L15.4425,4.025 L18.5325,0.945 C19.3411704,0.133120353 20.5219381,-0.18493683 21.6289921,0.110914262 C22.736046,0.406765354 23.6007346,1.27145398 23.8965857,2.37850793 C24.1924368,3.48556189 23.8743796,4.66632964 23.0625,5.475 Z" id="Shape" fill="#058BC6"/>
+        </g>
+    </g>
+</svg>

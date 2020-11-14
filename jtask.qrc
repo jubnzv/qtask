@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/">
+        <file>img/active.svg</file>
+        <file>img/add.svg</file>
+        <file>img/delete.svg</file>
+        <file>img/done.svg</file>
+        <file>img/edit.svg</file>
+        <file>img/filter.svg</file>
+        <file>img/jtask.svg</file>
+        <file>img/refresh.png</file>
+        <file>img/start.svg</file>
+        <file>img/stop.svg</file>
+        <file>img/undo.png</file>
+        <file>img/wait.svg</file>
+        <file>img/taskwarrior.png</file>
+    </qresource>
+</RCC>

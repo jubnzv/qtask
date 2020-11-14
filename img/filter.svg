@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="22px" height="22px" viewBox="0 0 22 22" version="1.1">
+    <!-- Generator: Sketch 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>295 - Funnel </title>
+    <desc>Created with Sketch.</desc>
+    <defs/>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="295---Funnel-" fill-rule="nonzero">
+            <polygon id="Shape" fill="#058BC6" points="13 19 9 22 9 15 13 15"/>
+            <ellipse id="Oval" fill="#55BAFF" cx="11" cy="3" rx="11" ry="3"/>
+            <path d="M11,6 C6.1671,6 2.0718,5.1487 0.5951,3.967 L9,15 L13,15 L21.4049,3.967 C19.9282,5.1487 15.8329,6 11,6 Z" id="Shape" fill="#E3E6E8"/>
+        </g>
+    </g>
+</svg>
