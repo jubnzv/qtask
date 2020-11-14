@@ -12,11 +12,11 @@ The goal of this application is to allow users to manage task list quickly using
 
 You may find the following features of this utility useful:
 
-* Convenient GUI for adding, deleting, and editing tasks
-* Filters to quickly sort tasks based on Taskwarrior commands
-* Keyboard shortcuts for all common actions
-* Access to Taskwarrior CLI commands via the built-in shell
-* This utility monitors changes in the database in the background. Therefore, you will always see new tasks as they arrive. This is useful if you are using the Taskwarrior CLI or scripts like [bugwarrior](https://github.com/ralphbean/bugwarrior) at the same time
+* Convenient GUI for adding, deleting, and editing tasks;
+* Filters to quickly sort tasks based on Taskwarrior commands;
+* Keyboard shortcuts for all common actions;
+* Access to Taskwarrior CLI commands via the built-in shell;
+* This utility monitors changes in the database in the background. Therefore, you will always see new tasks as they arrive. This is useful if you are using the Taskwarrior CLI or scripts like [bugwarrior](https://github.com/ralphbean/bugwarrior) at the same time.
 
 If you have any ideas on how to improve this utility, feel free to create an [issue](https://github.com/jubnzv/jtask/issues) or open a [PR](https://github.com/jubnzv/jtask/pulls).
 
@@ -33,7 +33,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
-This you can install with `make install`.
+This you can install it with `make install`.
 
 ## License
 
