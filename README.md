@@ -1,17 +1,24 @@
 # JTask
 
-JTask is an open-source organizer based on [Taskwarrior](https://taskwarrior.org/).
+ [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Screenshot
-
-![image](assets/screenshot.png)
+JTask is an open-source Qt-based graphical user interface for managing tasks. It is based on [Taskwarrior](https://taskwarrior.org/), a popular command-line organizer.
 
 ## Features
 
-* GUI for adding, deleting, and editing Taskwarrior tasks
-* Keyboard shortcuts for all actions
+![image](assets/screenshot.png)
+
+The goal of this application is to allow users to manage task list quickly using mostly the keyboards shortcuts while still having a user-friendly graphical user interface.
+
+You may find the following features of this utility useful:
+
+* Convenient GUI for adding, deleting, and editing tasks
+* Filters to quickly sort tasks based on Taskwarrior commands
+* Keyboard shortcuts for all common actions
 * Access to Taskwarrior CLI commands via the built-in shell
-* The utility monitors updates in the Taskwarrior database and automatically updates the task list
+* This utility monitors changes in the database in the background. Therefore, you will always see new tasks as they arrive. This is useful if you are using the Taskwarrior CLI or scripts like [bugwarrior](https://github.com/ralphbean/bugwarrior) at the same time
+
+If you have any ideas on how to improve this utility, feel free to create an [issue](https://github.com/jubnzv/jtask/issues) or open a [PR](https://github.com/jubnzv/jtask/pulls).
 
 ## Building
 
@@ -25,6 +32,8 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
+
+This you can install with `make install`.
 
 ## License
 
