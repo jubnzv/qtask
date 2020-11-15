@@ -127,8 +127,7 @@ void MainWindow::initTasksTable()
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,
             &MainWindow::updateTaskToolbar);
-    connect(m_tasks_view,
-            &TasksView::pushProjectFilter, this,
+    connect(m_tasks_view, &TasksView::pushProjectFilter, this,
             &MainWindow::pushFilterTag);
     connect(m_tasks_view, &QTableView::doubleClicked, this,
             &MainWindow::showEditTaskDialog);
