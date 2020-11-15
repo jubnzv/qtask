@@ -39,7 +39,7 @@ set(jtask_SRCS
     src/taskwatcher.cpp
     src/taskwarrior.cpp)
 set(jtask_MOC_HEADERS src/configmanager.hpp)
-set(jtask_RESOURCES jtask.qrc)
+set(jtask_RESOURCES res/jtask.qrc)
 add_executable(jtask ${jtask_SRCS} ${jtask_RESOURCES})
 
 target_link_libraries(jtask Qt5::Widgets)
@@ -55,3 +55,9 @@ configure_file(src/config.hpp.in src/config.hpp)
 
 include(GNUInstallDirs)
 install(TARGETS jtask RUNTIME DESTINATION bin)
+install(FILES res/icons/jtask.svg
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/24x24/apps)
+install(FILES res/jtask.desktop
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+install(FILES res/icons/jtask.svg
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)

@@ -76,7 +76,7 @@ bool MainWindow::initTaskWatcher()
 
 void MainWindow::initMainWindow()
 {
-    setWindowIcon(QIcon(":/img/jtask.svg"));
+    setWindowIcon(QIcon(":/icons/jtask.svg"));
     setWindowTitle(QCoreApplication::applicationName());
     setMinimumSize(400, 500);
 
@@ -89,13 +89,13 @@ void MainWindow::initMainWindow()
     initTasksTable();
 
     m_task_shell = new QLineEdit();
-    m_task_shell->addAction(QIcon(":/img/taskwarrior.png"),
+    m_task_shell->addAction(QIcon(":/icons/taskwarrior.png"),
                             QLineEdit::LeadingPosition);
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
 
     m_task_filter = new FilterLineEdit();
-    m_task_filter->addAction(QIcon(":/img/filter.svg"),
+    m_task_filter->addAction(QIcon(":/icons/filter.svg"),
                              QLineEdit::LeadingPosition);
     m_task_filter->setLeadingOffset(24);
     connect(m_task_filter, &FilterLineEdit::tagsChanged, this,
@@ -242,7 +242,7 @@ void MainWindow::initTaskToolbar()
 {
     m_task_toolbar = new QToolBar("Task toolbar");
 
-    m_add_action = new QAction(QIcon(":/img/add.svg"), tr("Add task"));
+    m_add_action = new QAction(QIcon(":/icons/add.svg"), tr("Add task"));
     connect(m_add_action, &QAction::triggered, this, [&]() {
         m_tasks_view->selectionModel()->clearSelection();
         onAddTask();
@@ -253,7 +253,7 @@ void MainWindow::initTaskToolbar()
     m_task_toolbar->addAction(m_add_action);
 
     m_undo_action =
-        new QAction(QIcon(":/img/undo.png"), tr("Undo last action"));
+        new QAction(QIcon(":/icons/undo.png"), tr("Undo last action"));
     connect(m_undo_action, &QAction::triggered, this, [&]() {
         if (m_task_provider->undoTask())
             m_tasks_view->selectionModel()->clearSelection();
@@ -266,7 +266,7 @@ void MainWindow::initTaskToolbar()
     m_task_toolbar->addAction(m_undo_action);
 
     m_update_action =
-        new QAction(QIcon(":/img/refresh.png"), tr("Update tasks"));
+        new QAction(QIcon(":/icons/refresh.png"), tr("Update tasks"));
     connect(m_update_action, &QAction::triggered, this, [&]() {
         m_tasks_view->selectionModel()->clearSelection();
         updateTasks(/*force=*/true);
@@ -278,7 +278,7 @@ void MainWindow::initTaskToolbar()
 
     m_task_toolbar->addSeparator();
 
-    m_done_action = new QAction(QIcon(":/img/done.svg"), tr("Done"));
+    m_done_action = new QAction(QIcon(":/icons/done.svg"), tr("Done"));
     connect(m_done_action, &QAction::triggered, this,
             &MainWindow::onSetTasksDone);
     m_done_action->setShortcut(tr("CTRL+D"));
@@ -288,7 +288,7 @@ void MainWindow::initTaskToolbar()
     m_task_toolbar->addAction(m_done_action);
     m_done_action->setEnabled(false);
 
-    m_edit_action = new QAction(QIcon(":/img/edit.svg"), tr("Edit"));
+    m_edit_action = new QAction(QIcon(":/icons/edit.svg"), tr("Edit"));
     connect(m_edit_action, &QAction::triggered, this,
             &MainWindow::onEditTaskAction);
     m_edit_action->setShortcut(tr("CTRL+E"));
@@ -297,7 +297,7 @@ void MainWindow::initTaskToolbar()
     m_task_toolbar->addAction(m_edit_action);
     m_edit_action->setEnabled(false);
 
-    m_wait_action = new QAction(QIcon(":/img/wait.svg"), tr("Wait"));
+    m_wait_action = new QAction(QIcon(":/icons/wait.svg"), tr("Wait"));
     connect(m_wait_action, &QAction::triggered, this, [&]() {
         auto *dlg =
             new DateTimeDialog(QDateTime::currentDateTime().addDays(1), this);
@@ -315,7 +315,7 @@ void MainWindow::initTaskToolbar()
     m_task_toolbar->addAction(m_wait_action);
     m_wait_action->setEnabled(false);
 
-    m_delete_action = new QAction(QIcon(":/img/delete.svg"), tr("Delete"));
+    m_delete_action = new QAction(QIcon(":/icons/delete.svg"), tr("Delete"));
     connect(m_delete_action, &QAction::triggered, this,
             &MainWindow::onDeleteTasks);
     m_delete_action->setShortcut(tr("Delete"));
@@ -326,7 +326,7 @@ void MainWindow::initTaskToolbar()
 
     m_task_toolbar->addSeparator();
 
-    m_start_action = new QAction(QIcon(":/img/start.svg"), tr("Start"));
+    m_start_action = new QAction(QIcon(":/icons/start.svg"), tr("Start"));
     connect(m_start_action, &QAction::triggered, this, [&]() {
         auto t_opt = getSelectedTaskId();
         if (t_opt.isNull())
@@ -340,7 +340,7 @@ void MainWindow::initTaskToolbar()
     m_task_toolbar->addAction(m_start_action);
     m_start_action->setEnabled(false);
 
-    m_stop_action = new QAction(QIcon(":/img/stop.svg"), tr("Stop"));
+    m_stop_action = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"));
     connect(m_stop_action, &QAction::triggered, this, [&]() {
         auto t_opt = getSelectedTaskId();
         if (t_opt.isNull())

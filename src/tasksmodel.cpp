@@ -39,7 +39,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     else if (role == Qt::DecorationRole) {
         if (index.column() == 2) {
             Task task = m_tasks.at(index.row());
-            return (task.active) ? QIcon(":/img/active.svg") : QVariant();
+            return (task.active) ? QIcon(":/icons/active.svg") : QVariant();
         }
     }
 

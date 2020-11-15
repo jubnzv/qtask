@@ -50,7 +50,7 @@ Task TaskDialog::getTask()
 
 void TaskDialog::initUI()
 {
-    setWindowIcon(QIcon(":/img/jtask.svg"));
+    setWindowIcon(QIcon(":/icons/jtask.svg"));
 
     QLabel *description_label = new QLabel("Description:");
     m_task_description = new QTextEdit();

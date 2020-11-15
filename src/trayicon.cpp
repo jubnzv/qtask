@@ -27,7 +27,7 @@ SystemTrayIcon::SystemTrayIcon(QObject *parent)
     connect(exit_action_, &QAction::triggered, this,
             &SystemTrayIcon::exitRequested);
 
-    this->setContextMenu(tray_icon_menu_);
-    this->setIcon(QIcon(":/img/jtask.svg"));
-    this->setToolTip("jtask");
+    setContextMenu(tray_icon_menu_);
+    setIcon(QIcon(":/icons/jtask.svg"));
+    setToolTip("JTask");
 }
