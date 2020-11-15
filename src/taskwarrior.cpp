@@ -67,11 +67,6 @@ bool Taskwarrior::setPriority(const QString &id, Task::Priority p)
 
 bool Taskwarrior::getTask(const QString &id, Task &task)
 {
-    QStringList active_ids;
-    if (!getActiveIds(active_ids))
-        return false;
-    task.active = active_ids.contains(id);
-
     QByteArray out;
     auto args = QStringList() << id << "information";
     if (!execCmd(args, out))
@@ -105,6 +100,10 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
         if (line.startsWith("Tags")) {
             auto tags_line = line.section(' ', 1).simplified();
             task.tags = tags_line.split(' ', Qt::SkipEmptyParts);
+            continue;
+        }
+        if (line.startsWith("Start")) {
+            task.active = true;
             continue;
         }
         if (line.startsWith("Waiting")) {
@@ -144,18 +143,14 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
 
 bool Taskwarrior::getTasks(QList<Task> &tasks)
 {
-    QStringList active_ids;
-    if (!getActiveIds(active_ids))
-        return false;
-
     QByteArray out;
-    auto args = QStringList()
-                << "rc.report.minimal.columns=id,project,priority,description"
-                << "rc.report.minimal.labels=',|,|,|'"
-                << "rc.report.minimal.sort=urgency-"
-                << "rc.print.empty.columns=yes"
-                << "+PENDING"
-                << "minimal";
+    auto args = QStringList() << "rc.report.minimal.columns=id,start.active,"
+                                 "project,priority,description"
+                              << "rc.report.minimal.labels=',|,|,|,|'"
+                              << "rc.report.minimal.sort=urgency-"
+                              << "rc.print.empty.columns=yes"
+                              << "+PENDING"
+                              << "minimal";
 
     if (!execCmd(args, out, /*filter_enabled=*/true))
         return false;
@@ -166,12 +161,13 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
 
     // Get positions from the labels string
     QVector<int> positions;
+    constexpr int columns_num = 4;
     for (int i = 0; i < out_bytes[1].size(); ++i) {
         const auto b = out_bytes[1][i];
         if (b == '|')
             positions.push_back(i);
     }
-    if (positions.size() != 3) {
+    if (positions.size() != columns_num) {
         return false;
     }
 
@@ -180,19 +176,20 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
         if (bytes.isEmpty())
             continue;
         QString line(bytes);
-        if (line.size() < positions[2])
+        if (line.size() < positions[3])
             return false;
 
         Task task;
         task.uuid =
             line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
-        if (active_ids.contains(task.uuid))
-            task.active = true;
-        task.project =
+        const QString start_mark =
             line.mid(positions[0], positions[1] - positions[0]).simplified();
+        task.active = start_mark.contains('*');
+        task.project =
+            line.mid(positions[1], positions[2] - positions[1]).simplified();
         task.priority = Task::priorityFromString(
-            line.mid(positions[1], positions[2] - positions[1]).simplified());
-        task.description = line.right(line.size() - positions[2]).simplified();
+            line.mid(positions[2], positions[3] - positions[2]).simplified());
+        task.description = line.right(line.size() - positions[3]).simplified();
 
         tasks.push_back(task);
     }
@@ -358,36 +355,6 @@ bool Taskwarrior::execCmd(const QStringList &args, QByteArray &out,
     if (rc != 0)
         return false;
     out = proc.readAllStandardOutput();
-    return true;
-}
-
-bool Taskwarrior::getActiveIds(QStringList &result)
-{
-    QByteArray out;
-    auto args = QStringList() << "rc.gc=off"
-                              << "+ACTIVE"
-                              << "ids";
-    if (!execCmd(args, out))
-        return false;
-
-    auto out_bytes = out.split(' ');
-    if (out_bytes.size() < 1)
-        return true; // not found
-    for (const QByteArray &b : out_bytes) {
-        // Handle ranges
-        if (b.contains('-')) {
-            auto ids = b.split('-');
-            if (ids.size() != 2)
-                continue;
-            int start = ids[0].toInt();
-            int end = ids[1].toInt();
-            for (int i = start; i < end; ++i)
-                result.push_back(QString::number(i));
-        } else {
-            result.push_back(std::move(QString(b).simplified()));
-        }
-    }
-
     return true;
 }
 
