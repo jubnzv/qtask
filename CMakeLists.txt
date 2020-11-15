@@ -32,6 +32,7 @@ set(jtask_SRCS
     src/configmanager.cpp
     src/optionaldatetimeedit.cpp
     src/settingsdialog.cpp
+    src/tasksview.cpp
     src/qtutil.cpp
     src/filterlineedit.cpp
     src/tasksmodel.cpp

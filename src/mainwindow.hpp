@@ -14,6 +14,7 @@
 
 #include "filterlineedit.hpp"
 #include "task.hpp"
+#include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "taskwatcher.hpp"
 #include "trayicon.hpp"
@@ -51,6 +52,10 @@ class MainWindow : public QMainWindow {
     QVariant getSelectedTaskId();
     QStringList getSelectedTaskIds();
 
+  public slots:
+    /// Add entry to taskwarrior filter
+    void pushFilterTag(const QString &);
+
   private slots:
     void onToggleTaskShell();
     void onToggleTaskFilter();
@@ -83,7 +88,7 @@ class MainWindow : public QMainWindow {
     QWidget *m_window;
     QGridLayout *m_layout;
     SystemTrayIcon *m_tray_icon;
-    QTableView *m_tasks_view;
+    TasksView *m_tasks_view;
     QToolBar *m_task_toolbar;
     QLineEdit *m_task_shell;
     FilterLineEdit *m_task_filter;

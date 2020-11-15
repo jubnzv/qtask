@@ -33,7 +33,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
-This you can install it with `make install`.
+Then you can install it with `make install`.
 
 ## License
 

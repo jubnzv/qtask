@@ -15,6 +15,8 @@ class FilterLineEdit final : public QLineEdit {
     QString getTagsStr() const;
     void setTags(const QString &tags);
     void setTags(const QStringList &tags);
+
+    void pushTag(const QString &);
     void popTag();
 
     void setLeadingOffset(const int &v) { m_leading_offset = { v }; }

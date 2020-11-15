@@ -40,6 +40,14 @@ void FilterLineEdit::setTags(const QStringList &tags)
     emit tagsChanged();
 }
 
+void FilterLineEdit::pushTag(const QString &value)
+{
+    m_tags.push_back(value);
+    clear();
+    update();
+    emit tagsChanged();
+}
+
 void FilterLineEdit::popTag()
 {
     if (m_tags.isEmpty())
@@ -47,6 +55,7 @@ void FilterLineEdit::popTag()
     m_tags.pop_back();
     clear();
     update();
+    emit tagsChanged();
 }
 
 void FilterLineEdit::addTag()

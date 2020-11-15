@@ -22,6 +22,7 @@
 #include "settingsdialog.hpp"
 #include "taskdialog.hpp"
 #include "tasksmodel.hpp"
+#include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "trayicon.hpp"
 
@@ -113,7 +114,7 @@ void MainWindow::initMainWindow()
 
 void MainWindow::initTasksTable()
 {
-    m_tasks_view = new QTableView(m_window);
+    m_tasks_view = new TasksView(m_window);
     m_tasks_view->setShowGrid(true);
 
     m_tasks_view->verticalHeader()->setVisible(false);
@@ -126,7 +127,9 @@ void MainWindow::initTasksTable()
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,
             &MainWindow::updateTaskToolbar);
-
+    connect(m_tasks_view,
+            &TasksView::pushProjectFilter, this,
+            &MainWindow::pushFilterTag);
     connect(m_tasks_view, &QTableView::doubleClicked, this,
             &MainWindow::showEditTaskDialog);
 
@@ -492,6 +495,13 @@ QStringList MainWindow::getSelectedTaskIds()
     }
 
     return ids;
+}
+
+void MainWindow::pushFilterTag(const QString &value)
+{
+    if (!m_task_filter->isVisible())
+        return;
+    m_task_filter->pushTag(value);
 }
 
 void MainWindow::onToggleTaskShell()
