@@ -91,7 +91,7 @@ template <class It> struct EmptySkipIterator {
     It end;
 };
 
-template <class It> EmptySkipIterator(It, It) -> EmptySkipIterator<It>;
+template <class It> EmptySkipIterator(It, It)->EmptySkipIterator<It>;
 
 } // namespace
 
@@ -361,9 +361,10 @@ struct TagsEdit::Impl {
     {
         if (mark) {
             auto e = select_start + select_size;
-            int anchor = select_size > 0 && cursor == select_start ? e
-                         : select_size > 0 && cursor == e ? select_start
-                                                          : cursor;
+            int anchor =
+                select_size > 0 && cursor == select_start
+                    ? e
+                    : select_size > 0 && cursor == e ? select_start : cursor;
             select_start = qMin(anchor, pos);
             select_size = qMax(anchor, pos) - select_start;
         } else {

@@ -12,8 +12,8 @@ class QStyleOptionFrame;
 class TagsEdit : public QWidget {
     Q_OBJECT
 
-public:
-    explicit TagsEdit(QWidget* parent = nullptr);
+  public:
+    explicit TagsEdit(QWidget *parent = nullptr);
     ~TagsEdit() override;
 
     // QWidget
@@ -21,7 +21,7 @@ public:
     QSize minimumSizeHint() const override;
 
     /// Set completions
-    void completion(std::vector<QString> const& completions);
+    void completion(std::vector<QString> const &completions);
 
     void setTags(const QStringList &tags);
     void clearTags();
@@ -29,21 +29,21 @@ public:
     void pushTag(const QString &);
     void popTag();
 
-signals:
+  signals:
     void tagsChanged();
 
-protected:
+  protected:
     // QWidget
-    void paintEvent(QPaintEvent* event) override;
-    void timerEvent(QTimerEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void resizeEvent(QResizeEvent* event) override;
-    void focusInEvent(QFocusEvent* event) override;
-    void focusOutEvent(QFocusEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void timerEvent(QTimerEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void focusInEvent(QFocusEvent *event) override;
+    void focusOutEvent(QFocusEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
-private:
+  private:
     struct Impl;
     std::unique_ptr<Impl> impl;
 };
