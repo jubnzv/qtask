@@ -1,8 +1,6 @@
 #ifndef TASKDIALOG_HPP
 #define TASKDIALOG_HPP
 
-#include <memory>
-
 #include <QComboBox>
 #include <QDateTimeEdit>
 #include <QDialog>

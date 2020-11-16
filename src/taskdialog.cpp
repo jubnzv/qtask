@@ -39,7 +39,13 @@ Task TaskDialog::getTask()
     task.description = m_task_description->toPlainText();
     task.priority = Task::priorityFromString(m_task_priority->currentText());
     task.project = m_task_project->text();
-    task.tags = m_task_tags->getTags();
+
+    for (const auto &tag : m_task_tags->getTags()) {
+        QString t(tag);
+        t.remove(QChar('+'));
+        if (!t.isEmpty())
+            task.tags.push_back(t);
+    }
 
     task.sched = m_task_sched->getDateTime();
     task.due = m_task_due->getDateTime();
