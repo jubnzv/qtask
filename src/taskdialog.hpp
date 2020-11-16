@@ -10,8 +10,8 @@
 #include <QTextEdit>
 #include <QWidget>
 
-#include "tagsedit.hpp"
 #include "optionaldatetimeedit.hpp"
+#include "tagsedit.hpp"
 #include "task.hpp"
 #include "taskwarrior.hpp"
 
