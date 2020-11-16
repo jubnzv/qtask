@@ -10,7 +10,7 @@
 #include <QTextEdit>
 #include <QWidget>
 
-#include "filterlineedit.hpp"
+#include "tagsedit.hpp"
 #include "optionaldatetimeedit.hpp"
 #include "task.hpp"
 #include "taskwarrior.hpp"
@@ -33,7 +33,7 @@ class TaskDialog : public QDialog {
     QTextEdit *m_task_description;
     QComboBox *m_task_priority;
     QLineEdit *m_task_project;
-    FilterLineEdit *m_task_tags;
+    TagsEdit *m_task_tags;
     OptionalDateTimeEdit *m_task_sched;
     OptionalDateTimeEdit *m_task_due;
     OptionalDateTimeEdit *m_task_wait;

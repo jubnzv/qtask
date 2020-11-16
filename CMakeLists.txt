@@ -34,7 +34,7 @@ set(jtask_SRCS
     src/settingsdialog.cpp
     src/tasksview.cpp
     src/qtutil.cpp
-    src/filterlineedit.cpp
+    src/tagsedit.cpp
     src/tasksmodel.cpp
     src/taskwatcher.cpp
     src/taskwarrior.cpp)
@@ -42,7 +42,7 @@ set(jtask_MOC_HEADERS src/configmanager.hpp)
 set(jtask_RESOURCES res/jtask.qrc)
 add_executable(jtask ${jtask_SRCS} ${jtask_RESOURCES})
 
-target_link_libraries(jtask Qt5::Widgets)
+target_link_libraries(jtask Qt5::Widgets Qt5::GuiPrivate)
 
 set(JTASK_VERSION_MAJOR 1)
 set(JTASK_VERSION_MINOR 0)

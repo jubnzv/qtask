@@ -12,7 +12,7 @@
 #include <QTableView>
 #include <QVariant>
 
-#include "filterlineedit.hpp"
+#include "tagsedit.hpp"
 #include "task.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
@@ -53,7 +53,7 @@ class MainWindow : public QMainWindow {
     QStringList getSelectedTaskIds();
 
   public slots:
-    /// Add entry to taskwarrior filter
+    /// Add entry to tags filter
     void pushFilterTag(const QString &);
 
   private slots:
@@ -91,7 +91,7 @@ class MainWindow : public QMainWindow {
     TasksView *m_tasks_view;
     QToolBar *m_task_toolbar;
     QLineEdit *m_task_shell;
-    FilterLineEdit *m_task_filter;
+    TagsEdit *m_task_filter;
 
     // Toolbar actions
     QAction *m_add_action;

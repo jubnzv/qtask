@@ -67,7 +67,7 @@ void TaskDialog::initUI()
     m_task_project = new QLineEdit();
 
     QLabel *tags_label = new QLabel("Tags:");
-    m_task_tags = new FilterLineEdit();
+    m_task_tags = new TagsEdit();
 
     m_task_sched = new OptionalDateTimeEdit("Schedule:");
     m_task_sched->setChecked(false);

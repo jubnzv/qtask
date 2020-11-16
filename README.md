@@ -22,7 +22,7 @@ If you have any ideas on how to improve this utility, feel free to create an [is
 
 ## Building
 
-On Debian-based distributions you need to install the following packages: `qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev`.
+On Debian-based distributions you need to install the following packages: `qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev qt5base-private-dev`.
 
 To build, please do the following:
 

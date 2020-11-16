@@ -17,7 +17,7 @@
 #include "aboutdialog.hpp"
 #include "configmanager.hpp"
 #include "datetimedialog.hpp"
-#include "filterlineedit.hpp"
+#include "tagsedit.hpp"
 #include "qtutil.hpp"
 #include "settingsdialog.hpp"
 #include "taskdialog.hpp"
@@ -94,11 +94,8 @@ void MainWindow::initMainWindow()
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
 
-    m_task_filter = new FilterLineEdit();
-    m_task_filter->addAction(QIcon(":/icons/filter.svg"),
-                             QLineEdit::LeadingPosition);
-    m_task_filter->setLeadingOffset(24);
-    connect(m_task_filter, &FilterLineEdit::tagsChanged, this,
+    m_task_filter = new TagsEdit(/* TODO: QIcon(":/icons/filter.svg")*/);
+    connect(m_task_filter, &TagsEdit::tagsChanged, this,
             &MainWindow::onApplyFilter);
 
     m_layout->addWidget(m_task_toolbar, 0, 0);
@@ -583,10 +580,11 @@ void MainWindow::onSetTasksDone()
 
 void MainWindow::onApplyFilter()
 {
-    if (m_task_provider->applyFilter(m_task_filter->getTags()))
-        updateTasks(/*force=*/true);
-    else
-        m_task_filter->setTags("");
+    if (!m_task_provider->applyFilter(m_task_filter->getTags()))
+        m_task_filter->popTag();
+    // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
+    //     m_task_filter->clearTags();
+    updateTasks(/*force=*/true);
 }
 
 void MainWindow::onEnterTaskCommand()
