@@ -5,6 +5,7 @@
 #include <QList>
 #include <QProcess>
 #include <QString>
+#include <QVariant>
 
 #include "configmanager.hpp"
 #include "task.hpp"
@@ -14,10 +15,27 @@ const QStringList Taskwarrior::s_args = { "rc.gc=off", "rc.confirmation=off",
 
 Taskwarrior::Taskwarrior()
     : m_actions_counter(0ull)
+    , m_task_version(QVariant{})
 {
 }
 
 Taskwarrior::~Taskwarrior() {}
+
+bool Taskwarrior::init()
+{
+    QByteArray out;
+    if (!execCmd({ "version" }, out, false, false))
+        return false;
+    auto out_bytes = out.split('\n');
+    if (out_bytes.size() < 2)
+        return false;
+    QString line = out_bytes[1];
+    QString task_version = line.split(' ', Qt::SkipEmptyParts)[1];
+    if (task_version.isEmpty())
+        return false;
+    m_task_version = { QString(task_version) };
+    return true;
+}
 
 bool Taskwarrior::addTask(const Task &task)
 {
@@ -289,10 +307,6 @@ int Taskwarrior::directCmd(const QString &cmd)
 
     QStringList args = cmd.split(' ', Qt::SkipEmptyParts) << s_args;
 
-    qDebug() << QString("Executing: '%1 %2'")
-                    .arg(ConfigManager::config()->getTaskBin(),
-                         cmd.split(' ', Qt::SkipEmptyParts).join(' '));
-
     proc.start(ConfigManager::config()->getTaskBin(), args);
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished() &&
@@ -303,21 +317,21 @@ int Taskwarrior::directCmd(const QString &cmd)
     return rc;
 }
 
-bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled)
+bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled,
+                          bool use_standard_args)
 {
     QProcess proc;
     int rc = -1;
 
-    if (filter_enabled) {
-        qDebug() << ConfigManager::config()->getTaskBin() << s_args << m_filter
-                 << args;
-        proc.start(ConfigManager::config()->getTaskBin(),
-                   QStringList() << s_args << m_filter << args);
-    } else {
-        qDebug() << ConfigManager::config()->getTaskBin() << s_args << args;
-        proc.start(ConfigManager::config()->getTaskBin(),
-                   QStringList() << s_args << args);
-    }
+    QStringList real_args;
+    if (filter_enabled)
+        real_args << m_filter;
+    if (use_standard_args)
+        real_args << s_args;
+    real_args << args;
+
+    qDebug() << ConfigManager::config()->getTaskBin() << real_args;
+    proc.start(ConfigManager::config()->getTaskBin(), real_args);
 
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished(1000) &&
@@ -329,22 +343,20 @@ bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled)
 }
 
 bool Taskwarrior::execCmd(const QStringList &args, QByteArray &out,
-                          bool filter_enabled)
+                          bool filter_enabled, bool use_standard_args)
 {
     QProcess proc;
     int rc = -1;
 
-    if (filter_enabled) {
-        qDebug() << ConfigManager::config()->getTaskBin() << s_args << m_filter
-                 << args;
-        proc.start(ConfigManager::config()->getTaskBin(),
-                   QStringList() << s_args << m_filter << args);
-    } else {
-        qDebug() << ConfigManager::config()->getTaskBin() << s_args
-                 << args.join(' ');
-        proc.start(ConfigManager::config()->getTaskBin(),
-                   QStringList() << s_args << args);
-    }
+    QStringList real_args;
+    if (filter_enabled)
+        real_args << m_filter;
+    if (use_standard_args)
+        real_args << s_args;
+    real_args << args;
+
+    qDebug() << ConfigManager::config()->getTaskBin() << real_args;
+    proc.start(ConfigManager::config()->getTaskBin(), real_args);
 
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished(1000) &&

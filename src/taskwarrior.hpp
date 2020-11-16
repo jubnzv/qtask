@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QList>
 #include <QString>
+#include <QVariant>
 
 #include "task.hpp"
 
@@ -13,7 +14,13 @@ class Taskwarrior {
     Taskwarrior();
     ~Taskwarrior();
 
+    /// Detect the version of task and check that it works. This command
+    /// is also executes without "rc.gc=off". This will un-waiting tasks and add
+    /// recurring tasks.
+    bool init();
+
     size_t getActionsCounter() const { return m_actions_counter; }
+    QVariant getTaskVersion() const { return m_task_version; }
 
     bool addTask(const Task &task);
     bool startTask(const QString &id);
@@ -35,9 +42,10 @@ class Taskwarrior {
     int directCmd(const QString &cmd);
 
   private:
-    bool execCmd(const QStringList &args, bool filter_enabled = false);
+    bool execCmd(const QStringList &args, bool filter_enabled = false,
+                 bool use_standard_args = true);
     bool execCmd(const QStringList &args, QByteArray &out,
-                 bool filter_enabled = false);
+                 bool filter_enabled = false, bool use_standard_args = true);
 
     bool getActiveIds(QStringList &result);
 
@@ -47,8 +55,11 @@ class Taskwarrior {
     static const QStringList s_args;
 
     QStringList m_filter;
+
     /// Counter of changes in the taskwarrior database that can be undone.
     size_t m_actions_counter;
+
+    QVariant m_task_version;
 };
 
 #endif // TASKWARRIOR_HPP

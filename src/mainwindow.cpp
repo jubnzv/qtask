@@ -17,9 +17,9 @@
 #include "aboutdialog.hpp"
 #include "configmanager.hpp"
 #include "datetimedialog.hpp"
-#include "tagsedit.hpp"
 #include "qtutil.hpp"
 #include "settingsdialog.hpp"
+#include "tagsedit.hpp"
 #include "taskdialog.hpp"
 #include "tasksmodel.hpp"
 #include "tasksview.hpp"
@@ -34,6 +34,14 @@ MainWindow::MainWindow()
     , m_task_provider(std::make_unique<Taskwarrior>())
     , m_task_watcher(nullptr)
 {
+    if (!m_task_provider->init()) {
+        QMessageBox::critical(
+            this, tr("Error"),
+            tr("Command 'task version' failed. Please make sure that "
+               "taskwarrior is installed correctly and you have the correct "
+               "path to the 'task' executable in the settings."));
+    }
+
     if (!initTaskWatcher()) {
         QMessageBox::warning(
             this, tr("Error"),
@@ -213,7 +221,7 @@ void MainWindow::initHelpMenu()
     help_menu->addAction(about_action);
     about_action->setShortcut(tr("F1"));
     connect(about_action, &QAction::triggered, this, [&]() {
-        auto *dlg = new AboutDialog(this);
+        auto *dlg = new AboutDialog(m_task_provider->getTaskVersion(), this);
         dlg->open();
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
     });

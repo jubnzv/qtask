@@ -2,14 +2,16 @@
 #define ABOUTDIALOG_HPP
 
 #include <QDialog>
+#include <QVariant>
 
 class AboutDialog : public QDialog {
   public:
-    explicit AboutDialog(QWidget *parent = nullptr);
+    explicit AboutDialog(const QVariant &task_version,
+                         QWidget *parent = nullptr);
     ~AboutDialog() = default;
 
   private:
-    void initUI();
+    void initUI(const QVariant &task_version);
 };
 
 #endif // ABOUTDIALOG_HPP
