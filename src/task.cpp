@@ -56,18 +56,12 @@ QStringList Task::getCmdArgs() const
                 result << QString{ " -%1" }.arg(t_escpaed);
         }
     }
-    if (!sched.isNull()) {
-        result << QString{ " sched:%1" }.arg(
-            sched.toDateTime().toString(Qt::ISODate));
-    }
-    if (!due.isNull()) {
-        result << QString{ " due:%1" }.arg(
-            due.toDateTime().toString(Qt::ISODate));
-    }
-    if (!wait.isNull()) {
-        result << QString{ " wait:%1" }.arg(
-            wait.toDateTime().toString(Qt::ISODate));
-    }
+
+    result << QString{ " sched:%1" }.arg(
+        sched.toDateTime().toString(Qt::ISODate));
+    result << QString{ " due:%1" }.arg(due.toDateTime().toString(Qt::ISODate));
+    result << QString{ " wait:%1" }.arg(
+        wait.toDateTime().toString(Qt::ISODate));
 
     QString escaped_desc = description;
     escaped_desc.replace("'", "\'");
