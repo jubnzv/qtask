@@ -345,6 +345,20 @@ struct TagsEdit::Impl {
         }
     }
 
+    void removePreviousTag()
+    {
+        if (hasSelection()) {
+            removeSelection();
+            return;
+        }
+        if ((currentText().size() == 0) && (editing_index > 0)) {
+            setEditingIndex(editing_index - 1);
+            moveCursor(currentText().size(), false);
+        }
+        cursor -= currentText().size();
+        currentText().remove(cursor, currentText().size());
+    }
+
     void selectAll()
     {
         select_start = 0;
@@ -639,6 +653,10 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
         impl->moveCursor(impl->text_layout.nextCursorPosition(impl->cursor),
                          true);
         event->accept();
+    } else if (event == QKeySequence::DeleteStartOfWord) {
+        impl->removePreviousTag();
+        emit tagsChanged();
+        event->accept();
     } else {
         switch (event->key()) {
         case Qt::Key_Left:
@@ -684,6 +702,8 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
             }
             event->accept();
             break;
+        case Qt::Key_Enter:
+        case Qt::Key_Return:
         case Qt::Key_Space:
             if (!impl->currentText().isEmpty()) {
                 impl->tags.insert(impl->tags.begin() +
