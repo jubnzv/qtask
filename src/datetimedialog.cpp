@@ -29,7 +29,7 @@ void DateTimeDialog::initUI()
     setSizeGripEnabled(false);
     resize(260, 230);
 
-    setWindowTitle(QCoreApplication::applicationName() + "Select date");
+    setWindowTitle(QCoreApplication::applicationName() + " - Select date");
 
     auto *widget = new QWidget(this);
     widget->setObjectName(QString::fromUtf8("widget"));
