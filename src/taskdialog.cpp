@@ -38,7 +38,11 @@ Task TaskDialog::getTask()
 
     task.description = m_task_description->toPlainText();
     task.priority = Task::priorityFromString(m_task_priority->currentText());
-    task.project = m_task_project->text();
+
+    auto project = m_task_project->text();
+    project.replace("pro:", "");
+    project.replace("project:", "");
+    task.project = project;
 
     for (const auto &tag : m_task_tags->getTags()) {
         QString t(tag);
