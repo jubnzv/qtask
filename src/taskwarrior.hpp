@@ -29,6 +29,7 @@ class Taskwarrior {
     bool setPriority(const QString &id, Task::Priority);
     bool getTask(const QString &id, Task &out_task);
     bool getTasks(QList<Task> &task);
+    bool getRecurringTasks(QList<RecurringTask> &out_tasks);
     bool deleteTask(const QString &id);
     bool deleteTask(const QStringList &ids);
     bool setTaskDone(const QString &id);

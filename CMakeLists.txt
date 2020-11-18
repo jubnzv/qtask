@@ -32,6 +32,8 @@ set(jtask_SRCS
     src/configmanager.cpp
     src/optionaldatetimeedit.cpp
     src/settingsdialog.cpp
+    src/recurringdialog.cpp
+    src/recurringtasksmodel.cpp
     src/tasksview.cpp
     src/qtutil.cpp
     src/tagsedit.cpp

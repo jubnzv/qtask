@@ -215,6 +215,55 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
     return true;
 }
 
+bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
+{
+    QByteArray out;
+    auto args = QStringList() << "recurring_full"
+                              << "rc.defaultwidth=0"
+                              << "status:Recurring";
+
+    if (!execCmd(args, out))
+        return false;
+
+    auto out_bytes = out.split('\n');
+    if (out_bytes.size() < 5)
+        return true; // no tasks
+
+    // Get positions from the labels string
+    // id created mod status recur wait due project description mask
+    QVector<int> positions;
+    constexpr int columns_num = 9;
+    for (int i = 0; i < out_bytes[2].size(); ++i) {
+        const auto b = out_bytes[2][i];
+        if (b == ' ')
+            positions.push_back(i);
+    }
+    if (positions.size() != columns_num) {
+        return false;
+    }
+
+    for (size_t i = 3; i < out_bytes.size() - 2; ++i) {
+        const QByteArray &bytes = out_bytes[i];
+        if (bytes.isEmpty())
+            continue;
+        QString line(bytes);
+
+        RecurringTask task;
+        task.uuid =
+            line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
+        task.period =
+            line.mid(positions[3], positions[4] - positions[3]).simplified();
+        task.project =
+            line.mid(positions[6], positions[7] - positions[6]).simplified();
+        task.description =
+            line.mid(positions[7], positions[8] - positions[7]).simplified();
+
+        out_tasks.push_back(task);
+    }
+
+    return true;
+}
+
 bool Taskwarrior::deleteTask(const QString &id)
 {
     if (execCmd({ "delete", id })) {

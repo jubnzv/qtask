@@ -6,40 +6,56 @@
 #include <QStringList>
 #include <QVariant>
 
-struct Task final {
-  public:
-    enum class Priority { Unset, L, M, H };
-    static QString priorityToString(const Priority &p);
-    static Priority priorityFromString(const QString &p);
-
-  public:
-    Task()
+struct AbstractTask {
+    AbstractTask()
         : uuid("")
         , description("")
-        , priority(Priority::Unset)
         , project("")
         , tags({})
-        , active(false)
         , sched(QVariant{})
         , due(QVariant{})
-        , wait(QVariant{})
     {
     }
 
     QString uuid;
     QString description;
-    Priority priority;
     QString project;
     QStringList tags;
-    bool active;
     QVariant sched;
     QVariant due;
+};
+
+struct Task final : public AbstractTask {
+    enum class Priority { Unset, L, M, H };
+    static QString priorityToString(const Priority &p);
+    static Priority priorityFromString(const QString &p);
+
+    Task()
+        : priority(Priority::Unset)
+        , active(false)
+        , wait(QVariant{})
+    {
+    }
+
+    Priority priority;
+    bool active;
     QVariant wait;
 
     /// Tags that will be removed at the next command.
     QStringList removed_tags;
 
     QStringList getCmdArgs() const;
+};
+
+struct RecurringTask final : public AbstractTask {
+    RecurringTask()
+        : period("")
+    {
+    }
+
+    // Recurring period with date suffix:
+    // https://taskwarrior.org/docs/design/recurrence.html#special-month-handling
+    QString period;
 };
 
 #endif // TASK_HPP

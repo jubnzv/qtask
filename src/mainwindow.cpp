@@ -18,6 +18,7 @@
 #include "configmanager.hpp"
 #include "datetimedialog.hpp"
 #include "qtutil.hpp"
+#include "recurringdialog.hpp"
 #include "settingsdialog.hpp"
 #include "tagsedit.hpp"
 #include "taskdialog.hpp"
@@ -202,6 +203,17 @@ void MainWindow::initToolsMenu()
 {
     QMenu *tools_menu = menuBar()->addMenu(tr("&Tools"));
     tools_menu->setToolTipsVisible(true);
+
+    QAction *recurring_action = new QAction("&Recurring templates", this);
+    tools_menu->addAction(recurring_action);
+    connect(recurring_action, &QAction::triggered, this, [&]() {
+        QList<RecurringTask> tasks;
+        if (!m_task_provider->getRecurringTasks(tasks))
+            return;
+        auto *dlg = new RecurringDialog(tasks, this);
+        dlg->open();
+        QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
+    });
 
     QAction *history_stats_action = new QAction("&Statistics", this);
     history_stats_action->setEnabled(false);
