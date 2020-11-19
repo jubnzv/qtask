@@ -35,6 +35,7 @@ set(jtask_SRCS
     src/recurringdialog.cpp
     src/recurringtasksmodel.cpp
     src/tasksview.cpp
+    src/taskdescriptiondelegate.cpp
     src/qtutil.cpp
     src/tagsedit.cpp
     src/tasksmodel.cpp

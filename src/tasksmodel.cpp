@@ -44,8 +44,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     }
 
     else if (role == Qt::BackgroundRole) {
-        const Task task = m_tasks.at(index.row());
-        return QVariant(QBrush(getTaskColor(task)));
+        return QVariant(QBrush(rowColor(index.row())));
     }
 
     return QVariant();
@@ -99,11 +98,16 @@ void TasksModel::setTasks(QList<Task> &&tasks)
     endResetModel();
 }
 
-QColor TasksModel::getTaskColor(const Task &task) const
+QColor TasksModel::rowColor(int row) const
 {
     QColor c;
 
-    switch (task.priority) {
+    if (row < 0 || row >= m_tasks.size()) {
+        c.setNamedColor("#ffffff");
+        return c;
+    }
+
+    switch (m_tasks.at(row).priority) {
     case Task::Priority::Unset:
         c.setNamedColor("#ffffff");
         break;

@@ -21,6 +21,7 @@
 #include "recurringdialog.hpp"
 #include "settingsdialog.hpp"
 #include "tagsedit.hpp"
+#include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
 #include "tasksmodel.hpp"
 #include "tasksview.hpp"
@@ -129,6 +130,8 @@ void MainWindow::initTasksTable()
 
     TasksModel *model = new TasksModel();
     m_tasks_view->setModel(model);
+    m_tasks_view->setItemDelegateForColumn(2 /* description */,
+                                           new TaskDescriptionDelegate(this));
 
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,

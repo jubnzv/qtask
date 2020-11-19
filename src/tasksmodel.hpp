@@ -27,7 +27,7 @@ class TasksModel : public QAbstractTableModel {
     void setTasks(const QList<Task> &);
     void setTasks(QList<Task> &&);
 
-    QColor getTaskColor(const Task &) const;
+    QColor rowColor(int row) const;
 
   private:
     QList<Task> m_tasks;
