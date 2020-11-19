@@ -2,6 +2,7 @@
 #define TASKDESCRIPTIONDELEGATE_HPP
 
 #include <QPainter>
+#include <QString>
 #include <QStyledItemDelegate>
 
 class TaskDescriptionDelegate : public QStyledItemDelegate {
@@ -10,7 +11,7 @@ class TaskDescriptionDelegate : public QStyledItemDelegate {
   public:
     TaskDescriptionDelegate(QObject *parent = nullptr);
 
-    QString anchorAt(QString html, const QPoint &point) const;
+    QString anchorAt(const QString &markdown, const QPoint &point) const;
 
   protected:
     void paint(QPainter *painter, const QStyleOptionViewItem &option,

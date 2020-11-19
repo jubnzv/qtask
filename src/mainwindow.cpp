@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDesktopServices>
 #include <QDialog>
 #include <QEvent>
 #include <QGridLayout>
@@ -140,6 +141,12 @@ void MainWindow::initTasksTable()
             &MainWindow::pushFilterTag);
     connect(m_tasks_view, &QTableView::doubleClicked, this,
             &MainWindow::showEditTaskDialog);
+    connect(m_tasks_view, &TasksView::linkActivated, this,
+            [&](const QString &link) {
+                if (!link.isEmpty()) {
+                    QDesktopServices::openUrl(link);
+                }
+            });
 
     m_tasks_view->installEventFilter(this);
 }

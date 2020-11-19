@@ -1,5 +1,6 @@
 #include "taskdescriptiondelegate.hpp"
 
+#include <QAbstractTextDocumentLayout>
 #include <QApplication>
 #include <QStyledItemDelegate>
 #include <QTextDocument>
@@ -9,6 +10,18 @@
 TaskDescriptionDelegate::TaskDescriptionDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
 {
+}
+
+QString TaskDescriptionDelegate::anchorAt(const QString &markdown,
+                                          const QPoint &point) const
+{
+    QTextDocument doc;
+    doc.setMarkdown(markdown);
+
+    auto textLayout = doc.documentLayout();
+    Q_ASSERT(textLayout != 0);
+
+    return textLayout->anchorAt(point);
 }
 
 void TaskDescriptionDelegate::paint(QPainter *painter,
