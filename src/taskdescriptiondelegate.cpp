@@ -29,6 +29,8 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
     QTextDocument document;
     document.setTextWidth(option.rect.width());
     document.setPageSize(option.rect.size());
+    QRect clip(0, 0, option.rect.width(), option.rect.height());
+    document.drawContents(painter, clip);
 
     QPalette pal;
     pal.setColor(QPalette::Text, fg_color);
@@ -42,4 +44,17 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
     }
 
     painter->restore();
+}
+
+QSize TaskDescriptionDelegate::sizeHint(const QStyleOptionViewItem &option,
+                                        const QModelIndex &index) const
+{
+    QStyleOptionViewItem options = option;
+    initStyleOption(&options, index);
+
+    QTextDocument doc;
+    doc.setHtml(options.text);
+    doc.setTextWidth(options.rect.width());
+
+    return QSize(doc.idealWidth(), doc.size().height());
 }
