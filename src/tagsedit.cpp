@@ -787,8 +787,13 @@ void TagsEdit::clearTags() { setTags(QStringList{}); }
 
 void TagsEdit::pushTag(const QString &value)
 {
-    // impl->tags.push_back(Tag(value, {}));
-    // update();
+    auto t = Tag();
+    t.text = value;
+    impl->tags.push_back(t);
+    impl->updateDisplayText();
+    impl->calcRects();
+    update();
+    emit tagsChanged();
 }
 
 void TagsEdit::popTag()
