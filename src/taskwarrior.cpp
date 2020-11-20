@@ -198,8 +198,11 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
             return false;
 
         Task task;
-        task.uuid =
-            line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
+        task.uuid = line.mid(0, positions[0]).simplified();
+        bool can_convert = false;
+        (void)task.uuid.toInt(&can_convert);
+        if (!can_convert)
+            continue;
         const QString start_mark =
             line.mid(positions[0], positions[1] - positions[0]).simplified();
         task.active = start_mark.contains('*');
