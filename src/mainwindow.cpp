@@ -572,10 +572,22 @@ void MainWindow::onAddTask()
 {
     auto *dlg = new TaskDialog(this);
     dlg->open();
+    QObject::connect(this, &MainWindow::acceptContinueCreatingTasks, dlg,
+                     &TaskDialog::acceptContinue);
     QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t))
             updateTasks();
+    });
+    QObject::connect(dlg, &QDialog::rejected, [this, dlg]() { updateTasks(); });
+    QObject::connect(dlg, &TaskDialog::createTaskAndContinue, [this, dlg]() {
+        auto t = dlg->getTask();
+        if (m_task_provider->addTask(t)) {
+            updateTasks();
+            emit acceptContinueCreatingTasks();
+        } else {
+            dlg->close();
+        }
     });
 
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
@@ -690,6 +702,8 @@ void MainWindow::updateTasks(bool force)
 
     auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
     model->setTasks(std::move(tasks));
+
+    updateTaskToolbar();
 }
 
 void MainWindow::updateTaskToolbar()

@@ -74,6 +74,9 @@ class MainWindow : public QMainWindow {
     void updateTasks(bool force = false);
     void updateTaskToolbar();
 
+  signals:
+    void acceptContinueCreatingTasks();
+
   private:
     /// The previous state of the window
     Qt::WindowStates m_window_prev_state;

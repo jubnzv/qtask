@@ -1,5 +1,7 @@
 #include "taskdialog.hpp"
 
+#include <QApplication>
+#include <QBoxLayout>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -7,6 +9,7 @@
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -98,10 +101,23 @@ void TaskDialog::initUI()
     m_task_wait->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
     m_task_wait->setDateTime(QDate::currentDate().startOfDay().addDays(5));
 
-    m_btn_box =
-        new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    connect(m_btn_box, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(m_btn_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    auto *ok_btn = new QPushButton(
+        QApplication::style()->standardIcon(QStyle::SP_DialogOkButton),
+        tr("Ok"), this);
+    auto *continue_btn = new QPushButton(tr("Continue"), this);
+    auto *cancel_btn = new QPushButton(
+        QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
+        tr("Cancel"), this);
+
+    QBoxLayout *button_layout = new QHBoxLayout();
+    button_layout->addWidget(cancel_btn);
+    button_layout->addWidget(continue_btn);
+    button_layout->addWidget(ok_btn);
+
+    connect(ok_btn, &QPushButton::clicked, this, &QDialog::accept);
+    connect(continue_btn, &QPushButton::clicked, this,
+            &TaskDialog::createTaskAndContinue);
+    connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
 
     QGridLayout *grid_layout = new QGridLayout();
     grid_layout->addWidget(priority_label, 0, 0);
@@ -118,7 +134,7 @@ void TaskDialog::initUI()
     main_layout->addWidget(description_label);
     main_layout->addWidget(m_task_description);
     main_layout->addLayout(grid_layout);
-    main_layout->addWidget(m_btn_box);
+    main_layout->addLayout(button_layout);
     main_layout->setContentsMargins(5, 5, 5, 5);
 
     setLayout(main_layout);
@@ -148,4 +164,10 @@ void TaskDialog::setTask(const Task &task)
         m_task_priority->setCurrentIndex(3);
         break;
     }
+}
+
+void TaskDialog::acceptContinue()
+{
+    m_task_description->setText("");
+    m_task_description->update();
 }

@@ -4,7 +4,6 @@
 #include <QComboBox>
 #include <QDateTimeEdit>
 #include <QDialog>
-#include <QDialogButtonBox>
 #include <QTextEdit>
 #include <QWidget>
 
@@ -27,6 +26,12 @@ class TaskDialog : public QDialog {
     void initUI();
     void setTask(const Task &task);
 
+  public slots:
+    void acceptContinue();
+
+  signals:
+    void createTaskAndContinue();
+
   private:
     QTextEdit *m_task_description;
     QComboBox *m_task_priority;
@@ -35,7 +40,6 @@ class TaskDialog : public QDialog {
     OptionalDateTimeEdit *m_task_sched;
     OptionalDateTimeEdit *m_task_due;
     OptionalDateTimeEdit *m_task_wait;
-    QDialogButtonBox *m_btn_box;
 };
 
 #endif // TASKDIALOG_HPP
