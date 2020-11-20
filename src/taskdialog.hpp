@@ -4,6 +4,8 @@
 #include <QComboBox>
 #include <QDateTimeEdit>
 #include <QDialog>
+#include <QKeyEvent>
+#include <QPushButton>
 #include <QTextEdit>
 #include <QWidget>
 
@@ -22,12 +24,18 @@ class TaskDialog : public QDialog {
 
     Task getTask();
 
+  protected:
+    void keyPressEvent(QKeyEvent *) override;
+
   private:
     void initUI();
     void setTask(const Task &task);
 
   public slots:
     void acceptContinue();
+
+  private slots:
+    void onDescriptionChanged();
 
   signals:
     void createTaskAndContinue();
@@ -40,6 +48,8 @@ class TaskDialog : public QDialog {
     OptionalDateTimeEdit *m_task_sched;
     OptionalDateTimeEdit *m_task_due;
     OptionalDateTimeEdit *m_task_wait;
+    QPushButton *m_ok_btn;
+    QPushButton *m_continue_btn;
 };
 
 #endif // TASKDIALOG_HPP

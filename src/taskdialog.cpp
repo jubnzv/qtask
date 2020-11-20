@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QShortcut>
 #include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -61,6 +62,15 @@ Task TaskDialog::getTask()
     return task;
 }
 
+void TaskDialog::keyPressEvent(QKeyEvent *event)
+{
+    if (event == QKeySequence::Close) {
+        reject();
+    } else {
+        event->ignore();
+    }
+}
+
 void TaskDialog::initUI()
 {
     setWindowIcon(QIcon(":/icons/jtask.svg"));
@@ -68,6 +78,8 @@ void TaskDialog::initUI()
     QLabel *description_label = new QLabel("Description:");
     m_task_description = new QTextEdit();
     m_task_description->setTabChangesFocus(true);
+    QObject::connect(m_task_description, &QTextEdit::textChanged, this,
+                     &TaskDialog::onDescriptionChanged);
 
     QLabel *priority_label = new QLabel("Priority:");
     m_task_priority = new QComboBox();
@@ -78,6 +90,8 @@ void TaskDialog::initUI()
 
     QLabel *project_label = new QLabel("Project:");
     m_task_project = new QLineEdit();
+    QObject::connect(m_task_project, &QLineEdit::editingFinished, this,
+                     [&]() { focusNextChild(); });
 
     QLabel *tags_label = new QLabel("Tags:");
     m_task_tags = new TagsEdit();
@@ -101,21 +115,34 @@ void TaskDialog::initUI()
     m_task_wait->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
     m_task_wait->setDateTime(QDate::currentDate().startOfDay().addDays(5));
 
-    auto *ok_btn = new QPushButton(
+    m_ok_btn = new QPushButton(
         QApplication::style()->standardIcon(QStyle::SP_DialogOkButton),
         tr("Ok"), this);
-    auto *continue_btn = new QPushButton(tr("Continue"), this);
+    m_ok_btn->setEnabled(false);
+    auto *create_shortcut = new QShortcut(QKeySequence("Ctrl+Return"), this);
+    QObject::connect(create_shortcut, &QShortcut::activated, this,
+                     &QDialog::accept);
+    m_ok_btn->setToolTip(tr("Create task"));
+
+    m_continue_btn = new QPushButton(tr("Continue"), this);
+    m_continue_btn->setEnabled(false);
+    auto *continue_shortcut = new QShortcut(QKeySequence("Alt+Return"), this);
+    QObject::connect(continue_shortcut, &QShortcut::activated, this,
+                     &TaskDialog::createTaskAndContinue);
+    m_continue_btn->setToolTip(tr("Create task and continue"));
+
     auto *cancel_btn = new QPushButton(
         QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
         tr("Cancel"), this);
+    cancel_btn->setToolTip(tr("Cancel and close window"));
 
     QBoxLayout *button_layout = new QHBoxLayout();
     button_layout->addWidget(cancel_btn);
-    button_layout->addWidget(continue_btn);
-    button_layout->addWidget(ok_btn);
+    button_layout->addWidget(m_continue_btn);
+    button_layout->addWidget(m_ok_btn);
 
-    connect(ok_btn, &QPushButton::clicked, this, &QDialog::accept);
-    connect(continue_btn, &QPushButton::clicked, this,
+    connect(m_ok_btn, &QPushButton::clicked, this, &QDialog::accept);
+    connect(m_continue_btn, &QPushButton::clicked, this,
             &TaskDialog::createTaskAndContinue);
     connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
 
@@ -170,4 +197,16 @@ void TaskDialog::acceptContinue()
 {
     m_task_description->setText("");
     m_task_description->update();
+    m_task_description->setFocus();
+}
+
+void TaskDialog::onDescriptionChanged()
+{
+    if (m_task_description->toPlainText().isEmpty()) {
+        m_ok_btn->setEnabled(false);
+        m_continue_btn->setEnabled(false);
+    } else {
+        m_ok_btn->setEnabled(true);
+        m_continue_btn->setEnabled(true);
+    }
 }
