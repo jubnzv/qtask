@@ -9,6 +9,7 @@
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QShortcut>
 #include <QStringList>
@@ -22,19 +23,7 @@
 TaskDialog::TaskDialog(QWidget *parent)
     : QDialog(parent)
 {
-    setWindowTitle(QCoreApplication::applicationName() + " - Add task");
-    initUI();
 }
-
-TaskDialog::TaskDialog(const Task &task, QWidget *parent)
-    : QDialog(parent)
-{
-    setWindowTitle(QCoreApplication::applicationName() + " - Edit task");
-    initUI();
-    setTask(task);
-}
-
-TaskDialog::~TaskDialog() {}
 
 Task TaskDialog::getTask()
 {
@@ -115,37 +104,6 @@ void TaskDialog::initUI()
     m_task_wait->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
     m_task_wait->setDateTime(QDate::currentDate().startOfDay().addDays(5));
 
-    m_ok_btn = new QPushButton(
-        QApplication::style()->standardIcon(QStyle::SP_DialogOkButton),
-        tr("Ok"), this);
-    m_ok_btn->setEnabled(false);
-    auto *create_shortcut = new QShortcut(QKeySequence("Ctrl+Return"), this);
-    QObject::connect(create_shortcut, &QShortcut::activated, this,
-                     &QDialog::accept);
-    m_ok_btn->setToolTip(tr("Create task"));
-
-    m_continue_btn = new QPushButton(tr("Continue"), this);
-    m_continue_btn->setEnabled(false);
-    auto *continue_shortcut = new QShortcut(QKeySequence("Alt+Return"), this);
-    QObject::connect(continue_shortcut, &QShortcut::activated, this,
-                     &TaskDialog::createTaskAndContinue);
-    m_continue_btn->setToolTip(tr("Create task and continue"));
-
-    auto *cancel_btn = new QPushButton(
-        QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
-        tr("Cancel"), this);
-    cancel_btn->setToolTip(tr("Cancel and close window"));
-
-    QBoxLayout *button_layout = new QHBoxLayout();
-    button_layout->addWidget(cancel_btn);
-    button_layout->addWidget(m_continue_btn);
-    button_layout->addWidget(m_ok_btn);
-
-    connect(m_ok_btn, &QPushButton::clicked, this, &QDialog::accept);
-    connect(m_continue_btn, &QPushButton::clicked, this,
-            &TaskDialog::createTaskAndContinue);
-    connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
-
     QGridLayout *grid_layout = new QGridLayout();
     grid_layout->addWidget(priority_label, 0, 0);
     grid_layout->addWidget(m_task_priority, 0, 1);
@@ -157,14 +115,13 @@ void TaskDialog::initUI()
     grid_layout->addWidget(m_task_due, 4, 0, 1, 2);
     grid_layout->addWidget(m_task_wait, 5, 0, 1, 2);
 
-    QVBoxLayout *main_layout = new QVBoxLayout();
-    main_layout->addWidget(description_label);
-    main_layout->addWidget(m_task_description);
-    main_layout->addLayout(grid_layout);
-    main_layout->addLayout(button_layout);
-    main_layout->setContentsMargins(5, 5, 5, 5);
+    m_main_layout = new QVBoxLayout();
+    m_main_layout->addWidget(description_label);
+    m_main_layout->addWidget(m_task_description);
+    m_main_layout->addLayout(grid_layout);
+    m_main_layout->setContentsMargins(5, 5, 5, 5);
 
-    setLayout(main_layout);
+    setLayout(m_main_layout);
 }
 
 void TaskDialog::setTask(const Task &task)
@@ -191,16 +148,64 @@ void TaskDialog::setTask(const Task &task)
         m_task_priority->setCurrentIndex(3);
         break;
     }
+
+    m_task_uuid = task.uuid;
 }
 
-void TaskDialog::acceptContinue()
+AddTaskDialog::AddTaskDialog(QWidget *parent)
+    : TaskDialog(parent)
+{
+    setWindowTitle(QCoreApplication::applicationName() + " - Add task");
+    initUI();
+}
+
+void AddTaskDialog::initUI()
+{
+    TaskDialog::initUI();
+    Q_ASSERT(m_main_layout);
+
+    m_ok_btn = new QPushButton(
+        QApplication::style()->standardIcon(QStyle::SP_DialogOkButton),
+        tr("Ok"), this);
+    m_ok_btn->setEnabled(false);
+    auto *create_shortcut = new QShortcut(QKeySequence("Ctrl+Return"), this);
+    QObject::connect(create_shortcut, &QShortcut::activated, this,
+                     &QDialog::accept);
+    m_ok_btn->setToolTip(tr("Create task"));
+
+    m_continue_btn = new QPushButton(tr("Continue"), this);
+    m_continue_btn->setEnabled(false);
+    auto *continue_shortcut = new QShortcut(QKeySequence("Alt+Return"), this);
+    QObject::connect(continue_shortcut, &QShortcut::activated, this,
+                     &AddTaskDialog::createTaskAndContinue);
+    m_continue_btn->setToolTip(tr("Create task and continue"));
+
+    auto *cancel_btn = new QPushButton(
+        QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
+        tr("Cancel"), this);
+    cancel_btn->setToolTip(tr("Cancel and close window"));
+
+    QBoxLayout *button_layout = new QHBoxLayout();
+    button_layout->addWidget(cancel_btn);
+    button_layout->addWidget(m_continue_btn);
+    button_layout->addWidget(m_ok_btn);
+
+    connect(m_ok_btn, &QPushButton::clicked, this, &QDialog::accept);
+    connect(m_continue_btn, &QPushButton::clicked, this,
+            &AddTaskDialog::createTaskAndContinue);
+    connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
+
+    m_main_layout->addLayout(button_layout);
+}
+
+void AddTaskDialog::acceptContinue()
 {
     m_task_description->setText("");
     m_task_description->update();
     m_task_description->setFocus();
 }
 
-void TaskDialog::onDescriptionChanged()
+void AddTaskDialog::onDescriptionChanged()
 {
     if (m_task_description->toPlainText().isEmpty()) {
         m_ok_btn->setEnabled(false);
@@ -209,4 +214,66 @@ void TaskDialog::onDescriptionChanged()
         m_ok_btn->setEnabled(true);
         m_continue_btn->setEnabled(true);
     }
+}
+
+EditTaskDialog::EditTaskDialog(const Task &task, QWidget *parent)
+    : TaskDialog(parent)
+{
+    setWindowTitle(QCoreApplication::applicationName() + " - Edit task");
+    initUI();
+    setTask(task);
+}
+
+void EditTaskDialog::initUI()
+{
+    TaskDialog::initUI();
+    Q_ASSERT(m_main_layout);
+
+    m_ok_btn = new QPushButton(
+        QApplication::style()->standardIcon(QStyle::SP_DialogOkButton),
+        tr("Ok"), this);
+    auto *create_shortcut = new QShortcut(QKeySequence("Ctrl+Return"), this);
+    QObject::connect(create_shortcut, &QShortcut::activated, this,
+                     &QDialog::accept);
+    m_ok_btn->setToolTip(tr("Create task"));
+
+    m_delete_btn = new QPushButton(tr("Delete"), this);
+    auto *delete_shortcut = new QShortcut(QKeySequence("Ctrl+Delete"), this);
+    QObject::connect(delete_shortcut, &QShortcut::activated, this,
+                     &EditTaskDialog::requestDeleteTask);
+    m_delete_btn->setToolTip(tr("Delete this task"));
+
+    auto *cancel_btn = new QPushButton(
+        QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
+        tr("Cancel"), this);
+    cancel_btn->setToolTip(tr("Cancel and close window"));
+
+    QBoxLayout *button_layout = new QHBoxLayout();
+    button_layout->addWidget(cancel_btn);
+    button_layout->addWidget(m_delete_btn);
+    button_layout->addWidget(m_ok_btn);
+
+    connect(m_ok_btn, &QPushButton::clicked, this, &QDialog::accept);
+    connect(m_delete_btn, &QPushButton::clicked, this,
+            &EditTaskDialog::requestDeleteTask);
+    connect(cancel_btn, &QPushButton::clicked, this, &QDialog::reject);
+
+    m_main_layout->addLayout(button_layout);
+}
+
+void EditTaskDialog::requestDeleteTask()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, tr("Conifrm action"),
+                                  tr("Delete task #%1?").arg(m_task_uuid),
+                                  QMessageBox::Yes | QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        emit deleteTask(m_task_uuid);
+        reject();
+    }
+}
+
+void EditTaskDialog::onDescriptionChanged()
+{
+    m_ok_btn->setEnabled(!m_task_description->toPlainText().isEmpty());
 }

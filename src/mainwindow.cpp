@@ -570,17 +570,18 @@ void MainWindow::onMuteNotifications() {}
 
 void MainWindow::onAddTask()
 {
-    auto *dlg = new TaskDialog(this);
+    auto *dlg = new AddTaskDialog(this);
     dlg->open();
+
     QObject::connect(this, &MainWindow::acceptContinueCreatingTasks, dlg,
-                     &TaskDialog::acceptContinue);
+                     &AddTaskDialog::acceptContinue);
     QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t))
             updateTasks();
     });
     QObject::connect(dlg, &QDialog::rejected, [this, dlg]() { updateTasks(); });
-    QObject::connect(dlg, &TaskDialog::createTaskAndContinue, [this, dlg]() {
+    QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
             updateTasks();
@@ -589,7 +590,6 @@ void MainWindow::onAddTask()
             dlg->close();
         }
     });
-
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 }
 
@@ -657,9 +657,15 @@ void MainWindow::showEditTaskDialog(const QModelIndex &idx)
         return;
     }
 
-    auto *dlg = new TaskDialog(task, this);
-
+    auto *dlg = new EditTaskDialog(task, this);
     dlg->open();
+
+    QObject::connect(dlg, &EditTaskDialog::deleteTask, this,
+                     [&](const QString &uuid) {
+                         m_task_provider->deleteTask(uuid);
+                         m_tasks_view->selectionModel()->clearSelection();
+                         updateTasks();
+                     });
     QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str, task]() {
         auto saved_tags = task.tags;
         auto saved_pri = task.priority;
@@ -677,7 +683,7 @@ void MainWindow::showEditTaskDialog(const QModelIndex &idx)
             return;
         updateTasks();
     });
-
+    QObject::connect(dlg, &QDialog::rejected, [this, dlg]() { updateTasks(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 }
 
