@@ -23,5 +23,7 @@ int main(int argc, char *argv[])
     main_win.resize(700, 200);
     main_win.show();
 
-    return a.exec();
+    int rc = a.exec();
+    ConfigManager::config()->updateConfigFile();
+    return rc;
 }

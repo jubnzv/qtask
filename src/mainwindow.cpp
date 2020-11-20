@@ -104,6 +104,7 @@ void MainWindow::initMainWindow()
                             QLineEdit::LeadingPosition);
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
+    m_task_shell->setVisible(ConfigManager::config()->getShowTaskShell());
 
     m_task_filter = new TagsEdit(/* TODO: QIcon(":/icons/filter.svg")*/);
     connect(m_task_filter, &TagsEdit::tagsChanged, this,
@@ -196,17 +197,11 @@ void MainWindow::initViewMenu()
 
     m_toggle_task_shell_action = new QAction("&Task shell", this);
     m_toggle_task_shell_action->setCheckable(true);
-    m_toggle_task_shell_action->setChecked(true);
+    m_toggle_task_shell_action->setChecked(
+        ConfigManager::config()->getShowTaskShell());
     view_menu->addAction(m_toggle_task_shell_action);
     connect(m_toggle_task_shell_action, &QAction::triggered, this,
             &MainWindow::onToggleTaskShell);
-
-    m_toggle_task_filter_action = new QAction("&Task filter", this);
-    m_toggle_task_filter_action->setCheckable(true);
-    m_toggle_task_filter_action->setChecked(true);
-    view_menu->addAction(m_toggle_task_filter_action);
-    connect(m_toggle_task_filter_action, &QAction::triggered, this,
-            &MainWindow::onToggleTaskFilter);
 }
 
 void MainWindow::initToolsMenu()
@@ -253,14 +248,17 @@ void MainWindow::initShortcuts()
 {
     QAction *focus_task_shell = new QAction(this);
     focus_task_shell->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_T));
-    connect(focus_task_shell, &QAction::triggered, this,
-            &MainWindow::onFocusTaskShell);
+    connect(focus_task_shell, &QAction::triggered, this, [&]() {
+        if (m_task_shell->isVisible()) {
+            m_task_shell->setFocus();
+        }
+    });
     this->addAction(focus_task_shell);
 
     QAction *filter_tasks = new QAction(this);
     filter_tasks->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
     connect(filter_tasks, &QAction::triggered, this,
-            &MainWindow::onFocusTaskFilter);
+            [&]() { m_task_filter->setFocus(); });
     this->addAction(filter_tasks);
 }
 
@@ -534,34 +532,11 @@ void MainWindow::onToggleTaskShell()
 {
     if (m_toggle_task_shell_action->isChecked()) {
         m_task_shell->setVisible(true);
+        ConfigManager::config()->setShowTaskShell(true);
     } else {
         m_task_shell->setVisible(false);
+        ConfigManager::config()->setShowTaskShell(false);
     }
-}
-
-void MainWindow::onToggleTaskFilter()
-{
-    if (m_toggle_task_filter_action->isChecked()) {
-        m_task_filter->setVisible(true);
-    } else {
-        m_task_filter->setVisible(false);
-    }
-}
-
-void MainWindow::onFocusTaskShell()
-{
-    if (!m_task_shell->isVisible()) {
-        m_task_shell->setVisible(true);
-    }
-    m_task_shell->setFocus();
-}
-
-void MainWindow::onFocusTaskFilter()
-{
-    if (!m_task_filter->isVisible()) {
-        m_task_filter->setVisible(true);
-    }
-    m_task_filter->setFocus();
 }
 
 void MainWindow::onSettingsMenu() {}

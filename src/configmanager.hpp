@@ -26,6 +26,9 @@ class ConfigManager : public QObject {
     QString getTaskDataPath() const { return m_task_data_path; }
     void setTaskDataPath(const QString &v) { m_task_data_path = v; }
 
+    bool getShowTaskShell() const { return m_show_task_shell; }
+    void setShowTaskShell(bool v) { m_show_task_shell = v; }
+
     bool initializeFromFile();
 
     void updateConfigFile();
@@ -43,10 +46,16 @@ class ConfigManager : public QObject {
     /// Path to configuration file
     QString m_config_path;
 
+    /// Path to task binary
     QString m_task_bin;
     static const QString s_default_task_bin;
+
+    /// Path to taskwarrior data
     QString m_task_data_path;
     static const QString s_default_task_data_path;
+
+    /// Task shell will be shown in the main window
+    bool m_show_task_shell;
 };
 
 #endif // CONFIGMANAGER_HPP

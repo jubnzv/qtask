@@ -58,9 +58,6 @@ class MainWindow : public QMainWindow {
 
   private slots:
     void onToggleTaskShell();
-    void onToggleTaskFilter();
-    void onFocusTaskShell();
-    void onFocusTaskFilter();
     void onSettingsMenu();
     void onMuteNotifications();
     void onAddTask();
@@ -85,8 +82,6 @@ class MainWindow : public QMainWindow {
     bool m_is_quit;
 
     QAction *m_toggle_task_shell_action;
-
-    QAction *m_toggle_task_filter_action;
 
     QWidget *m_window;
     QGridLayout *m_layout;

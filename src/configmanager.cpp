@@ -18,6 +18,7 @@ ConfigManager::ConfigManager(QObject *parent)
     , m_config_path("")
     , m_task_bin(s_default_task_bin)
     , m_task_data_path(s_default_task_data_path)
+    , m_show_task_shell(false)
 {
 }
 
@@ -76,6 +77,7 @@ void ConfigManager::updateConfigFile()
     QSettings settings(m_config_path, QSettings::IniFormat);
     settings.setValue("task_bin", m_task_bin);
     settings.setValue("task_data_path", m_task_data_path);
+    settings.setValue("show_task_shell", m_show_task_shell);
 }
 
 bool ConfigManager::createNewConfigFile()
@@ -85,6 +87,7 @@ bool ConfigManager::createNewConfigFile()
         return false;
     settings.setValue("task_bin", s_default_task_bin);
     settings.setValue("task_data_path", s_default_task_data_path);
+    settings.setValue("show_task_shell", false);
     return true;
 }
 
@@ -94,5 +97,6 @@ bool ConfigManager::fillOptionsFromConfigFile()
     m_task_bin = settings.value("task_bin", s_default_task_bin).toString();
     m_task_data_path =
         settings.value("task_data_path", s_default_task_data_path).toString();
+    m_show_task_shell = settings.value("show_task_shell", false).toBool();
     return true;
 }
