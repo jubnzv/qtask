@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-project(jtask CXX)
+project(qtask CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -21,7 +21,7 @@ else()
   set(DEBUG_MODE 0)
 endif()
 
-set(jtask_SRCS
+set(qtask_SRCS
     src/aboutdialog.cpp
     src/main.cpp
     src/mainwindow.cpp
@@ -41,33 +41,33 @@ set(jtask_SRCS
     src/tasksmodel.cpp
     src/taskwatcher.cpp
     src/taskwarrior.cpp)
-set(jtask_MOC_HEADERS src/configmanager.hpp)
-set(jtask_RESOURCES res/jtask.qrc)
-add_executable(jtask ${jtask_SRCS} ${jtask_RESOURCES})
+set(qtask_MOC_HEADERS src/configmanager.hpp)
+set(qtask_RESOURCES res/qtask.qrc)
+add_executable(qtask ${qtask_SRCS} ${qtask_RESOURCES})
 
-target_link_libraries(jtask Qt5::Widgets Qt5::GuiPrivate)
+target_link_libraries(qtask Qt5::Widgets Qt5::GuiPrivate)
 
 # Replacement of the QtSingleApplication for Qt5 and Qt6.
 set(QAPPLICATION_CLASS
     QApplication
     CACHE STRING "Inheritance class for SingleApplication")
 add_subdirectory(src/third-party/singleapplication)
-target_link_libraries(jtask SingleApplication::SingleApplication)
+target_link_libraries(qtask SingleApplication::SingleApplication)
 
-set(JTASK_VERSION_MAJOR 1)
-set(JTASK_VERSION_MINOR 0)
-set(JTASK_VERSION_PATCH 0)
+set(QTASK_VERSION_MAJOR 1)
+set(QTASK_VERSION_MINOR 0)
+set(QTASK_VERSION_PATCH 0)
 set_property(
-  TARGET jtask
+  TARGET qtask
   PROPERTY VERSION
-           ${JTASK_VERSION_MAJOR}.${JTASK_VERSION_MINOR}.${JTASK_VERSION_PATCH})
+           ${QTASK_VERSION_MAJOR}.${QTASK_VERSION_MINOR}.${QTASK_VERSION_PATCH})
 configure_file(src/config.hpp.in src/config.hpp)
 
 include(GNUInstallDirs)
-install(TARGETS jtask RUNTIME DESTINATION bin)
-install(FILES res/icons/jtask.svg
+install(TARGETS qtask RUNTIME DESTINATION bin)
+install(FILES res/icons/qtask.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/24x24/apps)
-install(FILES res/jtask.desktop
+install(FILES res/qtask.desktop
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-install(FILES res/icons/jtask.svg
+install(FILES res/icons/qtask.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)

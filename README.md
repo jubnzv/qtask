@@ -1,8 +1,8 @@
-# JTask
+# QTask
 
- [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+ [![License: GPL-3.0](https://img.shields.io/badge/License-GPL3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
 
-JTask is an open-source Qt-based graphical user interface for managing tasks. It is based on [Taskwarrior](https://taskwarrior.org/), a popular command-line organizer.
+QTask is an open-source Qt-based graphical user interface for managing tasks. It is based on [Taskwarrior](https://taskwarrior.org/), a popular command-line organizer.
 
 ## Features
 
@@ -18,7 +18,7 @@ You may find the following features of this utility useful:
 * Access to Taskwarrior CLI commands via the built-in shell;
 * This utility monitors changes in the database in the background. Therefore, you will always see new tasks as they arrive. This is useful if you are using the Taskwarrior CLI or scripts like [bugwarrior](https://github.com/ralphbean/bugwarrior) at the same time.
 
-If you have any ideas on how to improve this utility, feel free to create an [issue](https://github.com/jubnzv/jtask/issues) or open a [PR](https://github.com/jubnzv/jtask/pulls).
+If you have any ideas on how to improve this utility, feel free to create an [issue](https://github.com/jubnzv/qtask/issues) or open a [PR](https://github.com/jubnzv/qtask/pulls).
 
 ## Building
 
@@ -41,4 +41,4 @@ make install
 
 ## License
 
-MIT
+GPL-3.0

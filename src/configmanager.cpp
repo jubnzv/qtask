@@ -38,8 +38,8 @@ bool ConfigManager::initializeFromFile()
     foreach (auto const &p, QStandardPaths::standardLocations(
                                 QStandardPaths::ConfigLocation)) {
         QDir d(p);
-        if (d.exists(".jtask")) {
-            existsting_dir = QString("%1%2jtask").arg(p, QDir::separator());
+        if (d.exists("qtask")) {
+            existsting_dir = QString("%1%2qtask").arg(p, QDir::separator());
             break;
         }
     }
@@ -49,8 +49,8 @@ bool ConfigManager::initializeFromFile()
         foreach (auto const &p, QStandardPaths::standardLocations(
                                     QStandardPaths::ConfigLocation)) {
             QDir d(p);
-            if (d.mkdir("jtask")) {
-                existsting_dir = QString("%1%2jtask").arg(p, QDir::separator());
+            if (d.mkdir("qtask")) {
+                existsting_dir = QString("%1%2qtask").arg(p, QDir::separator());
                 break;
             }
         }
@@ -61,8 +61,8 @@ bool ConfigManager::initializeFromFile()
     }
 
     QDir config_dir(existsting_dir.toString());
-    m_config_path = config_dir.absoluteFilePath("jtask.ini");
-    if (!config_dir.exists("jtask.ini")) {
+    m_config_path = config_dir.absoluteFilePath("qtask.ini");
+    if (!config_dir.exists("qtask.ini")) {
         if (!createNewConfigFile())
             return false;
         m_is_new = true;

@@ -20,7 +20,7 @@ RecurringDialog::~RecurringDialog() {}
 
 void RecurringDialog::initUI(const QList<RecurringTask> &tasks)
 {
-    setWindowIcon(QIcon(":/icons/jtask.svg"));
+    setWindowIcon(QIcon(":/icons/qtask.svg"));
 
     m_tasks_view = new QTableView(this);
     m_tasks_view->setShowGrid(true);

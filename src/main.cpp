@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     SingleApplication app(argc, argv, /*allowSecondary=*/false,
                           SingleApplication::Mode::User |
                               SingleApplication::Mode::SecondaryNotification);
-    app.setApplicationName("JTask");
+    app.setApplicationName("QTask");
 
     if (!ConfigManager::config()->initializeFromFile()) {
         QMessageBox::warning(
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     // If this is a secondary instance
     if (app.isSecondary()) {
         app.sendMessage(app.arguments().join(' ').toUtf8());
-        qDebug() << "JTask already running.";
+        qDebug() << "QTask already running.";
         qDebug() << "Primary instance PID: " << app.primaryPid();
         qDebug() << "Primary instance user: " << app.primaryUser();
         return EXIT_SUCCESS;

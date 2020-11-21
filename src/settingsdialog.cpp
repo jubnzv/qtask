@@ -25,7 +25,7 @@ void SettingsDialog::initUI()
     main_layout->setContentsMargins(5, 5, 5, 5);
 
     setWindowTitle(QCoreApplication::applicationName() + " - Settings");
-    setWindowIcon(QIcon(":/icons/jtask.svg"));
+    setWindowIcon(QIcon(":/icons/qtask.svg"));
 
     QLabel *task_bin_label = new QLabel("task executable:");
     main_layout->addWidget(task_bin_label, 0, 0);

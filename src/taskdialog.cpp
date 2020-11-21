@@ -62,7 +62,7 @@ void TaskDialog::keyPressEvent(QKeyEvent *event)
 
 void TaskDialog::initUI()
 {
-    setWindowIcon(QIcon(":/icons/jtask.svg"));
+    setWindowIcon(QIcon(":/icons/qtask.svg"));
 
     QLabel *description_label = new QLabel("Description:");
     m_task_description = new QTextEdit();

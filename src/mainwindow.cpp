@@ -87,7 +87,7 @@ bool MainWindow::initTaskWatcher()
 
 void MainWindow::initMainWindow()
 {
-    setWindowIcon(QIcon(":/icons/jtask.svg"));
+    setWindowIcon(QIcon(":/icons/qtask.svg"));
     setWindowTitle(QCoreApplication::applicationName());
     setMinimumSize(400, 500);
 

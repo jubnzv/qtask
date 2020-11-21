@@ -20,24 +20,24 @@ void AboutDialog::initUI(const QVariant &task_version)
     setWindowTitle(QCoreApplication::applicationName() + " - About");
 
     const QString version = QString("%1.%2.%3")
-                                .arg(QString::number(JTASK_VERSION_MAJOR),
-                                     QString::number(JTASK_VERSION_MINOR),
-                                     QString::number(JTASK_VERSION_PATCH));
+                                .arg(QString::number(QTASK_VERSION_MAJOR),
+                                     QString::number(QTASK_VERSION_MINOR),
+                                     QString::number(QTASK_VERSION_PATCH));
 
     const QString info =
         QString("<html><style>a { color: blue; text-decoration: none; "
                 "}</style><body>"
                 "<CENTER>"
-                "<BR><IMG SRC=\":/icons/jtask.svg\">"
+                "<BR><IMG SRC=\":/icons/qtask.svg\">"
                 "<P> Version <B>%1</B><BR>"
-                "JTask is an open-source organizer based on Taskwarrior.<BR>"
+                "QTask is an open-source organizer based on Taskwarrior.<BR>"
                 "<P> Components: Qt-%2,%3 <a "
                 "href=\"https://smashicons.com/app/c/24px-icons/essentials_1/"
                 "list/soft_outline\">Essential Icon Pack</a><P>"
                 "<P><a "
                 "Website: "
-                "href=\"https://github.com/jubnzv/jtask\">https://github.com/"
-                "jubnzv/jtask</a><P>"
+                "href=\"https://github.com/jubnzv/qtask\">https://github.com/"
+                "jubnzv/qtask</a><P>"
                 "<a E-mail: "
                 "href=\"mailto:jubnzv@gmail.com\">jubnzv@gmail.com</a><P>"
                 "</P>"

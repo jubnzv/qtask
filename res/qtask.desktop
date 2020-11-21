@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=JTask
+Name=QTask
 Comment=An open-source organizer based on Taskwarrior
-Exec=jtask
+Exec=qtask
 Terminal=false
 X-MultipleArgs=false
 Type=Application
-Icon=jtask
+Icon=qtask
 Categories=Qt;Office;Calendar;
 StartupNotify=true
