@@ -24,7 +24,12 @@ class ConfigManager : public QObject {
     void setTaskBin(const QString &v) { m_task_bin = v; }
 
     QString getTaskDataPath() const { return m_task_data_path; }
-    void setTaskDataPath(const QString &v) { m_task_data_path = v; }
+    void setTaskDataPath(const QString &v)
+    {
+        m_task_data_path = v;
+        if (!v.isEmpty() && v[v.size() - 1] != QDir::separator())
+            m_task_data_path += QDir::separator();
+    }
 
     bool getShowTaskShell() const { return m_show_task_shell; }
     void setShowTaskShell(bool v) { m_show_task_shell = v; }

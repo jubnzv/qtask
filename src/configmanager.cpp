@@ -10,7 +10,7 @@ ConfigManager *ConfigManager::inst_ = nullptr;
 
 const QString ConfigManager::s_default_task_bin = "/usr/bin/task";
 const QString ConfigManager::s_default_task_data_path =
-    QString("%1%2%3%2").arg(QDir::homePath(), QDir::separator(), ".task");
+    QString("%1%2%3%2").arg(QDir::homePath(), QDir::separator(), ".task", QDir::separator());
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
