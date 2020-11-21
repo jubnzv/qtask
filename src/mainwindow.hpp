@@ -42,7 +42,6 @@ class MainWindow : public QMainWindow {
     void initTaskToolbar();
     void toggleMainWindow();
     void openSettingsDialog();
-    void showMainWindow();
     void quitApp();
 
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -55,6 +54,9 @@ class MainWindow : public QMainWindow {
   public slots:
     /// Add entry to tags filter
     void pushFilterTag(const QString &);
+
+    /// Show this window if minimized
+    void showMainWindow();
 
   private slots:
     void onToggleTaskShell();

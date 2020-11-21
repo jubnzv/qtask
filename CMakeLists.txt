@@ -47,6 +47,13 @@ add_executable(jtask ${jtask_SRCS} ${jtask_RESOURCES})
 
 target_link_libraries(jtask Qt5::Widgets Qt5::GuiPrivate)
 
+# Replacement of the QtSingleApplication for Qt5 and Qt6.
+set(QAPPLICATION_CLASS
+    QApplication
+    CACHE STRING "Inheritance class for SingleApplication")
+add_subdirectory(src/third-party/singleapplication)
+target_link_libraries(jtask SingleApplication::SingleApplication)
+
 set(JTASK_VERSION_MAJOR 1)
 set(JTASK_VERSION_MINOR 0)
 set(JTASK_VERSION_PATCH 0)

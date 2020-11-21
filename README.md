@@ -26,14 +26,18 @@ On Debian-based distributions you need to install the following packages: `qt5-d
 
 To build, please do the following:
 
-```cpp
+```bash
+git clone https://github.com/jubnzv/qtask.git qtask
+cd qtask
+git submodule update --init
+
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
-```
 
-Then you can install it with `make install`.
+make install
+```
 
 ## License
 
