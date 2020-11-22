@@ -58,6 +58,9 @@ class MainWindow : public QMainWindow {
     /// Show this window if minimized
     void showMainWindow();
 
+    /// Receive a message from a secondary QTask instance
+    void receiveNewInstanceMessage(quint32 instanceId, QByteArray message);
+
   private slots:
     void onToggleTaskShell();
     void onSettingsMenu();

@@ -413,6 +413,15 @@ void MainWindow::showMainWindow()
     this->activateWindow();
 }
 
+void MainWindow::receiveNewInstanceMessage(quint32, QByteArray message)
+{
+    if (message == "add_task") {
+        onAddTask();
+    } else {
+        showMainWindow();
+    }
+}
+
 void MainWindow::quitApp()
 {
     m_is_quit = true;
