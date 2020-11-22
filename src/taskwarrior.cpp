@@ -221,8 +221,11 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
 bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
 {
     QByteArray out;
+
     auto args = QStringList() << "recurring_full"
-                              << "rc.defaultwidth=0"
+                              << "rc.report.recurring_full.columns=id,recur,"
+                                 "project,description"
+                              << "rc.report.recurring_full.labels=',|,|,|'"
                               << "status:Recurring";
 
     if (!execCmd(args, out))
@@ -235,7 +238,7 @@ bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
     // Get positions from the labels string
     // id created mod status recur wait due project description mask
     QVector<int> positions;
-    constexpr int columns_num = 9;
+    constexpr int columns_num = 3;
     for (int i = 0; i < out_bytes[2].size(); ++i) {
         const auto b = out_bytes[2][i];
         if (b == ' ')
@@ -255,11 +258,10 @@ bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
         task.uuid =
             line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
         task.period =
-            line.mid(positions[3], positions[4] - positions[3]).simplified();
+            line.mid(positions[0], positions[1] - positions[0]).simplified();
         task.project =
-            line.mid(positions[6], positions[7] - positions[6]).simplified();
-        task.description =
-            line.mid(positions[7], positions[8] - positions[7]).simplified();
+            line.mid(positions[1], positions[2] - positions[1]).simplified();
+        task.description = line.right(line.size() - positions[2]).simplified();
 
         out_tasks.push_back(task);
     }
