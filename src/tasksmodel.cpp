@@ -103,25 +103,25 @@ QColor TasksModel::rowColor(int row) const
     QColor c;
 
     if (row < 0 || row >= m_tasks.size()) {
-        c.setNamedColor("#ffffff");
+        c.setRgb(0xffffff);
         return c;
     }
 
     switch (m_tasks.at(row).priority) {
     case Task::Priority::Unset:
-        c.setNamedColor("#ffffff");
+        c.setRgb(0xffffff);
         break;
     case Task::Priority::L:
-        c.setNamedColor("#f7ffe4");
+        c.setRgb(0xf7ffe4);
         break;
     case Task::Priority::M:
-        c.setNamedColor("#fffae4");
+        c.setRgb(0xfffae4);
         break;
     case Task::Priority::H:
-        c.setNamedColor("#d5acbe");
+        c.setRgb(0xd5acbe);
         break;
     default:
-        c.setNamedColor("#ffffff");
+        c.setRgb(0xffffff);
         break;
     }
 
