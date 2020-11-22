@@ -93,6 +93,7 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
     auto out_bytes = out.split('\n');
     if (out_bytes.size() < 5)
         return false; // not found
+    bool desc_done = false;
     for (size_t i = 3; i < out_bytes.size() - 3; ++i) {
         const QByteArray &bytes = out_bytes[i];
         if (bytes.isEmpty())
@@ -153,6 +154,26 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
             if (dt.isValid())
                 task.due = dt;
             continue;
+        } else {
+            // Searching multiline description
+            if (desc_done || line.startsWith("Status")) {
+                desc_done = true;
+                continue;
+            }
+
+            QString desc_line = line.section(' ', 1).simplified();
+            if (desc_line.isEmpty())
+                continue;
+
+            QString first_word =
+                line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
+            QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
+            if (dt.isValid()) {
+                desc_done = true;
+                continue;
+            }
+
+            task.description += '\n' + desc_line;
         }
     }
 
@@ -189,6 +210,7 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
         return false;
     }
 
+    bool found_annotation = false;
     for (size_t i = 3; i < out_bytes.size() - 3; ++i) {
         const QByteArray &bytes = out_bytes[i];
         if (bytes.isEmpty())
@@ -198,11 +220,39 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
             return false;
 
         Task task;
+
         task.uuid = line.mid(0, positions[0]).simplified();
         bool can_convert = false;
         (void)task.uuid.toInt(&can_convert);
-        if (!can_convert)
+        if (!can_convert) {
+            // It's probably a continuation of the multiline description or an
+            // annotation from the previous task.
+            if ((line.size() < positions[3]) || tasks.isEmpty() ||
+                found_annotation)
+                continue;
+
+            QString desc_line =
+                line.right(line.size() - positions[3]).simplified();
+            if (desc_line.isEmpty())
+                continue;
+
+            // The annotations always start with a timestamp. And they always
+            // follows the description.
+            QString first_word =
+                line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
+            QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
+            if (dt.isValid()) {
+                // We won't handle the annotations at all.
+                found_annotation = true;
+                continue;
+            }
+
+            tasks[tasks.size() - 1].description += '\n' + desc_line;
             continue;
+        }
+
+        found_annotation = false;
+
         const QString start_mark =
             line.mid(positions[0], positions[1] - positions[0]).simplified();
         task.active = start_mark.contains('*');
