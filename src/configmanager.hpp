@@ -34,6 +34,9 @@ class ConfigManager : public QObject {
     bool getShowTaskShell() const { return m_show_task_shell; }
     void setShowTaskShell(bool v) { m_show_task_shell = v; }
 
+    bool getHideWindowOnStartup() const { return m_hide_on_startup; }
+    void setHideWindowOnStartup(bool v) { m_hide_on_startup = v; }
+
     bool initializeFromFile();
 
     void updateConfigFile();
@@ -61,6 +64,9 @@ class ConfigManager : public QObject {
 
     /// Task shell will be shown in the main window
     bool m_show_task_shell;
+
+    /// QTask window is hidden on startup
+    bool m_hide_on_startup;
 };
 
 #endif // CONFIGMANAGER_HPP

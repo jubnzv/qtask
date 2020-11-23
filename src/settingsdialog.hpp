@@ -2,6 +2,7 @@
 #define SETTINGSDIALOG_HPP
 
 #include <QAbstractButton>
+#include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QLineEdit>
@@ -23,6 +24,7 @@ class SettingsDialog : public QDialog {
   private:
     QLineEdit *m_task_bin_edit;
     QLineEdit *m_task_data_path_edit;
+    QCheckBox *m_hide_on_startup_cb;
     QDialogButtonBox *m_buttons;
 };
 

@@ -60,7 +60,6 @@ int main(int argc, char *argv[])
 
     MainWindow main_win;
     main_win.resize(700, 200);
-    main_win.show();
 
     // If this is a secondary instance
     if (app.isSecondary()) {

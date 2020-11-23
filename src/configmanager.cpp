@@ -19,6 +19,7 @@ ConfigManager::ConfigManager(QObject *parent)
     , m_task_bin(s_default_task_bin)
     , m_task_data_path(s_default_task_data_path)
     , m_show_task_shell(false)
+    , m_hide_on_startup(false)
 {
 }
 
@@ -75,9 +76,12 @@ bool ConfigManager::initializeFromFile()
 void ConfigManager::updateConfigFile()
 {
     QSettings settings(m_config_path, QSettings::IniFormat);
+    if (!settings.isWritable())
+        return;
     settings.setValue("task_bin", m_task_bin);
     settings.setValue("task_data_path", m_task_data_path);
     settings.setValue("show_task_shell", m_show_task_shell);
+    settings.setValue("hide_on_startup", m_hide_on_startup);
 }
 
 bool ConfigManager::createNewConfigFile()
@@ -88,6 +92,7 @@ bool ConfigManager::createNewConfigFile()
     settings.setValue("task_bin", s_default_task_bin);
     settings.setValue("task_data_path", s_default_task_data_path);
     settings.setValue("show_task_shell", false);
+    settings.setValue("hide_on_startup", false);
     return true;
 }
 
@@ -98,5 +103,6 @@ bool ConfigManager::fillOptionsFromConfigFile()
     m_task_data_path =
         settings.value("task_data_path", s_default_task_data_path).toString();
     m_show_task_shell = settings.value("show_task_shell", false).toBool();
+    m_hide_on_startup = settings.value("hide_on_startup", false).toBool();
     return true;
 }

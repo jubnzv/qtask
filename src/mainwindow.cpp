@@ -60,6 +60,8 @@ MainWindow::MainWindow()
     initToolsMenu();
     initHelpMenu();
     initShortcuts();
+
+    (ConfigManager::config()->getHideWindowOnStartup()) ? hide() : show();
 }
 
 MainWindow::~MainWindow()
@@ -181,8 +183,7 @@ void MainWindow::initFileMenu()
     QAction *settings = new QAction("&Settings", this);
     settings->setShortcut(tr("CTRL+SHIFT+P"));
     file_menu->addAction(settings);
-    connect(settings, &QAction::triggered, this,
-            &MainWindow::openSettingsDialog);
+    connect(settings, &QAction::triggered, this, &MainWindow::onOpenSettings);
 
     QAction *quit = new QAction("&Quit", this);
     quit->setShortcut(tr("CTRL+Q"));
@@ -388,7 +389,7 @@ void MainWindow::toggleMainWindow()
     }
 }
 
-void MainWindow::openSettingsDialog()
+void MainWindow::onOpenSettings()
 {
     auto *dlg = new SettingsDialog(this);
     dlg->open();

@@ -41,12 +41,17 @@ void SettingsDialog::initUI()
     m_task_data_path_edit->setText(ConfigManager::config()->getTaskDataPath());
     main_layout->addWidget(m_task_data_path_edit, 1, 1);
 
+    m_hide_on_startup_cb = new QCheckBox(tr("Hide QTask window on startup"));
+    m_hide_on_startup_cb->setChecked(
+        ConfigManager::config()->getHideWindowOnStartup());
+    main_layout->addWidget(m_hide_on_startup_cb, 2, 0, 1, 2);
+
     m_buttons =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply |
                              QDialogButtonBox::Close);
     connect(m_buttons, &QDialogButtonBox::clicked, this,
             &SettingsDialog::onButtonBoxClicked);
-    main_layout->addWidget(m_buttons, 2, 0, 1, 2);
+    main_layout->addWidget(m_buttons, 3, 0, 1, 2);
 
     setLayout(main_layout);
 }
@@ -60,6 +65,11 @@ void SettingsDialog::applySettings()
     auto task_bin = m_task_bin_edit->text();
     if (ConfigManager::config()->getTaskBin() != task_bin)
         ConfigManager::config()->setTaskBin(task_bin);
+
+    ConfigManager::config()->setHideWindowOnStartup(
+        m_hide_on_startup_cb->isChecked());
+
+    ConfigManager::config()->updateConfigFile();
 }
 
 void SettingsDialog::onButtonBoxClicked(QAbstractButton *button)

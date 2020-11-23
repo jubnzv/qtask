@@ -41,7 +41,7 @@ class MainWindow : public QMainWindow {
     void initShortcuts();
     void initTaskToolbar();
     void toggleMainWindow();
-    void openSettingsDialog();
+    void onOpenSettings();
     void quitApp();
 
     bool eventFilter(QObject *watched, QEvent *event) override;
