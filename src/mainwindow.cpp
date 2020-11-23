@@ -489,7 +489,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
         hide();
         event->ignore();
     } else {
+        ConfigManager::config()->updateConfigFile();
         QMainWindow::closeEvent(event);
+        qApp->quit();
     }
 }
 
