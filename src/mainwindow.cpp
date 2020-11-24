@@ -557,7 +557,18 @@ void MainWindow::onMuteNotifications() {}
 
 void MainWindow::onAddTask()
 {
-    auto *dlg = new AddTaskDialog(this);
+    QVariant default_project = {};
+    for (const auto &tag : m_task_filter->getTags()) {
+        if (tag.startsWith("pro:") || tag.startsWith("project:")) {
+            if (!default_project.isNull()) {
+                default_project = {};
+                break;
+            }
+            default_project = { tag };
+        }
+    }
+
+    auto *dlg = new AddTaskDialog(default_project, this);
     dlg->open();
 
     QObject::connect(this, &MainWindow::acceptContinueCreatingTasks, dlg,

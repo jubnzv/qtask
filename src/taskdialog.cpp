@@ -152,16 +152,18 @@ void TaskDialog::setTask(const Task &task)
     m_task_uuid = task.uuid;
 }
 
-AddTaskDialog::AddTaskDialog(QWidget *parent)
+AddTaskDialog::AddTaskDialog(const QVariant &default_project, QWidget *parent)
     : TaskDialog(parent)
 {
-    setWindowTitle(QCoreApplication::applicationName() + " - Add task");
     initUI();
+    if (!default_project.isNull())
+        m_task_tags->pushTag(default_project.toString());
 }
 
 void AddTaskDialog::initUI()
 {
     TaskDialog::initUI();
+    setWindowTitle(QCoreApplication::applicationName() + " - Add task");
     Q_ASSERT(m_main_layout);
 
     m_ok_btn = new QPushButton(
