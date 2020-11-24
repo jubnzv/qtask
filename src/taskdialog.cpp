@@ -16,6 +16,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "mainwindow.hpp"
 #include "optionaldatetimeedit.hpp"
 #include "task.hpp"
 #include "tasksmodel.hpp"
@@ -104,6 +105,7 @@ void TaskDialog::initUI()
     m_task_wait->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
     m_task_wait->setDateTime(QDate::currentDate().startOfDay().addDays(5));
 
+    // TODO: Check mem
     QGridLayout *grid_layout = new QGridLayout();
     grid_layout->addWidget(priority_label, 0, 0);
     grid_layout->addWidget(m_task_priority, 0, 1);
@@ -185,7 +187,10 @@ void AddTaskDialog::initUI()
     auto *cancel_btn = new QPushButton(
         QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
         tr("Cancel"), this);
-    cancel_btn->setToolTip(tr("Cancel and close window"));
+    auto *cancel_shortcut = new QShortcut(QKeySequence("Escape"), this);
+    QObject::connect(cancel_shortcut, &QShortcut::activated, this,
+                     &QDialog::reject);
+    cancel_btn->setToolTip(tr("Cancel and close this window"));
 
     QBoxLayout *button_layout = new QHBoxLayout();
     button_layout->addWidget(cancel_btn);
@@ -248,7 +253,10 @@ void EditTaskDialog::initUI()
     auto *cancel_btn = new QPushButton(
         QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
         tr("Cancel"), this);
-    cancel_btn->setToolTip(tr("Cancel and close window"));
+    auto *cancel_shortcut = new QShortcut(QKeySequence("Escape"), this);
+    QObject::connect(cancel_shortcut, &QShortcut::activated, this,
+                     &QDialog::reject);
+    cancel_btn->setToolTip(tr("Cancel and close this window"));
 
     QBoxLayout *button_layout = new QHBoxLayout();
     button_layout->addWidget(cancel_btn);
