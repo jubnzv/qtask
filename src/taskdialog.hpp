@@ -50,7 +50,8 @@ class AddTaskDialog final : public TaskDialog {
     Q_OBJECT
 
   public:
-    explicit AddTaskDialog(const QVariant &default_project = {}, QWidget *parent = nullptr);
+    explicit AddTaskDialog(const QVariant &default_project = {},
+                           QWidget *parent = nullptr);
     ~AddTaskDialog() = default;
 
   protected slots:
