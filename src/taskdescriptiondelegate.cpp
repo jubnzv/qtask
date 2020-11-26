@@ -28,7 +28,6 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 {
-    QColor fg_color = QApplication::palette().text().color();
     if (option.state & QStyle::State_Selected) {
         painter->fillRect(option.rect, option.palette.highlight());
     } else {
@@ -42,14 +41,8 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
     QTextDocument document;
     document.setTextWidth(option.rect.width());
     document.setPageSize(option.rect.size());
-    QRect clip(0, 0, option.rect.width(), option.rect.height());
-    document.drawContents(painter, clip);
-
-    QPalette pal;
-    pal.setColor(QPalette::Text, fg_color);
 
     QVariant value = index.data(Qt::DisplayRole);
-
     if (value.isValid() && !value.isNull()) {
         document.setMarkdown(value.toString());
         painter->translate(option.rect.topLeft());

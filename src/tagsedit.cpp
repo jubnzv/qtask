@@ -787,6 +787,10 @@ void TagsEdit::clearTags() { setTags(QStringList{}); }
 
 void TagsEdit::pushTag(const QString &value)
 {
+    for (const auto &t : impl->tags)
+        if (value == t.text)
+            return;
+
     auto t = Tag();
     t.text = value;
     impl->tags.push_back(t);

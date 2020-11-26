@@ -564,7 +564,7 @@ void MainWindow::onAddTask()
                 default_project = {};
                 break;
             }
-            default_project = { tag };
+            default_project = { tag.mid(tag.indexOf(':') + 1, tag.size()) };
         }
     }
 

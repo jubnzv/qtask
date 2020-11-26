@@ -159,7 +159,7 @@ AddTaskDialog::AddTaskDialog(const QVariant &default_project, QWidget *parent)
 {
     initUI();
     if (!default_project.isNull())
-        m_task_tags->pushTag(default_project.toString());
+        m_task_project->setText(default_project.toString());
 }
 
 void AddTaskDialog::initUI()
