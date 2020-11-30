@@ -1,0 +1,66 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        arch: [x86, x64]
+        qt_version: [5.14.1]
+        exclude:
+          # We only compile for the current architecture of the runner for Linux
+          - os: ubuntu-latest
+            arch: x86
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Cache Qt ${{ matrix.qt_version }}
+        id: cache-qt
+        uses: actions/cache@v1
+        with:
+          path: ${{ runner.temp }}/Qt
+          key: ${{ runner.os }}-${{ matrix.arch }}-Qt-${{ matrix.qt_version }}
+      - name: Install Qt ${{ matrix.qt_version }}
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: ${{ matrix.qt_version }}
+          arch: ${{ matrix.qt_compile_suite }}
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+          dir: ${{ runner.temp }}/Qt
+      - name: Install additional dependencies
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get update -qq;
+            sudo apt install -qq qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev qtbase5-private-dev desktop-file-utils
+          else
+            echo "$RUNNER_OS not supported"
+            exit 1
+          fi
+      - name: Create build environment
+        run: cmake -E make_directory ${{ runner.workspace }}/build
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{ runner.workspace }}/build
+        run: cmake $GITHUB_WORKSPACE $CMAKE_PLATFORM_ARG -DCMAKE_BUILD_TYPE=Release -DCOMPILER_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        working-directory: ${{ runner.workspace }}/build
+        run: cmake --build . --config Release --target qtask
+      - name: Validate desktop file
+        working-directory: ${{ github.workspace }}
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          output=$(desktop-file-validate res/qtask.desktop)
+          if [ ! -z "$output" ]; then
+            echo "$output";
+            exit 1;
+          fi

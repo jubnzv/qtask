@@ -80,11 +80,13 @@ target_link_libraries(qtask SingleApplication::SingleApplication)
 set(QTASK_VERSION_MAJOR 1)
 set(QTASK_VERSION_MINOR 0)
 set(QTASK_VERSION_PATCH 0)
-set_property(
-  TARGET qtask
-  PROPERTY VERSION
-           ${QTASK_VERSION_MAJOR}.${QTASK_VERSION_MINOR}.${QTASK_VERSION_PATCH})
-configure_file(src/config.hpp.in src/config.hpp)
+
+set(GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
+file(MAKE_DIRECTORY ${GEN_DIR})
+configure_file(src/config.hpp.in ${GEN_DIR}/config.hpp)
+set(GEN_H_LIST ${GEN_DIR}/config.hpp)
+source_group(gen FILES ${GEN_H_LIST})
+include_directories(${GEN_DIR})
 
 include(GNUInstallDirs)
 install(TARGETS qtask RUNTIME DESTINATION bin)
