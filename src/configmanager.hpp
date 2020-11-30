@@ -7,10 +7,6 @@
 
 class ConfigManager : public QObject {
     Q_OBJECT
-    Q_PROPERTY(QString m_task_bin READ getTaskBin WRITE setTaskBin NOTIFY
-                   updateConfigFile)
-    Q_PROPERTY(QString m_task_data_path READ getTaskBin WRITE setTaskBin NOTIFY
-                   updateConfigFile)
 
   public:
     ConfigManager(QObject *parent = nullptr);
