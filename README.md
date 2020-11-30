@@ -1,6 +1,7 @@
 # QTask
 
- [![License: GPL-3.0](https://img.shields.io/badge/License-GPL3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
+![](https://github.com/jubnzv/qtask/workflows/Build/badge.svg)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
 
 QTask is an open-source Qt-based graphical user interface for managing tasks. It is based on [Taskwarrior](https://taskwarrior.org/), a popular command-line organizer.
 
@@ -22,21 +23,34 @@ If you have any ideas on how to improve this utility, feel free to create an [is
 
 ## Building
 
-On Debian-based distributions you need to install the following packages: `qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev qt5base-private-dev`.
+First of all, you need to install the dependencies. You will need Qt at least version 5.14.
 
-To build, please do the following:
+On Debian-based distributions you need to run the following command:
 
 ```bash
-git clone https://github.com/jubnzv/qtask.git qtask
-cd qtask
-git submodule update --init
+sudo apt-get install qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev qtbase5-private-dev
+```
 
+Clone the repository with submodules:
+
+```bash
+git clone --recurse-submodules https://github.com/jubnzv/qtask.git qtask
+cd qtask
+```
+
+Build QTask in the build directory:
+
+```bash
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
+```
 
-make install
+Then you can install the compiled binary:
+
+```bash
+sudo make install
 ```
 
 ## License
