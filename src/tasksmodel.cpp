@@ -98,6 +98,13 @@ void TasksModel::setTasks(QList<Task> &&tasks)
     endResetModel();
 }
 
+QVariant TasksModel::getTask(const QModelIndex &index) const
+{
+    if (index.isValid() && index.row() < m_tasks.size())
+        return QVariant::fromValue(m_tasks.at(index.row()));
+    return {};
+}
+
 QColor TasksModel::rowColor(int row) const
 {
     QColor c;

@@ -47,6 +47,8 @@ struct Task final : public AbstractTask {
     QStringList getCmdArgs() const;
 };
 
+Q_DECLARE_METATYPE(Task)
+
 struct RecurringTask final : public AbstractTask {
     RecurringTask()
         : period("")

@@ -105,7 +105,6 @@ void TaskDialog::initUI()
     m_task_wait->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
     m_task_wait->setDateTime(QDate::currentDate().startOfDay().addDays(5));
 
-    // TODO: Check mem
     QGridLayout *grid_layout = new QGridLayout();
     grid_layout->addWidget(priority_label, 0, 0);
     grid_layout->addWidget(m_task_priority, 0, 1);

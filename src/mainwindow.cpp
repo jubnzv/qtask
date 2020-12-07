@@ -150,6 +150,8 @@ void MainWindow::initTasksTable()
                     QDesktopServices::openUrl(link);
                 }
             });
+    connect(m_tasks_view, &TasksView::selectedTaskIsActive, this,
+            [&](bool is_active) { m_stop_action->setEnabled(is_active); });
 
     m_tasks_view->installEventFilter(this);
 }
@@ -729,11 +731,9 @@ void MainWindow::updateTaskToolbar()
         if (num_selected == 1) {
             m_edit_action->setEnabled(true);
             m_start_action->setEnabled(true);
-            m_stop_action->setEnabled(true);
         } else {
             m_edit_action->setEnabled(false);
             m_start_action->setEnabled(false);
-            m_stop_action->setEnabled(false);
         }
         m_wait_action->setEnabled(true);
         m_delete_action->setEnabled(true);
