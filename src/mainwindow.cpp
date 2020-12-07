@@ -151,7 +151,10 @@ void MainWindow::initTasksTable()
                 }
             });
     connect(m_tasks_view, &TasksView::selectedTaskIsActive, this,
-            [&](bool is_active) { m_stop_action->setEnabled(is_active); });
+            [&](bool is_active) {
+                m_start_action->setEnabled(!is_active);
+                m_stop_action->setEnabled(is_active);
+            });
 
     m_tasks_view->installEventFilter(this);
 }
@@ -730,10 +733,8 @@ void MainWindow::updateTaskToolbar()
         m_done_action->setEnabled(true);
         if (num_selected == 1) {
             m_edit_action->setEnabled(true);
-            m_start_action->setEnabled(true);
         } else {
             m_edit_action->setEnabled(false);
-            m_start_action->setEnabled(false);
         }
         m_wait_action->setEnabled(true);
         m_delete_action->setEnabled(true);
