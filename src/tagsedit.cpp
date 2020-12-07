@@ -605,6 +605,7 @@ void TagsEdit::mousePressEvent(QMouseEvent *event)
         impl->calcRects();
         impl->updateCursorBlinking();
         update();
+        emit tagsChanged();
     }
 }
 
