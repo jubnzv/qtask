@@ -14,9 +14,9 @@ class Taskwarrior {
     Taskwarrior();
     ~Taskwarrior();
 
-    /// Detect the version of task and check that it works. This command
-    /// is also executes without "rc.gc=off". This will un-waiting tasks and add
-    /// recurring tasks.
+    /// Detect the version of task and check that it works. This function
+    /// will also runs garbage collection. This will un-waiting tasks and add
+    /// new recurring tasks.
     bool init();
 
     size_t getActionsCounter() const { return m_actions_counter; }

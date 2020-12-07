@@ -34,6 +34,10 @@ bool Taskwarrior::init()
     if (task_version.isEmpty())
         return false;
     m_task_version = { QString(task_version) };
+
+    if (!execCmd({ "rc.gc=on" }, false, false))
+        return false;
+
     return true;
 }
 
