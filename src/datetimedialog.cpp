@@ -31,15 +31,11 @@ void DateTimeDialog::initUI()
 
     setWindowTitle(QCoreApplication::applicationName() + " - Select date");
 
-    auto *widget = new QWidget(this);
-    widget->setObjectName(QString::fromUtf8("widget"));
-    widget->setGeometry(QRect(0, 10, 258, 215));
-
-    auto *vl = new QVBoxLayout(widget);
+    auto *vl = new QVBoxLayout(this);
     vl->setObjectName(QString::fromUtf8("verticalLayout"));
     vl->setContentsMargins(0, 0, 0, 0);
 
-    m_calendar = new QCalendarWidget(widget);
+    m_calendar = new QCalendarWidget(this);
     m_calendar->setObjectName(QString::fromUtf8("m_calendar"));
     m_calendar->setSelectedDate(m_datetime.date());
     vl->addWidget(m_calendar);
@@ -48,7 +44,7 @@ void DateTimeDialog::initUI()
         m_datetime = m_datetime_edit->dateTime();
     });
 
-    m_datetime_edit = new QDateTimeEdit(widget);
+    m_datetime_edit = new QDateTimeEdit(this);
     m_datetime_edit->setObjectName(QString::fromUtf8("m_datetime_edit"));
     m_datetime_edit->setDateTime(m_datetime);
     vl->addWidget(m_datetime_edit);
@@ -57,7 +53,7 @@ void DateTimeDialog::initUI()
         m_calendar->setSelectedDate(m_datetime.date());
     });
 
-    auto *buttons = new QDialogButtonBox(widget);
+    auto *buttons = new QDialogButtonBox(this);
     buttons->setObjectName(QString::fromUtf8("buttons"));
     buttons->setOrientation(Qt::Horizontal);
     buttons->setStandardButtons(QDialogButtonBox::Cancel |
