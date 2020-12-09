@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
         qDebug() << "QTask already running.";
         qDebug() << "Primary instance PID: " << app.primaryPid();
         qDebug() << "Primary instance user: " << app.primaryUser();
+        app.sendMessage("show");
         return EXIT_SUCCESS;
     } else {
         QObject::connect(&app, &SingleApplication::receivedMessage, &main_win,
