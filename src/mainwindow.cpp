@@ -152,8 +152,21 @@ void MainWindow::initTasksTable()
             });
     connect(m_tasks_view, &TasksView::selectedTaskIsActive, this,
             [&](bool is_active) {
-                m_start_action->setEnabled(!is_active);
-                m_stop_action->setEnabled(is_active);
+                if (is_active) {
+                    removeShortcutFromToolTip(m_start_action);
+                    removeShortcutFromToolTip(m_stop_action);
+                    m_stop_action->setShortcut(tr("CTRL+S"));
+                    addShortcutToToolTip(m_stop_action);
+                    m_start_action->setEnabled(false);
+                    m_stop_action->setEnabled(true);
+                } else {
+                    removeShortcutFromToolTip(m_stop_action);
+                    removeShortcutFromToolTip(m_start_action);
+                    m_start_action->setShortcut(tr("CTRL+S"));
+                    addShortcutToToolTip(m_start_action);
+                    m_start_action->setEnabled(true);
+                    m_stop_action->setEnabled(false);
+                }
             });
 
     m_tasks_view->installEventFilter(this);
@@ -364,9 +377,6 @@ void MainWindow::initTaskToolbar()
         m_task_provider->startTask(t_opt.toString());
         updateTasks();
     });
-    m_start_action->setShortcut(tr("CTRL+S"));
-    removeShortcutFromToolTip(m_start_action);
-    addShortcutToToolTip(m_start_action);
     m_task_toolbar->addAction(m_start_action);
     m_start_action->setEnabled(false);
 
@@ -378,9 +388,6 @@ void MainWindow::initTaskToolbar()
         m_task_provider->stopTask(t_opt.toString());
         updateTasks();
     });
-    m_stop_action->setShortcut(tr("CTRL+ALT+S"));
-    removeShortcutFromToolTip(m_stop_action);
-    addShortcutToToolTip(m_stop_action);
     m_task_toolbar->addAction(m_stop_action);
     m_stop_action->setEnabled(false);
 }
@@ -729,6 +736,8 @@ void MainWindow::updateTaskToolbar()
         m_delete_action->setEnabled(false);
         m_start_action->setEnabled(false);
         m_stop_action->setEnabled(false);
+        removeShortcutFromToolTip(m_stop_action);
+        removeShortcutFromToolTip(m_start_action);
     } else {
         m_done_action->setEnabled(true);
         if (num_selected == 1) {
