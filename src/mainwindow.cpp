@@ -27,6 +27,7 @@
 #include "tasksmodel.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
+#include "taskwarriorreferencedialog.hpp"
 #include "trayicon.hpp"
 
 using namespace ui;
@@ -252,6 +253,17 @@ void MainWindow::initHelpMenu()
 {
     QMenu *help_menu = menuBar()->addMenu(tr("&Help"));
     help_menu->setToolTipsVisible(true);
+
+    QAction *reference_action =
+        new QAction("&Taskwarrior quick reference", this);
+    help_menu->addAction(reference_action);
+    connect(reference_action, &QAction::triggered, this, [&]() {
+        auto *dlg = new TaskwarriorReferenceDialog(this);
+        dlg->open();
+        QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
+    });
+
+    help_menu->addSeparator();
 
     QAction *about_action = new QAction("&About", this);
     help_menu->addAction(about_action);

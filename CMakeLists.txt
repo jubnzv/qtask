@@ -62,6 +62,7 @@ set(qtask_SRCS
     src/qtutil.cpp
     src/tagsedit.cpp
     src/tasksmodel.cpp
+    src/taskwarriorreferencedialog.cpp
     src/taskwatcher.cpp
     src/taskwarrior.cpp)
 set(qtask_MOC_HEADERS src/configmanager.hpp)
