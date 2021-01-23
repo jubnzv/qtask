@@ -46,6 +46,7 @@ endif()
 
 set(qtask_SRCS
     src/aboutdialog.cpp
+    src/agendadialog.cpp
     src/main.cpp
     src/mainwindow.cpp
     src/trayicon.cpp

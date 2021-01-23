@@ -16,6 +16,7 @@
 #include <QWindowStateChangeEvent>
 
 #include "aboutdialog.hpp"
+#include "agendadialog.hpp"
 #include "configmanager.hpp"
 #include "datetimedialog.hpp"
 #include "qtutil.hpp"
@@ -229,8 +230,21 @@ void MainWindow::initToolsMenu()
     QMenu *tools_menu = menuBar()->addMenu(tr("&Tools"));
     tools_menu->setToolTipsVisible(true);
 
+    QAction *agenda_action = new QAction("&Agenda view", this);
+    tools_menu->addAction(agenda_action);
+    agenda_action->setShortcut(tr("ALT+A"));
+    connect(agenda_action, &QAction::triggered, this, [&]() {
+        QList<Task> tasks = {};
+        if (!m_task_provider->getTasks(tasks))
+            return;
+        auto *dlg = new AgendaDialog(tasks, this);
+        dlg->open();
+        QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
+    });
+
     QAction *recurring_action = new QAction("&Recurring templates", this);
     tools_menu->addAction(recurring_action);
+    recurring_action->setShortcut(tr("ALT+R"));
     connect(recurring_action, &QAction::triggered, this, [&]() {
         QList<RecurringTask> tasks;
         if (!m_task_provider->getRecurringTasks(tasks))
