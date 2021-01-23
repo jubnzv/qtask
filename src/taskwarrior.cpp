@@ -188,10 +188,11 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
 {
     QByteArray out;
     auto args = QStringList() << "rc.report.minimal.columns=id,start.active,"
-                                 "project,priority,description"
-                              << "rc.report.minimal.labels=',|,|,|,|'"
+                                 "project,priority,scheduled,due,description"
+                              << "rc.report.minimal.labels=',|,|,|,|,|,|'"
                               << "rc.report.minimal.sort=urgency-"
                               << "rc.print.empty.columns=yes"
+                              << "rc.dateformat=Y-M-DTH:N:S"
                               << "+PENDING"
                               << "minimal";
 
@@ -204,7 +205,7 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
 
     // Get positions from the labels string
     QVector<int> positions;
-    constexpr int columns_num = 4;
+    constexpr int columns_num = 6;
     for (int i = 0; i < out_bytes[1].size(); ++i) {
         const auto b = out_bytes[1][i];
         if (b == '|')
@@ -264,7 +265,17 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
             line.mid(positions[1], positions[2] - positions[1]).simplified();
         task.priority = Task::priorityFromString(
             line.mid(positions[2], positions[3] - positions[2]).simplified());
-        task.description = line.right(line.size() - positions[3]).simplified();
+        auto sched = QDateTime::fromString(
+            line.mid(positions[3], positions[4] - positions[3]).simplified(),
+            Qt::ISODate);
+        if (sched.isValid())
+            task.sched = sched;
+        auto due = QDateTime::fromString(
+            line.mid(positions[4], positions[5] - positions[4]).simplified(),
+            Qt::ISODate);
+        if (due.isValid())
+            task.due = due;
+        task.description = line.right(line.size() - positions[5]).simplified();
 
         tasks.push_back(task);
     }
