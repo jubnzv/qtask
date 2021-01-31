@@ -23,7 +23,7 @@ If you have any ideas on how to improve this utility, feel free to create an [is
 
 ## Building
 
-First of all, you need to install the dependencies. You will need Qt at least version 5.14.
+First of all, you need to install the dependencies. You will need Qt at least version 5.14. For earlier versions of Qt, some features will be disabled.
 
 On Debian-based distributions you need to run the following command:
 
