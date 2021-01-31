@@ -10,6 +10,12 @@
 #include "configmanager.hpp"
 #include "task.hpp"
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+constexpr auto s_split_behaviour = Qt::SkipEmptyParts;
+#else
+constexpr auto s_split_behaviour = QString::SkipEmptyParts;
+#endif // QT_VERSION_CHECK
+
 const QStringList Taskwarrior::s_args = { "rc.gc=off", "rc.confirmation=off",
                                           "rc.bulk=0", "rc.defaultwidth=0" };
 
@@ -30,7 +36,7 @@ bool Taskwarrior::init()
     if (out_bytes.size() < 2)
         return false;
     QString line = out_bytes[1];
-    QString task_version = line.split(' ', Qt::SkipEmptyParts)[1];
+    QString task_version = line.split(' ', s_split_behaviour)[1];
     if (task_version.isEmpty())
         return false;
     m_task_version = { QString(task_version) };
@@ -122,7 +128,7 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
         }
         if (line.startsWith("Tags")) {
             auto tags_line = line.section(' ', 1).simplified();
-            task.tags = tags_line.split(' ', Qt::SkipEmptyParts);
+            task.tags = tags_line.split(' ', s_split_behaviour);
             continue;
         }
         if (line.startsWith("Start")) {
@@ -130,7 +136,7 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
             continue;
         }
         if (line.startsWith("Waiting")) {
-            const QStringList lexemes = line.split(' ', Qt::SkipEmptyParts);
+            const QStringList lexemes = line.split(' ', s_split_behaviour);
             if (lexemes.size() != 4)
                 continue;
             auto dt = QDateTime::fromString(
@@ -140,7 +146,7 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
             continue;
         }
         if (line.startsWith("Scheduled")) {
-            const QStringList lexemes = line.split(' ', Qt::SkipEmptyParts);
+            const QStringList lexemes = line.split(' ', s_split_behaviour);
             if (lexemes.size() != 3)
                 continue;
             auto dt = QDateTime::fromString(
@@ -150,7 +156,7 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
             continue;
         }
         if (line.startsWith("Due")) {
-            const QStringList lexemes = line.split(' ', Qt::SkipEmptyParts);
+            const QStringList lexemes = line.split(' ', s_split_behaviour);
             if (lexemes.size() != 3)
                 continue;
             auto dt = QDateTime::fromString(
@@ -424,7 +430,7 @@ int Taskwarrior::directCmd(const QString &cmd)
     QProcess proc;
     int rc = -1;
 
-    QStringList args = cmd.split(' ', Qt::SkipEmptyParts) << s_args;
+    QStringList args = cmd.split(' ', s_split_behaviour) << s_args;
 
     proc.start(ConfigManager::config()->getTaskBin(), args);
     if (proc.waitForStarted(1000)) {

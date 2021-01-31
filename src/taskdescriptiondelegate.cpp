@@ -16,7 +16,11 @@ QString TaskDescriptionDelegate::anchorAt(const QString &markdown,
                                           const QPoint &point) const
 {
     QTextDocument doc;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     doc.setMarkdown(markdown);
+#else
+    doc.setPlainText(markdown);
+#endif // QT_VERSION_CHECK
 
     auto textLayout = doc.documentLayout();
     Q_ASSERT(textLayout != 0);
@@ -44,7 +48,11 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
 
     QVariant value = index.data(Qt::DisplayRole);
     if (value.isValid() && !value.isNull()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
         document.setMarkdown(value.toString());
+#else
+        document.setPlainText(value.toString());
+#endif // QT_VERSION_CHECK
         painter->translate(option.rect.topLeft());
         document.drawContents(painter);
     }
