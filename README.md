@@ -1,7 +1,7 @@
 # QTask
 
 ![](https://github.com/jubnzv/qtask/workflows/Build/badge.svg)
-[![License: GPL-3.0](https://img.shields.io/badge/License-GPL3-blue.svg)](https://opensource.org/licenses/GPL-3.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 QTask is an open-source Qt-based graphical user interface for managing tasks. It is based on [Taskwarrior](https://taskwarrior.org/), a popular command-line organizer.
 
@@ -52,7 +52,3 @@ Then you can install the compiled binary:
 ```bash
 sudo make install
 ```
-
-## License
-
-GPL-3.0
