@@ -1,4 +1,5 @@
 #include "optionaldatetimeedit.hpp"
+#include "qtutil.hpp"
 
 #include <QCheckBox>
 #include <QDateTimeEdit>
@@ -19,7 +20,7 @@ OptionalDateTimeEdit::OptionalDateTimeEdit(const QString &label,
     : QWidget(parent)
 {
     initUI(label);
-    setDateTime(QDate{ 1970, 1, 1 }.startOfDay());
+    setDateTime(startOfDay(QDate{ 1970, 1, 1 }));
 }
 
 OptionalDateTimeEdit::~OptionalDateTimeEdit() {}

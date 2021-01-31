@@ -18,6 +18,7 @@
 
 #include "mainwindow.hpp"
 #include "optionaldatetimeedit.hpp"
+#include "qtutil.hpp"
 #include "task.hpp"
 #include "tasksmodel.hpp"
 
@@ -89,21 +90,21 @@ void TaskDialog::initUI()
     m_task_sched = new OptionalDateTimeEdit("Schedule:");
     m_task_sched->setChecked(false);
     // Taskwarrior's implementation feature
-    m_task_sched->setMinimumDateTime(QDate(1980, 1, 2).startOfDay());
-    m_task_sched->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
-    m_task_sched->setDateTime(QDate::currentDate().startOfDay().addDays(1));
+    m_task_sched->setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
+    m_task_sched->setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
+    m_task_sched->setDateTime(startOfDay(QDate::currentDate()).addDays(1));
 
     m_task_due = new OptionalDateTimeEdit("Due:");
     m_task_due->setChecked(false);
-    m_task_due->setMinimumDateTime(QDate(1980, 1, 2).startOfDay());
-    m_task_due->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
-    m_task_due->setDateTime(QDate::currentDate().startOfDay().addDays(5));
+    m_task_due->setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
+    m_task_due->setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
+    m_task_due->setDateTime(startOfDay(QDate::currentDate()).addDays(5));
 
     m_task_wait = new OptionalDateTimeEdit("Wait:");
     m_task_wait->setChecked(false);
-    m_task_wait->setMinimumDateTime(QDate(1980, 1, 2).startOfDay());
-    m_task_wait->setMaximumDateTime(QDate(2038, 1, 1).startOfDay());
-    m_task_wait->setDateTime(QDate::currentDate().startOfDay().addDays(5));
+    m_task_wait->setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
+    m_task_wait->setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
+    m_task_wait->setDateTime(startOfDay(QDate::currentDate()).addDays(5));
 
     QGridLayout *grid_layout = new QGridLayout();
     grid_layout->addWidget(priority_label, 0, 0);
