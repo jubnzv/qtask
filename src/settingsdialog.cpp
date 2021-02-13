@@ -46,12 +46,17 @@ void SettingsDialog::initUI()
         ConfigManager::config()->getHideWindowOnStartup());
     main_layout->addWidget(m_hide_on_startup_cb, 2, 0, 1, 2);
 
+    m_save_filter_on_exit = new QCheckBox(tr("Save task filter on exit"));
+    m_save_filter_on_exit->setChecked(
+        ConfigManager::config()->getSaveFilterOnExit());
+    main_layout->addWidget(m_save_filter_on_exit, 3, 0, 1, 2);
+
     m_buttons =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply |
                              QDialogButtonBox::Close);
     connect(m_buttons, &QDialogButtonBox::clicked, this,
             &SettingsDialog::onButtonBoxClicked);
-    main_layout->addWidget(m_buttons, 3, 0, 1, 2);
+    main_layout->addWidget(m_buttons, 4, 0, 1, 2);
 
     setLayout(main_layout);
 }
@@ -68,6 +73,8 @@ void SettingsDialog::applySettings()
 
     ConfigManager::config()->setHideWindowOnStartup(
         m_hide_on_startup_cb->isChecked());
+    ConfigManager::config()->setSaveFilterOnExit(
+        m_save_filter_on_exit->isChecked());
 
     ConfigManager::config()->updateConfigFile();
 }

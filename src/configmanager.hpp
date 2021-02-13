@@ -33,6 +33,12 @@ class ConfigManager : public QObject {
     bool getHideWindowOnStartup() const { return m_hide_on_startup; }
     void setHideWindowOnStartup(bool v) { m_hide_on_startup = v; }
 
+    bool getSaveFilterOnExit() const { return m_save_filter_on_exit; }
+    void setSaveFilterOnExit(bool v) { m_save_filter_on_exit = v; }
+
+    QStringList getTaskFilter() const { return m_task_filter; }
+    void setTaskFilter(const QStringList &v) { m_task_filter = v; }
+
     bool initializeFromFile();
 
     void updateConfigFile();
@@ -63,6 +69,12 @@ class ConfigManager : public QObject {
 
     /// QTask window is hidden on startup
     bool m_hide_on_startup;
+
+    /// QTask will save current task filter on exit and apply it after restart.
+    bool m_save_filter_on_exit;
+
+    /// task filter from the previous launch.
+    QStringList m_task_filter;
 };
 
 #endif // CONFIGMANAGER_HPP

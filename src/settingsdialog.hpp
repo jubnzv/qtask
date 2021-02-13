@@ -25,6 +25,7 @@ class SettingsDialog : public QDialog {
     QLineEdit *m_task_bin_edit;
     QLineEdit *m_task_data_path_edit;
     QCheckBox *m_hide_on_startup_cb;
+    QCheckBox *m_save_filter_on_exit;
     QDialogButtonBox *m_buttons;
 };
 

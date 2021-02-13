@@ -64,6 +64,14 @@ MainWindow::MainWindow()
     initShortcuts();
 
     (ConfigManager::config()->getHideWindowOnStartup()) ? hide() : show();
+
+    if (ConfigManager::config()->getSaveFilterOnExit()) {
+        auto tags = ConfigManager::config()->getTaskFilter();
+        tags.removeAll(QString(""));
+        if (!tags.isEmpty()) {
+            m_task_filter->setTags(tags);
+        }
+    }
 }
 
 MainWindow::~MainWindow()
@@ -463,6 +471,10 @@ void MainWindow::receiveNewInstanceMessage(quint32, QByteArray message)
 
 void MainWindow::quitApp()
 {
+    if (ConfigManager::config()->getSaveFilterOnExit()) {
+        ConfigManager::config()->setTaskFilter(m_task_filter->getTags());
+    }
+
     m_is_quit = true;
     close();
 }

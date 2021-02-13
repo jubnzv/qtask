@@ -20,6 +20,8 @@ ConfigManager::ConfigManager(QObject *parent)
     , m_task_data_path(s_default_task_data_path)
     , m_show_task_shell(false)
     , m_hide_on_startup(false)
+    , m_save_filter_on_exit(false)
+    , m_task_filter({})
 {
 }
 
@@ -82,6 +84,8 @@ void ConfigManager::updateConfigFile()
     settings.setValue("task_data_path", m_task_data_path);
     settings.setValue("show_task_shell", m_show_task_shell);
     settings.setValue("hide_on_startup", m_hide_on_startup);
+    settings.setValue("save_filter_on_exit", m_save_filter_on_exit);
+    settings.setValue("task_filter", m_task_filter);
 }
 
 bool ConfigManager::createNewConfigFile()
@@ -93,6 +97,9 @@ bool ConfigManager::createNewConfigFile()
     settings.setValue("task_data_path", s_default_task_data_path);
     settings.setValue("show_task_shell", false);
     settings.setValue("hide_on_startup", false);
+    settings.setValue("save_filter_on_exit", false);
+    settings.setValue("task_filter", {});
+
     return true;
 }
 
@@ -104,5 +111,8 @@ bool ConfigManager::fillOptionsFromConfigFile()
         settings.value("task_data_path", s_default_task_data_path).toString();
     m_show_task_shell = settings.value("show_task_shell", false).toBool();
     m_hide_on_startup = settings.value("hide_on_startup", false).toBool();
+    m_save_filter_on_exit =
+        settings.value("save_filter_on_exit", false).toBool();
+    m_task_filter = settings.value("task_filter", "").toStringList();
     return true;
 }
