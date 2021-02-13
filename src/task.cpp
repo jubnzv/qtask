@@ -36,10 +36,10 @@ QStringList Task::getCmdArgs() const
 
     if (priority != Priority::Unset)
         result << QString{ " pri:'%1'" }.arg(Task::priorityToString(priority));
+    else
+        result << QString{ " pri:''" };
 
-    if (!project.isEmpty()) {
-        result << QString{ " project:'%1'" }.arg(project);
-    }
+    result << QString{ " project:'%1'" }.arg(project);
     for (auto const &t : tags) {
         if (!t.isEmpty()) {
             QString t_escpaed = t;
