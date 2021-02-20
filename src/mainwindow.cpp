@@ -70,6 +70,7 @@ MainWindow::MainWindow()
         tags.removeAll(QString(""));
         if (!tags.isEmpty()) {
             m_task_filter->setTags(tags);
+            onApplyFilter();
         }
     }
 }
