@@ -10,7 +10,9 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86, x64]
-        qt_version: [5.9, 5.14.1]
+        # 5.9 was disabled, since it is not available in matrix.os anymore.
+        # qt_version: [5.9, 5.14.1]
+        qt_version: [5.14.1]
         exclude:
           # We only compile for the current architecture of the runner for Linux
           - os: ubuntu-latest
