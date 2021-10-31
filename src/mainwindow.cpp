@@ -749,7 +749,7 @@ void MainWindow::updateTasks(bool force)
 
     // The commands from m_task_provider will modify the taskwarrior
     // database files. This will trigger TaskWatcher to emit update event.
-    if (!force && m_task_watcher->isActive())
+    if (!force && m_task_watcher && m_task_watcher->isActive())
         return;
 
     QList<Task> tasks = {};
