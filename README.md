@@ -21,7 +21,16 @@ You may find the following features of this utility useful:
 
 If you have any ideas on how to improve this utility, feel free to create an [issue](https://github.com/jubnzv/qtask/issues) or open a [PR](https://github.com/jubnzv/qtask/pulls).
 
-## Building
+## Installation
+
+Arch Linux users could use AUR to install `qtask`:
+```bash
+yay -S qtask-git
+```
+
+On other distributions you'll need to build it from sources.
+
+### Building from source
 
 First of all, you need to install the dependencies. You will need Qt at least version 5.14. For earlier versions of Qt, some features will be disabled.
 
