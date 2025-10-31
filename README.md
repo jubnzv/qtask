@@ -32,13 +32,20 @@ On other distributions you'll need to build it from sources.
 
 ### Building from source
 
-First of all, you need to install the dependencies. You will need Qt at least version 5.14. For earlier versions of Qt, some features will be disabled.
+First, make sure you have Qt installed.
+The project supports both Qt 5 (≥ 5.14) and Qt 6, and will automatically use the newest available version detected by CMake.
 
-On Debian-based distributions you need to run the following command:
+On Debian-based distributions, you can install the required dependencies with:
 
 ```bash
-sudo apt-get install qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev qtbase5-private-dev
+# For Qt 5
+sudo apt install qt5-default qttools5-dev libqt5svg5-dev libx11-xcb-dev qtbase5-private-dev
+
+# Or, for Qt 6 (recommended)
+sudo apt install qt6-base-dev qt6-tools-dev qt6-svg-dev libx11-xcb-dev
 ```
+CMake will detect your installed Qt version automatically and build the project with the latest one available.
+
 
 Clone the repository with submodules:
 
