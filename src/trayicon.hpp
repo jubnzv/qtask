@@ -1,13 +1,13 @@
 #ifndef SYSTRAYICON_HPP
 #define SYSTRAYICON_HPP
 
-#include <memory>
 
 #include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
+#include <QObject>
 
-class QAction;
-class QMenu;
-class QObject;
+#include <memory>
 
 namespace ui
 {
@@ -16,7 +16,7 @@ class SystemTrayIcon : public QSystemTrayIcon {
     Q_OBJECT
 
   public:
-    SystemTrayIcon(QObject *parent);
+    explicit SystemTrayIcon(QObject *parent);
 
   signals:
     void muteNotificationsRequested(bool value);
@@ -24,10 +24,7 @@ class SystemTrayIcon : public QSystemTrayIcon {
     void exitRequested();
 
   private:
-    QMenu *tray_icon_menu_;
-    QAction *add_task_action_;
-    QAction *mute_notifications_action_;
-    QAction *exit_action_;
+    std::unique_ptr<QMenu> tray_icon_menu_;
 };
 
 } // namespace ui
