@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 project(qtask CXX)
 
+set(QTASK_VERSION_MAJOR 1)
+set(QTASK_VERSION_MINOR 1)
+set(QTASK_VERSION_PATCH 0)
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -12,10 +16,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+
+#Detect best qt version in the system.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
-if (${QT_VERSION_MAJOR} VERSION_LESS 6.0.0)
+if (${QT_VERSION} VERSION_LESS 5.15.0)
   find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 else()
+  #Not sure, if should search/link GuiPrivate Svg with old versions.
   find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets GuiPrivate Svg)
 endif()
 
@@ -53,6 +60,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
   endif()
 endif()
 
+#List and add all files by mask to the project, no manual enlisting is required.
 file(GLOB qtask_SRCS
         src/*.h
         src/*.hpp
@@ -65,9 +73,10 @@ set(qtask_RESOURCES res/qtask.qrc)
 add_executable(qtask ${qtask_SRCS} ${qtask_RESOURCES})
 
 target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::GuiPrivate)
-if (${QT_VERSION_MAJOR} VERSION_GREATER_EQUAL 6.0.0)
+if (${QT_VERSION} VERSION_GREATER_EQUAL 5.15.0)
   target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Svg)
 endif()
+
 # Replacement of the QtSingleApplication for Qt5 and Qt6.
 set(QAPPLICATION_CLASS
     QApplication
@@ -75,9 +84,6 @@ set(QAPPLICATION_CLASS
 add_subdirectory(src/third-party/singleapplication)
 target_link_libraries(qtask SingleApplication::SingleApplication)
 
-set(QTASK_VERSION_MAJOR 1)
-set(QTASK_VERSION_MINOR 1)
-set(QTASK_VERSION_PATCH 0)
 
 set(GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${GEN_DIR})
