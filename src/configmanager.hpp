@@ -51,7 +51,7 @@ class ConfigManager : public QObject {
     inline static std::unique_ptr<ConfigManager> inst_;
 
     /// Configuration file was created during initialization
-    bool m_is_new;
+     bool m_is_new;
 
     /// Path to configuration file
     QString m_config_path;

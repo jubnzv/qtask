@@ -5,23 +5,26 @@
 #include <QObject>
 #include <QString>
 
+#include <memory>
+
 class TaskWatcher : public QObject {
     Q_OBJECT
 
   public:
-    TaskWatcher(QObject *parent = nullptr);
-    ~TaskWatcher();
+    explicit TaskWatcher(QObject *parent = nullptr);
+    ~TaskWatcher() override;
 
     bool setup(const QString &task_data_path);
-    bool isActive() const { return m_active; }
+    [[nodiscard]] bool isActive() const
+    {
+        return m_task_data_watcher != nullptr;
+    }
 
   signals:
     void dataChanged(const QString &);
 
   private:
-    QString m_task_data_path;
-    bool m_active;
-    QFileSystemWatcher *m_task_data_watcher;
+    std::unique_ptr<QFileSystemWatcher> m_task_data_watcher{ nullptr };
 };
 
 #endif // TASKWATCHER_HPP

@@ -14,6 +14,7 @@
 #include <QToolBar>
 #include <QVariant>
 #include <QWindowStateChangeEvent>
+#include <qassert.h>
 
 #include "aboutdialog.hpp"
 #include "agendadialog.hpp"
@@ -30,6 +31,8 @@
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
 #include "trayicon.hpp"
+
+#include <memory>
 
 using namespace ui;
 
@@ -77,23 +80,20 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-    if (m_task_watcher) {
-        delete m_task_watcher;
-        m_task_watcher = nullptr;
-    }
+    m_task_watcher.reset();
+    m_task_provider.reset();
 }
 
 bool MainWindow::initTaskWatcher()
 {
     Q_ASSERT(!m_task_watcher);
-    m_task_watcher = new TaskWatcher();
+    m_task_watcher.reset(new TaskWatcher(this));
     if (!m_task_watcher->setup(ConfigManager::config().getTaskDataPath())) {
-        delete m_task_watcher;
         m_task_watcher = nullptr;
         return false;
     }
     connect(
-        m_task_watcher, &TaskWatcher::dataChanged, this,
+        m_task_watcher.get(), &TaskWatcher::dataChanged, this,
         [&](const QString & /* filepath */) { updateTasks(/*force=*/true); });
     return true;
 }
