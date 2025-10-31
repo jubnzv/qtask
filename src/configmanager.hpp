@@ -6,13 +6,13 @@
 #include <QString>
 
 class ConfigManager : public QObject {
+  private:
     Q_OBJECT
-
-  public:
     ConfigManager(QObject *parent = nullptr);
-    ~ConfigManager() = default;
+  public:
 
-    static ConfigManager *config();
+    ~ConfigManager() = default;
+    static ConfigManager& config();
 
     bool isNew() const { return m_is_new; }
 
@@ -48,7 +48,7 @@ class ConfigManager : public QObject {
     bool fillOptionsFromConfigFile();
 
   private:
-    static ConfigManager *inst_;
+    inline static std::unique_ptr<ConfigManager> inst_;
 
     /// Configuration file was created during initialization
     bool m_is_new;

@@ -52,7 +52,7 @@ MainWindow::MainWindow()
             this, tr("Error"),
             tr("Can't initialize file watcher service for %1. The task "
                "list will not be updated after external changes.")
-                .arg(ConfigManager::config()->getTaskDataPath()));
+                .arg(ConfigManager::config().getTaskDataPath()));
     }
 
     initMainWindow();
@@ -63,10 +63,10 @@ MainWindow::MainWindow()
     initHelpMenu();
     initShortcuts();
 
-    (ConfigManager::config()->getHideWindowOnStartup()) ? hide() : show();
+    (ConfigManager::config().getHideWindowOnStartup()) ? hide() : show();
 
-    if (ConfigManager::config()->getSaveFilterOnExit()) {
-        auto tags = ConfigManager::config()->getTaskFilter();
+    if (ConfigManager::config().getSaveFilterOnExit()) {
+        auto tags = ConfigManager::config().getTaskFilter();
         tags.removeAll(QString(""));
         if (!tags.isEmpty()) {
             m_task_filter->setTags(tags);
@@ -87,7 +87,7 @@ bool MainWindow::initTaskWatcher()
 {
     Q_ASSERT(!m_task_watcher);
     m_task_watcher = new TaskWatcher();
-    if (!m_task_watcher->setup(ConfigManager::config()->getTaskDataPath())) {
+    if (!m_task_watcher->setup(ConfigManager::config().getTaskDataPath())) {
         delete m_task_watcher;
         m_task_watcher = nullptr;
         return false;
@@ -117,7 +117,7 @@ void MainWindow::initMainWindow()
                             QLineEdit::LeadingPosition);
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
-    m_task_shell->setVisible(ConfigManager::config()->getShowTaskShell());
+    m_task_shell->setVisible(ConfigManager::config().getShowTaskShell());
 
     m_task_filter = new TagsEdit(/* TODO: QIcon(":/icons/filter.svg")*/);
     connect(m_task_filter, &TagsEdit::tagsChanged, this,
@@ -228,7 +228,7 @@ void MainWindow::initViewMenu()
     m_toggle_task_shell_action = new QAction("&Task shell", this);
     m_toggle_task_shell_action->setCheckable(true);
     m_toggle_task_shell_action->setChecked(
-        ConfigManager::config()->getShowTaskShell());
+        ConfigManager::config().getShowTaskShell());
     view_menu->addAction(m_toggle_task_shell_action);
     connect(m_toggle_task_shell_action, &QAction::triggered, this,
             &MainWindow::onToggleTaskShell);
@@ -472,8 +472,8 @@ void MainWindow::receiveNewInstanceMessage(quint32, QByteArray message)
 
 void MainWindow::quitApp()
 {
-    if (ConfigManager::config()->getSaveFilterOnExit()) {
-        ConfigManager::config()->setTaskFilter(m_task_filter->getTags());
+    if (ConfigManager::config().getSaveFilterOnExit()) {
+        ConfigManager::config().setTaskFilter(m_task_filter->getTags());
     }
 
     m_is_quit = true;
@@ -540,7 +540,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
         hide();
         event->ignore();
     } else {
-        ConfigManager::config()->updateConfigFile();
+        ConfigManager::config().updateConfigFile();
         QMainWindow::closeEvent(event);
         qApp->quit();
     }
@@ -595,10 +595,10 @@ void MainWindow::onToggleTaskShell()
 {
     if (m_toggle_task_shell_action->isChecked()) {
         m_task_shell->setVisible(true);
-        ConfigManager::config()->setShowTaskShell(true);
+        ConfigManager::config().setShowTaskShell(true);
     } else {
         m_task_shell->setVisible(false);
-        ConfigManager::config()->setShowTaskShell(false);
+        ConfigManager::config().setShowTaskShell(false);
     }
 }
 
