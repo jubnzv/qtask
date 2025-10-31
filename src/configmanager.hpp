@@ -58,11 +58,9 @@ class ConfigManager : public QObject {
 
     /// Path to task binary
     QString m_task_bin;
-    static const QString s_default_task_bin;
 
     /// Path to taskwarrior data
     QString m_task_data_path;
-    static const QString s_default_task_data_path;
 
     /// Task shell will be shown in the main window
     bool m_show_task_shell;
