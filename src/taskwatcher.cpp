@@ -1,29 +1,35 @@
 #include "taskwatcher.hpp"
 
+#include <QDir>
 #include <QFile>
 #include <QFileSystemWatcher>
 #include <QString>
 
-TaskWatcher::TaskWatcher(QObject *parent)
-    : m_task_data_path("")
-    , m_active(false)
-    , m_task_data_watcher(nullptr)
-{
-}
+TaskWatcher::TaskWatcher(QObject *parent) {}
 
-TaskWatcher::~TaskWatcher() {}
+TaskWatcher::~TaskWatcher() = default;
 
 bool TaskWatcher::setup(const QString &task_data_path)
 {
-    QStringList watch_files = { task_data_path + "pending.data" };
-    for (auto const &f : watch_files)
-        if (!QFile::exists(f))
-            return false;
+    const auto addPath = [&task_data_path](const QString &fileName) {
+        return task_data_path + QDir::separator() + fileName;
+    };
 
-    m_task_data_watcher = new QFileSystemWatcher(watch_files);
-    connect(m_task_data_watcher, &QFileSystemWatcher::fileChanged, this,
+    const QStringList fileNamesCandidates = {
+        addPath("pending.data"),
+        addPath("taskchampion.sqlite3"),
+    };
+
+    const auto it =
+        std::find_if(fileNamesCandidates.begin(), fileNamesCandidates.end(),
+                     [](const auto &p) { return QFile::exists(p); });
+
+    if (it == fileNamesCandidates.end()) {
+        return false;
+    }
+
+    m_task_data_watcher.reset(new QFileSystemWatcher({ *it }));
+    connect(m_task_data_watcher.get(), &QFileSystemWatcher::fileChanged, this,
             &TaskWatcher::dataChanged);
-
-    m_active = true;
     return true;
 }

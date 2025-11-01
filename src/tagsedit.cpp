@@ -8,12 +8,15 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyle>
+#include <QSize>
 #include <QStyleHints>
 #include <QStyleOptionFrame>
 #include <QTextLayout>
 #include <QtGui/private/qinputcontrol_p.h>
 
+
 #include <cassert>
+#include <iterator>
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
 #define FONT_METRICS_WIDTH(fmt, ...) fmt.width(__VA_ARGS__)
@@ -92,6 +95,49 @@ template <class It> struct EmptySkipIterator {
 };
 
 template <class It> EmptySkipIterator(It, It)->EmptySkipIterator<It>;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+QSize inferredGlobalStrut()
+{
+    static const QSize kDefault{8, 16};
+    // This function is AI suggested.
+    const QFontMetrics fm(qApp->font());
+    const int textH = fm.height();
+    const int charW = fm.horizontalAdvance(QLatin1Char('M'));
+
+    const QStyle *style = qApp->style();
+    if (!style)
+    {
+        return kDefault;
+    }
+    const int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth);
+    const int spacingH = style->pixelMetric(QStyle::PM_LayoutVerticalSpacing);
+    const int spacingW = style->pixelMetric(QStyle::PM_LayoutHorizontalSpacing);
+    const int btnIcon = style->pixelMetric(QStyle::PM_ButtonIconSize);
+
+    int minh = qMax(textH + spacingH + frame * 2, btnIcon);
+    int minw = qMax(charW * 2 + spacingW + frame * 2, btnIcon);
+    if (minh <= 0)
+    {
+        minh = kDefault.height();
+    }
+    if (minw <= 0)
+    {
+        minw = kDefault.width();
+    }
+
+    return {minw, minh};
+}
+#endif
+
+QSize globalStrut()
+{
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+    return QApplication::globalStrut();
+#else
+    return inferredGlobalStrut();
+#endif
+}
 
 } // namespace
 
@@ -621,7 +667,7 @@ QSize TagsEdit::sizeHint() const
     impl->initStyleOption(&opt);
     return (style()->sizeFromContents(
         QStyle::CT_LineEdit, &opt,
-        QSize(w, h).expandedTo(QApplication::globalStrut()), this));
+        QSize(w, h).expandedTo(globalStrut()), this));
 }
 
 QSize TagsEdit::minimumSizeHint() const
@@ -635,7 +681,7 @@ QSize TagsEdit::minimumSizeHint() const
     impl->initStyleOption(&opt);
     return (style()->sizeFromContents(
         QStyle::CT_LineEdit, &opt,
-        QSize(w, h).expandedTo(QApplication::globalStrut()), this));
+        QSize(w, h).expandedTo(globalStrut()), this));
 }
 
 void TagsEdit::keyPressEvent(QKeyEvent *event)

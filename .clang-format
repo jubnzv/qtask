@@ -1,7 +1,6 @@
 Language:    Cpp
 IndentWidth: 4
 AlignEscapedNewlines: Left
-AlignAfterOpenBracket: DontAlign
 Cpp11BracedListStyle: false
 AlignConsecutiveMacros: 'true'
 BreakConstructorInitializers: BeforeComma

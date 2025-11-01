@@ -6,13 +6,13 @@
 #include <QString>
 
 class ConfigManager : public QObject {
+  private:
     Q_OBJECT
+    ConfigManager(QObject *parent = nullptr);
 
   public:
-    ConfigManager(QObject *parent = nullptr);
     ~ConfigManager() = default;
-
-    static ConfigManager *config();
+    static ConfigManager &config();
 
     bool isNew() const { return m_is_new; }
 
@@ -48,8 +48,6 @@ class ConfigManager : public QObject {
     bool fillOptionsFromConfigFile();
 
   private:
-    static ConfigManager *inst_;
-
     /// Configuration file was created during initialization
     bool m_is_new;
 
@@ -58,11 +56,9 @@ class ConfigManager : public QObject {
 
     /// Path to task binary
     QString m_task_bin;
-    static const QString s_default_task_bin;
 
     /// Path to taskwarrior data
     QString m_task_data_path;
-    static const QString s_default_task_data_path;
 
     /// Task shell will be shown in the main window
     bool m_show_task_shell;

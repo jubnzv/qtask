@@ -8,6 +8,7 @@
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QMainWindow>
+#include <QPointer>
 #include <QSystemTrayIcon>
 #include <QTableView>
 #include <QVariant>
@@ -108,8 +109,7 @@ class MainWindow : public QMainWindow {
     QAction *m_stop_action;
 
     std::unique_ptr<Taskwarrior> m_task_provider;
-
-    TaskWatcher *m_task_watcher;
+    std::unique_ptr<TaskWatcher> m_task_watcher;
 };
 
 } // namespace ui

@@ -432,7 +432,7 @@ int Taskwarrior::directCmd(const QString &cmd)
 
     QStringList args = cmd.split(' ', s_split_behaviour) << s_args;
 
-    proc.start(ConfigManager::config()->getTaskBin(), args);
+    proc.start(ConfigManager::config().getTaskBin(), args);
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished() &&
             (proc.exitStatus() == QProcess::NormalExit))
@@ -455,8 +455,8 @@ bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled,
         real_args << s_args;
     real_args << args;
 
-    qDebug() << ConfigManager::config()->getTaskBin() << real_args;
-    proc.start(ConfigManager::config()->getTaskBin(), real_args);
+    qDebug() << ConfigManager::config().getTaskBin() << real_args;
+    proc.start(ConfigManager::config().getTaskBin(), real_args);
 
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished(1000) &&
@@ -480,8 +480,8 @@ bool Taskwarrior::execCmd(const QStringList &args, QByteArray &out,
         real_args << s_args;
     real_args << args;
 
-    qDebug() << ConfigManager::config()->getTaskBin() << real_args;
-    proc.start(ConfigManager::config()->getTaskBin(), real_args);
+    qDebug() << ConfigManager::config().getTaskBin() << real_args;
+    proc.start(ConfigManager::config().getTaskBin(), real_args);
 
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished(1000) &&

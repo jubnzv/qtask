@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
         "a", "Add a task without starting a new instance.");
     parser.addOption(add_task_option);
 
-    if (!ConfigManager::config()->initializeFromFile()) {
+    if (!ConfigManager::config().initializeFromFile()) {
         QMessageBox::warning(
             nullptr, QObject::tr("Warning"),
             QObject::tr("Can't read configuration file. The default "
@@ -74,6 +74,6 @@ int main(int argc, char *argv[])
     }
 
     int rc = app.exec();
-    ConfigManager::config()->updateConfigFile();
+    ConfigManager::config().updateConfigFile();
     return rc;
 }

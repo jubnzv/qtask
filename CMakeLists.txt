@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 project(qtask CXX)
 
+set(QTASK_VERSION_MAJOR 1)
+set(QTASK_VERSION_MINOR 1)
+set(QTASK_VERSION_PATCH 0)
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -9,10 +13,22 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
-set(QT_MIN_VERSION "5.3.0")
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-find_package(Qt5 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Widgets)
+
+
+#Detect best qt version in the system.
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+if (${QT_VERSION} VERSION_LESS 5.15.0)
+  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+else()
+  #Not sure, if should search/link GuiPrivate Svg with old versions.
+  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets GuiPrivate Svg)
+endif()
+
+if(${QT_VERSION} VERSION_LESS 5.3.0)
+  message(FATAL_ERROR "Found Qt version ${QT_VERSION} is too small.")
+endif()
 
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -44,33 +60,22 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
   endif()
 endif()
 
-set(qtask_SRCS
-    src/aboutdialog.cpp
-    src/agendadialog.cpp
-    src/main.cpp
-    src/mainwindow.cpp
-    src/trayicon.cpp
-    src/taskdialog.cpp
-    src/task.cpp
-    src/datetimedialog.cpp
-    src/configmanager.cpp
-    src/optionaldatetimeedit.cpp
-    src/settingsdialog.cpp
-    src/recurringdialog.cpp
-    src/recurringtasksmodel.cpp
-    src/tasksview.cpp
-    src/taskdescriptiondelegate.cpp
-    src/qtutil.cpp
-    src/tagsedit.cpp
-    src/tasksmodel.cpp
-    src/taskwarriorreferencedialog.cpp
-    src/taskwatcher.cpp
-    src/taskwarrior.cpp)
+#List and add all files by mask to the project, no manual enlisting is required.
+file(GLOB qtask_SRCS
+        src/*.h
+        src/*.hpp
+        src/*.cpp
+        src/*.ui
+    )
+
 set(qtask_MOC_HEADERS src/configmanager.hpp)
 set(qtask_RESOURCES res/qtask.qrc)
 add_executable(qtask ${qtask_SRCS} ${qtask_RESOURCES})
 
-target_link_libraries(qtask Qt5::Widgets Qt5::GuiPrivate)
+target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::GuiPrivate)
+if (${QT_VERSION} VERSION_GREATER_EQUAL 5.15.0)
+  target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Svg)
+endif()
 
 # Replacement of the QtSingleApplication for Qt5 and Qt6.
 set(QAPPLICATION_CLASS
@@ -79,9 +84,6 @@ set(QAPPLICATION_CLASS
 add_subdirectory(src/third-party/singleapplication)
 target_link_libraries(qtask SingleApplication::SingleApplication)
 
-set(QTASK_VERSION_MAJOR 1)
-set(QTASK_VERSION_MINOR 0)
-set(QTASK_VERSION_PATCH 0)
 
 set(GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 file(MAKE_DIRECTORY ${GEN_DIR})
