@@ -59,9 +59,10 @@ QString FindTaskDataFolder()
             break;
         }
         auto keyValue = QString::fromStdString(line).split("=");
-        keyValue.back() = expandHome(keyValue.back());
+        keyValue.back() = expandHome(keyValue.back().trimmed());
 
-        if (keyValue.size() == 2 && keyValue.front() == "data.location" &&
+        if (keyValue.size() == 2 &&
+            keyValue.front().trimmed() == "data.location" &&
             QDir(keyValue.back()).exists()) {
             std::cout << "Found data location: "
                       << keyValue.back().toStdString() << std::endl;
