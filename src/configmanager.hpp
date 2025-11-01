@@ -48,8 +48,6 @@ class ConfigManager : public QObject {
     bool fillOptionsFromConfigFile();
 
   private:
-    inline static std::unique_ptr<ConfigManager> inst_;
-
     /// Configuration file was created during initialization
     bool m_is_new;
 
