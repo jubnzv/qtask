@@ -24,8 +24,7 @@ class TasksModel : public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation,
                         int role = Qt::DisplayRole) const override;
 
-    void setTasks(const QList<Task> &);
-    void setTasks(QList<Task> &&);
+    void setTasks(QList<Task>);
     QVariant getTask(const QModelIndex &) const;
 
     QColor rowColor(int row) const;
