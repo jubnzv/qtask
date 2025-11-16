@@ -54,6 +54,16 @@
 
 using namespace ui;
 
+namespace
+{
+const auto kStartStopShortcut = QKeySequence("CTRL+S");
+const auto kSettingsButtonShortcut = QKeySequence("CTRL+SHIFT+S");
+const auto kActivateTaskShellShortcut = QKeySequence("CTRL+T");
+const auto kDoneShortcut = QKeySequence("CTRL+D");
+const auto kEditShortcut = QKeySequence("CTRL+E");
+const auto kWaitShortcut = QKeySequence("CTRL+W");
+} // namespace
+
 MainWindow::MainWindow()
     : m_window_prev_state(Qt::WindowNoState)
     , m_is_quit(false)
@@ -185,7 +195,7 @@ void MainWindow::initTasksTable()
                     removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
                     removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
                     m_toolbar_actions.m_stop_action->setShortcut(
-                        QKeySequence("CTRL+S"));
+                        kStartStopShortcut);
                     addShortcutToToolTip(m_toolbar_actions.m_stop_action);
                     m_toolbar_actions.m_start_action->setEnabled(false);
                     m_toolbar_actions.m_stop_action->setEnabled(true);
@@ -193,7 +203,7 @@ void MainWindow::initTasksTable()
                     removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
                     removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
                     m_toolbar_actions.m_start_action->setShortcut(
-                        QKeySequence("CTRL+S"));
+                        kStartStopShortcut);
                     addShortcutToToolTip(m_toolbar_actions.m_start_action);
                     m_toolbar_actions.m_start_action->setEnabled(true);
                     m_toolbar_actions.m_stop_action->setEnabled(false);
@@ -230,12 +240,12 @@ void MainWindow::initFileMenu()
     file_menu->setToolTipsVisible(true);
 
     auto *settings = new QAction("&Settings", this);
-    settings->setShortcut(QKeySequence("CTRL+SHIFT+P"));
+    settings->setShortcut(kSettingsButtonShortcut);
     file_menu->addAction(settings);
     connect(settings, &QAction::triggered, this, &MainWindow::onOpenSettings);
 
     auto *quit = new QAction("&Quit", this);
-    quit->setShortcut(QKeySequence("CTRL+Q"));
+    quit->setShortcut(QKeySequence::Quit);
     file_menu->addAction(quit);
     connect(quit, &QAction::triggered, this, &MainWindow::quitApp);
 }
@@ -314,19 +324,19 @@ void MainWindow::initHelpMenu()
 void MainWindow::initShortcuts()
 {
     auto *focus_task_shell = new QAction(this);
-    focus_task_shell->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_T));
+    focus_task_shell->setShortcut(kActivateTaskShellShortcut);
     connect(focus_task_shell, &QAction::triggered, this, [&]() {
         if (m_task_shell->isVisible()) {
             m_task_shell->setFocus();
         }
     });
-    this->addAction(focus_task_shell);
+    addAction(focus_task_shell);
 
     auto *filter_tasks = new QAction(this);
-    filter_tasks->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F));
+    filter_tasks->setShortcut(QKeySequence::Find);
     connect(filter_tasks, &QAction::triggered, this,
             [&]() { m_task_filter->setFocus(); });
-    this->addAction(filter_tasks);
+    addAction(filter_tasks);
 }
 
 void MainWindow::connectTaskToolbarActions()
@@ -770,49 +780,49 @@ void MainWindow::updateTaskToolbar()
 
 MainWindow::TToolbarActionsDefined::TToolbarActionsDefined(QToolBar &parent)
 {
-    const auto allocate = [&parent](const QString &path, const QString &text) {
+    const auto allocate = [&parent](const QString &path, const QString &text,
+                                    const QKeySequence &short_cut) {
         auto action = new QAction(QIcon(path), text, &parent);
         action->setEnabled(true);
+        action->setShortcut(short_cut);
         removeShortcutFromToolTip(action);
         addShortcutToToolTip(action);
         parent.addAction(action);
         return action;
     };
 
-    m_add_action = allocate(":/icons/add.svg", tr("Add task"));
-    m_add_action->setShortcut(QKeySequence("CTRL+N"));
-
-    m_undo_action = allocate(":/icons/undo.png", tr("Undo last action"));
+    m_add_action =
+        allocate(":/icons/add.svg", tr("Add task"), QKeySequence::New);
+    m_undo_action = allocate(":/icons/undo.png", tr("Undo last action"),
+                             QKeySequence::Undo);
     m_undo_action->setEnabled(false);
-    m_undo_action->setShortcut(QKeySequence("CTRL+Z"));
 
-    m_update_action = allocate(":/icons/refresh.png", tr("Update tasks"));
-    m_update_action->setShortcut(QKeySequence("CTRL+R"));
+    m_update_action = allocate(":/icons/refresh.png", tr("Update tasks"),
+                               QKeySequence::Refresh);
 
     parent.addSeparator();
 
-    m_done_action = allocate(":/icons/done.svg", tr("Done"));
-    m_done_action->setShortcut(QKeySequence("CTRL+D"));
+    m_done_action = allocate(":/icons/done.svg", tr("Done"), kDoneShortcut);
     m_done_action->setEnabled(false);
 
-    m_edit_action = allocate(":/icons/edit.svg", tr("Edit"));
-    m_edit_action->setShortcut(QKeySequence("CTRL+E"));
+    m_edit_action = allocate(":/icons/edit.svg", tr("Edit"), kEditShortcut);
     m_edit_action->setEnabled(false);
 
-    m_wait_action = allocate(":/icons/wait.svg", tr("Wait"));
-    m_wait_action->setShortcut(QKeySequence("CTRL+W"));
+    m_wait_action = allocate(":/icons/wait.svg", tr("Wait"), kWaitShortcut);
     m_wait_action->setEnabled(false);
 
-    m_delete_action = allocate(":/icons/delete.svg", tr("Delete"));
-    m_delete_action->setShortcut(QKeySequence::Delete);
+    m_delete_action =
+        allocate(":/icons/delete.svg", tr("Delete"), QKeySequence::Delete);
     m_delete_action->setEnabled(false);
 
     parent.addSeparator();
 
-    m_start_action = allocate(":/icons/start.svg", tr("Start"));
+    m_start_action =
+        allocate(":/icons/start.svg", tr("Start"), QKeySequence::UnknownKey);
     m_start_action->setEnabled(false);
 
-    m_stop_action = allocate(":/icons/stop.svg", tr("Stop"));
+    m_stop_action =
+        allocate(":/icons/stop.svg", tr("Stop"), QKeySequence::UnknownKey);
     m_stop_action->setEnabled(false);
 }
 
