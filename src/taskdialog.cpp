@@ -234,23 +234,22 @@ AddTaskDialog::AddTaskDialog(const QVariant &default_project, QWidget *parent)
 void AddTaskDialog::constructUi()
 {
     m_ok_btn->setEnabled(false);
-    auto *create_shortcut = new QShortcut(QKeySequence("Ctrl+Return"), this);
-    QObject::connect(create_shortcut, &QShortcut::activated, this,
-                     &QDialog::accept);
+    QObject::connect(new QShortcut(QKeySequence("Ctrl+Return"), this),
+                     &QShortcut::activated, this, &QDialog::accept);
     m_ok_btn->setToolTip(tr("Create task"));
 
     m_continue_btn->setEnabled(false);
-    auto *continue_shortcut = new QShortcut(QKeySequence("Alt+Return"), this);
-    QObject::connect(continue_shortcut, &QShortcut::activated, this,
+    QObject::connect(new QShortcut(QKeySequence("Alt+Return"), this),
+                     &QShortcut::activated, this,
                      &AddTaskDialog::createTaskAndContinue);
     m_continue_btn->setToolTip(tr("Create task and continue"));
 
     auto *cancel_btn = new QPushButton(
         QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
         tr("Cancel"), this);
-    auto *cancel_shortcut = new QShortcut(QKeySequence::Cancel, this);
-    QObject::connect(cancel_shortcut, &QShortcut::activated, this,
-                     &QDialog::reject);
+
+    QObject::connect(new QShortcut(QKeySequence::Cancel, this),
+                     &QShortcut::activated, this, &QDialog::reject);
     cancel_btn->setToolTip(tr("Cancel and close this window"));
 
     connect(m_ok_btn, &QPushButton::clicked, this, &QDialog::accept);
@@ -294,22 +293,20 @@ EditTaskDialog::EditTaskDialog(const Task &task, QWidget *parent)
 
 void EditTaskDialog::constructUi()
 {
-    auto *create_shortcut = new QShortcut(QKeySequence("Ctrl+Return"), this);
-    QObject::connect(create_shortcut, &QShortcut::activated, this,
-                     &QDialog::accept);
+    QObject::connect(new QShortcut(QKeySequence("Ctrl+Return"), this),
+                     &QShortcut::activated, this, &QDialog::accept);
     m_ok_btn->setToolTip(tr("Create task"));
 
-    auto *delete_shortcut = new QShortcut(QKeySequence("Ctrl+Delete"), this);
-    QObject::connect(delete_shortcut, &QShortcut::activated, this,
+    QObject::connect(new QShortcut(QKeySequence("Ctrl+Delete"), this),
+                     &QShortcut::activated, this,
                      &EditTaskDialog::requestDeleteTask);
     m_delete_btn->setToolTip(tr("Delete this task"));
 
     auto *cancel_btn = new QPushButton(
         QApplication::style()->standardIcon(QStyle::SP_DialogCancelButton),
         tr("Cancel"), this);
-    auto *cancel_shortcut = new QShortcut(QKeySequence::Cancel, this);
-    QObject::connect(cancel_shortcut, &QShortcut::activated, this,
-                     &QDialog::reject);
+    QObject::connect(new QShortcut(QKeySequence::Cancel, this),
+                     &QShortcut::activated, this, &QDialog::reject);
     cancel_btn->setToolTip(tr("Cancel and close this window"));
 
     connect(m_ok_btn, &QPushButton::clicked, this, &QDialog::accept);
