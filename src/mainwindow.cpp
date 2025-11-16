@@ -184,14 +184,16 @@ void MainWindow::initTasksTable()
                 if (is_active) {
                     removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
                     removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
-                    m_toolbar_actions.m_stop_action->setShortcut(tr("CTRL+S"));
+                    m_toolbar_actions.m_stop_action->setShortcut(
+                        QKeySequence("CTRL+S"));
                     addShortcutToToolTip(m_toolbar_actions.m_stop_action);
                     m_toolbar_actions.m_start_action->setEnabled(false);
                     m_toolbar_actions.m_stop_action->setEnabled(true);
                 } else {
                     removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
                     removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
-                    m_toolbar_actions.m_start_action->setShortcut(tr("CTRL+S"));
+                    m_toolbar_actions.m_start_action->setShortcut(
+                        QKeySequence("CTRL+S"));
                     addShortcutToToolTip(m_toolbar_actions.m_start_action);
                     m_toolbar_actions.m_start_action->setEnabled(true);
                     m_toolbar_actions.m_stop_action->setEnabled(false);
@@ -228,12 +230,12 @@ void MainWindow::initFileMenu()
     file_menu->setToolTipsVisible(true);
 
     auto *settings = new QAction("&Settings", this);
-    settings->setShortcut(tr("CTRL+SHIFT+P"));
+    settings->setShortcut(QKeySequence("CTRL+SHIFT+P"));
     file_menu->addAction(settings);
     connect(settings, &QAction::triggered, this, &MainWindow::onOpenSettings);
 
     auto *quit = new QAction("&Quit", this);
-    quit->setShortcut(tr("CTRL+Q"));
+    quit->setShortcut(QKeySequence("CTRL+Q"));
     file_menu->addAction(quit);
     connect(quit, &QAction::triggered, this, &MainWindow::quitApp);
 }
@@ -778,31 +780,31 @@ MainWindow::TToolbarActionsDefined::TToolbarActionsDefined(QToolBar &parent)
     };
 
     m_add_action = allocate(":/icons/add.svg", tr("Add task"));
-    m_add_action->setShortcut(tr("CTRL+N"));
+    m_add_action->setShortcut(QKeySequence("CTRL+N"));
 
     m_undo_action = allocate(":/icons/undo.png", tr("Undo last action"));
     m_undo_action->setEnabled(false);
-    m_undo_action->setShortcut(tr("CTRL+Z"));
+    m_undo_action->setShortcut(QKeySequence("CTRL+Z"));
 
     m_update_action = allocate(":/icons/refresh.png", tr("Update tasks"));
-    m_update_action->setShortcut(tr("CTRL+R"));
+    m_update_action->setShortcut(QKeySequence("CTRL+R"));
 
     parent.addSeparator();
 
     m_done_action = allocate(":/icons/done.svg", tr("Done"));
-    m_done_action->setShortcut(tr("CTRL+D"));
+    m_done_action->setShortcut(QKeySequence("CTRL+D"));
     m_done_action->setEnabled(false);
 
     m_edit_action = allocate(":/icons/edit.svg", tr("Edit"));
-    m_edit_action->setShortcut(tr("CTRL+E"));
+    m_edit_action->setShortcut(QKeySequence("CTRL+E"));
     m_edit_action->setEnabled(false);
 
     m_wait_action = allocate(":/icons/wait.svg", tr("Wait"));
-    m_wait_action->setShortcut(tr("CTRL+W"));
+    m_wait_action->setShortcut(QKeySequence("CTRL+W"));
     m_wait_action->setEnabled(false);
 
     m_delete_action = allocate(":/icons/delete.svg", tr("Delete"));
-    m_delete_action->setShortcut(tr("Delete"));
+    m_delete_action->setShortcut(QKeySequence::Delete);
     m_delete_action->setEnabled(false);
 
     parent.addSeparator();
