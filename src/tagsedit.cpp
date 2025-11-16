@@ -14,6 +14,7 @@
 #include <QTextLayout>
 #include <QtGui/private/qinputcontrol_p.h>
 
+#include <algorithm>
 #include <cassert>
 #include <iterator>
 #include <memory>
