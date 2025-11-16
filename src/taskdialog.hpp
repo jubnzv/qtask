@@ -21,7 +21,7 @@ class TaskDialogBase : public QDialog {
     Q_OBJECT
   public:
     explicit TaskDialogBase(QWidget *parent = nullptr);
-    ~TaskDialogBase() override = default;
+    ~TaskDialogBase() override;
     TaskDialogBase(const TaskDialogBase &) = delete;
     TaskDialogBase &operator=(const TaskDialogBase &) = delete;
     TaskDialogBase(TaskDialogBase &&) = delete;
@@ -62,7 +62,7 @@ class AddTaskDialog final : public TaskDialogBase {
   public:
     explicit AddTaskDialog(const QVariant &default_project = {},
                            QWidget *parent = nullptr);
-    ~AddTaskDialog() final = default;
+    ~AddTaskDialog() final;
 
   public slots:
     void acceptContinue();
@@ -84,7 +84,7 @@ class EditTaskDialog final : public TaskDialogBase {
     Q_OBJECT
   public:
     explicit EditTaskDialog(const Task &, QWidget *parent = nullptr);
-    ~EditTaskDialog() final = default;
+    ~EditTaskDialog() final;
 
   signals:
     void deleteTask(const QString &uuid);

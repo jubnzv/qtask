@@ -4,6 +4,7 @@
 #include <QCalendarWidget>
 #include <QDialog>
 #include <QListWidget>
+#include <QVBoxLayout>
 
 #include "task.hpp"
 
@@ -22,9 +23,12 @@ class AgendaDialog : public QDialog {
     void onUpdateTasks();
 
   private:
-    QCalendarWidget *m_calendar;
-    QListWidget *m_sched_tasks_list;
-    QListWidget *m_due_tasks_list;
+    QVBoxLayout *CreateLabeledVerticalLayout(const QString &label_text,
+                                             QWidget *widget);
+
+    QCalendarWidget *const m_calendar;
+    QListWidget *const m_sched_tasks_list;
+    QListWidget *const m_due_tasks_list;
     QList<Task> m_tasks;
 };
 

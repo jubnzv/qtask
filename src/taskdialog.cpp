@@ -79,6 +79,8 @@ TaskDialogBase::TaskDialogBase(QWidget *parent)
     constructUi();
 }
 
+TaskDialogBase::~TaskDialogBase() = default;
+
 void TaskDialogBase::constructUi()
 {
     auto *description_label = new QLabel(tr("Description:"), this);
@@ -231,6 +233,8 @@ AddTaskDialog::AddTaskDialog(const QVariant &default_project, QWidget *parent)
     adjustSize();
 }
 
+AddTaskDialog::~AddTaskDialog() = default;
+
 void AddTaskDialog::constructUi()
 {
     m_ok_btn->setEnabled(false);
@@ -290,6 +294,8 @@ EditTaskDialog::EditTaskDialog(const Task &task, QWidget *parent)
     constructUi();
     setTask(task);
 }
+
+EditTaskDialog::~EditTaskDialog() = default;
 
 void EditTaskDialog::constructUi()
 {
