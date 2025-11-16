@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QString>
 #include <QVBoxLayout>
+#include <qtconfiginclude.h>
 
 #include "config.hpp"
 

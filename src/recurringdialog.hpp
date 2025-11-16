@@ -22,8 +22,8 @@ class RecurringDialog : public QDialog {
     void initUI(QList<RecurringTask> tasks);
 
   private:
-    QTableView *m_tasks_view;
-    QDialogButtonBox *m_btn_box;
+    QTableView *const m_tasks_view;
+    QDialogButtonBox *const m_btn_box;
 };
 
 #endif // RECURRINGDIALOG_HPP

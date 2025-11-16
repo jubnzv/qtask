@@ -2,7 +2,10 @@
 #define OPTIONALDATETIMEEDIT_HPP
 
 #include <QCheckBox>
+#include <QDateTime>
 #include <QDateTimeEdit>
+#include <QObject>
+#include <QString>
 #include <QVariant>
 #include <QWidget>
 
@@ -13,7 +16,7 @@ class OptionalDateTimeEdit : public QWidget {
     OptionalDateTimeEdit(const QString &label, const QDateTime &date,
                          QWidget *parent = nullptr);
     OptionalDateTimeEdit(const QString &label, QWidget *parent = nullptr);
-    ~OptionalDateTimeEdit();
+    ~OptionalDateTimeEdit() override;
 
     QVariant getDateTime() const;
     void setDateTime(const QDateTime &dt);
@@ -24,11 +27,8 @@ class OptionalDateTimeEdit : public QWidget {
     void setMaximumDateTime(const QDateTime &);
 
   private:
-    void initUI(const QString &label);
-
-  private:
-    QDateTimeEdit *m_datetime_edit;
-    QCheckBox *m_enabled;
+    QDateTimeEdit *const m_datetime_edit;
+    QCheckBox *const m_enabled;
 };
 
 #endif // OPTIONALDATETIMEEDIT_HPP

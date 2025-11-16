@@ -1,6 +1,7 @@
 #include "settingsdialog.hpp"
 
 #include <QAbstractButton>
+#include <QCheckBox>
 #include <QCoreApplication>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -13,47 +14,50 @@
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
+    , m_task_bin_edit(new QLineEdit(this))
+    , m_task_data_path_edit(new QLineEdit(this))
+    , m_hide_on_startup_cb(
+          new QCheckBox(tr("Hide QTask window on startup"), this))
+    , m_save_filter_on_exit(new QCheckBox(tr("Save task filter on exit"), this))
+    , m_buttons(new QDialogButtonBox(QDialogButtonBox::Ok |
+                                         QDialogButtonBox::Apply |
+                                         QDialogButtonBox::Close,
+                                     this))
+
 {
+    setWindowTitle(tr("Settings"));
+    setWindowIcon(QIcon(":/icons/qtask.svg"));
+
     initUI();
 }
 
-SettingsDialog::~SettingsDialog() {}
+SettingsDialog::~SettingsDialog() = default;
 
 void SettingsDialog::initUI()
 {
-    QGridLayout *main_layout = new QGridLayout();
+    auto *main_layout = new QGridLayout(this);
     main_layout->setContentsMargins(5, 5, 5, 5);
 
-    setWindowTitle(QCoreApplication::applicationName() + " - Settings");
-    setWindowIcon(QIcon(":/icons/qtask.svg"));
-
-    QLabel *task_bin_label = new QLabel("task executable:");
+    auto *task_bin_label = new QLabel(tr("task executable:"));
     main_layout->addWidget(task_bin_label, 0, 0);
 
-    m_task_bin_edit = new QLineEdit();
     m_task_bin_edit->setText(ConfigManager::config().getTaskBin());
     main_layout->addWidget(m_task_bin_edit, 0, 1);
 
-    QLabel *task_data_path_label = new QLabel("Path to task data:");
+    auto *task_data_path_label = new QLabel(tr("Path to task data:"));
     main_layout->addWidget(task_data_path_label, 1, 0);
 
-    m_task_data_path_edit = new QLineEdit();
     m_task_data_path_edit->setText(ConfigManager::config().getTaskDataPath());
     main_layout->addWidget(m_task_data_path_edit, 1, 1);
 
-    m_hide_on_startup_cb = new QCheckBox(tr("Hide QTask window on startup"));
     m_hide_on_startup_cb->setChecked(
         ConfigManager::config().getHideWindowOnStartup());
     main_layout->addWidget(m_hide_on_startup_cb, 2, 0, 1, 2);
 
-    m_save_filter_on_exit = new QCheckBox(tr("Save task filter on exit"));
     m_save_filter_on_exit->setChecked(
         ConfigManager::config().getSaveFilterOnExit());
     main_layout->addWidget(m_save_filter_on_exit, 3, 0, 1, 2);
 
-    m_buttons =
-        new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Apply |
-                             QDialogButtonBox::Close);
     connect(m_buttons, &QDialogButtonBox::clicked, this,
             &SettingsDialog::onButtonBoxClicked);
     main_layout->addWidget(m_buttons, 4, 0, 1, 2);
@@ -64,12 +68,14 @@ void SettingsDialog::initUI()
 void SettingsDialog::applySettings()
 {
     auto task_data_path = m_task_data_path_edit->text();
-    if (ConfigManager::config().getTaskDataPath() != task_data_path)
+    if (ConfigManager::config().getTaskDataPath() != task_data_path) {
         ConfigManager::config().setTaskDataPath(task_data_path);
+    }
 
     auto task_bin = m_task_bin_edit->text();
-    if (ConfigManager::config().getTaskBin() != task_bin)
+    if (ConfigManager::config().getTaskBin() != task_bin) {
         ConfigManager::config().setTaskBin(task_bin);
+    }
 
     ConfigManager::config().setHideWindowOnStartup(
         m_hide_on_startup_cb->isChecked());

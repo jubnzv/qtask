@@ -4,26 +4,37 @@
 #include <QCheckBox>
 #include <QDateTimeEdit>
 #include <QHBoxLayout>
+#include <QString>
 #include <QVariant>
 #include <QWidget>
 
 OptionalDateTimeEdit::OptionalDateTimeEdit(const QString &label,
                                            const QDateTime &dt, QWidget *parent)
     : QWidget(parent)
+    , m_datetime_edit(new QDateTimeEdit())
+    , m_enabled(new QCheckBox(label, this))
 {
-    initUI(label);
+    {
+        auto layout = new QHBoxLayout(this);
+        connect(m_enabled, &QCheckBox::stateChanged, this,
+                [&]() { m_datetime_edit->setEnabled(m_enabled->isChecked()); });
+        layout->addWidget(m_enabled);
+
+        m_datetime_edit->setCalendarPopup(true);
+        layout->addWidget(m_datetime_edit);
+        setLayout(layout);
+    }
     setDateTime(dt);
+    setChecked(true);
 }
 
 OptionalDateTimeEdit::OptionalDateTimeEdit(const QString &label,
                                            QWidget *parent)
-    : QWidget(parent)
+    : OptionalDateTimeEdit(label, startOfDay(QDate{ 1970, 1, 1 }), parent)
 {
-    initUI(label);
-    setDateTime(startOfDay(QDate{ 1970, 1, 1 }));
 }
 
-OptionalDateTimeEdit::~OptionalDateTimeEdit() {}
+OptionalDateTimeEdit::~OptionalDateTimeEdit() = default;
 
 QVariant OptionalDateTimeEdit::getDateTime() const
 {
@@ -59,20 +70,4 @@ void OptionalDateTimeEdit::setMinimumDateTime(const QDateTime &dt)
 void OptionalDateTimeEdit::setMaximumDateTime(const QDateTime &dt)
 {
     m_datetime_edit->setMaximumDateTime(dt);
-}
-
-void OptionalDateTimeEdit::initUI(const QString &label)
-{
-    auto layout = new QHBoxLayout(this);
-
-    m_enabled = new QCheckBox(label);
-    connect(m_enabled, &QCheckBox::stateChanged, this,
-            [&]() { m_datetime_edit->setEnabled(m_enabled->isChecked()); });
-    layout->addWidget(m_enabled);
-
-    m_datetime_edit = new QDateTimeEdit();
-    m_datetime_edit->setCalendarPopup(true);
-    layout->addWidget(m_datetime_edit);
-
-    setChecked(true);
 }
