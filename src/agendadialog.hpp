@@ -11,8 +11,8 @@ class AgendaDialog : public QDialog {
     Q_OBJECT
 
   public:
-    AgendaDialog(const QList<Task> &, QWidget *parent = nullptr);
-    ~AgendaDialog();
+    explicit AgendaDialog(QList<Task>, QWidget *parent = nullptr);
+    ~AgendaDialog() override;
 
   private:
     void initUI();

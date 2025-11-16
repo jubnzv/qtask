@@ -14,9 +14,9 @@
 
 #include "task.hpp"
 
-AgendaDialog::AgendaDialog(const QList<Task> &tasks, QWidget *parent)
+AgendaDialog::AgendaDialog(QList<Task> tasks, QWidget *parent)
     : QDialog(parent)
-    , m_tasks(tasks)
+    , m_tasks(std::move(tasks))
 {
     initUI();
 }

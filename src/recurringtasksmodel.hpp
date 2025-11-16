@@ -23,8 +23,7 @@ class RecurringTasksModel : public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation,
                         int role = Qt::DisplayRole) const override;
 
-    void setTasks(const QList<RecurringTask> &);
-    void setTasks(QList<RecurringTask> &&);
+    void setTasks(QList<RecurringTask> tasks);
 
   private:
     QList<RecurringTask> m_tasks;
