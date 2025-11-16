@@ -7,16 +7,16 @@
 #include <QDebug>
 #include <QPainter>
 #include <QPainterPath>
-#include <QStyle>
 #include <QSize>
+#include <QStyle>
 #include <QStyleHints>
 #include <QStyleOptionFrame>
 #include <QTextLayout>
 #include <QtGui/private/qinputcontrol_p.h>
 
-
 #include <cassert>
 #include <iterator>
+#include <memory>
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
 #define FONT_METRICS_WIDTH(fmt, ...) fmt.width(__VA_ARGS__)
@@ -94,20 +94,19 @@ template <class It> struct EmptySkipIterator {
     It end;
 };
 
-template <class It> EmptySkipIterator(It, It)->EmptySkipIterator<It>;
+template <class It> EmptySkipIterator(It, It) -> EmptySkipIterator<It>;
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 QSize inferredGlobalStrut()
 {
-    static const QSize kDefault{8, 16};
+    static const QSize kDefault{ 8, 16 };
     // This function is AI suggested.
     const QFontMetrics fm(qApp->font());
     const int textH = fm.height();
     const int charW = fm.horizontalAdvance(QLatin1Char('M'));
 
     const QStyle *style = qApp->style();
-    if (!style)
-    {
+    if (!style) {
         return kDefault;
     }
     const int frame = style->pixelMetric(QStyle::PM_DefaultFrameWidth);
@@ -117,16 +116,14 @@ QSize inferredGlobalStrut()
 
     int minh = qMax(textH + spacingH + frame * 2, btnIcon);
     int minw = qMax(charW * 2 + spacingW + frame * 2, btnIcon);
-    if (minh <= 0)
-    {
+    if (minh <= 0) {
         minh = kDefault.height();
     }
-    if (minw <= 0)
-    {
+    if (minw <= 0) {
         minw = kDefault.width();
     }
 
-    return {minw, minh};
+    return { minw, minh };
 }
 #endif
 
@@ -168,7 +165,7 @@ struct TagsEdit::Impl {
         option->features = QStyleOptionFrame::None;
     }
 
-    inline QRectF crossRect(QRectF const &r) const
+    [[nodiscard]] inline QRectF crossRect(QRectF const &r) const
     {
         QRectF cross(QPointF{ 0, 0 },
                      QSizeF{ tag_cross_width, tag_cross_width });
@@ -176,7 +173,7 @@ struct TagsEdit::Impl {
         return cross;
     }
 
-    bool inCrossArea(size_t tag_index, QPoint const &point) const
+    [[nodiscard]] bool inCrossArea(size_t tag_index, QPoint const &point) const
     {
         return crossRect(tags[tag_index].rect)
                    .adjusted(-2, 0, 0, 0)
@@ -221,7 +218,7 @@ struct TagsEdit::Impl {
         }
     }
 
-    QRect cRect() const
+    [[nodiscard]] QRect cRect() const
     {
         QStyleOptionFrame panel;
         initStyleOption(&panel);
@@ -421,10 +418,9 @@ struct TagsEdit::Impl {
     {
         if (mark) {
             auto e = select_start + select_size;
-            int anchor =
-                select_size > 0 && cursor == select_start
-                    ? e
-                    : select_size > 0 && cursor == e ? select_start : cursor;
+            int anchor = select_size > 0 && cursor == select_start ? e
+                         : select_size > 0 && cursor == e ? select_start
+                                                          : cursor;
             select_start = qMin(anchor, pos);
             select_size = qMax(anchor, pos) - select_start;
         } else {
@@ -665,9 +661,9 @@ QSize TagsEdit::sizeHint() const
             2 * horizontal_margin + leftmargin + rightmargin; // "some"
     QStyleOptionFrame opt;
     impl->initStyleOption(&opt);
-    return (style()->sizeFromContents(
-        QStyle::CT_LineEdit, &opt,
-        QSize(w, h).expandedTo(globalStrut()), this));
+    return (style()->sizeFromContents(QStyle::CT_LineEdit, &opt,
+                                      QSize(w, h).expandedTo(globalStrut()),
+                                      this));
 }
 
 QSize TagsEdit::minimumSizeHint() const
@@ -679,9 +675,9 @@ QSize TagsEdit::minimumSizeHint() const
     int w = fm.maxWidth() + leftmargin + rightmargin;
     QStyleOptionFrame opt;
     impl->initStyleOption(&opt);
-    return (style()->sizeFromContents(
-        QStyle::CT_LineEdit, &opt,
-        QSize(w, h).expandedTo(globalStrut()), this));
+    return (style()->sizeFromContents(QStyle::CT_LineEdit, &opt,
+                                      QSize(w, h).expandedTo(globalStrut()),
+                                      this));
 }
 
 void TagsEdit::keyPressEvent(QKeyEvent *event)
@@ -803,10 +799,11 @@ void TagsEdit::completion(std::vector<QString> const &completions)
 
 void TagsEdit::setTags(const QStringList &tags)
 {
-    std::vector<Tag> t{ Tag() };
-    for (auto tt : tags) {
-        t.push_back({ tt, QRect() });
-    }
+    std::vector<Tag> t;
+    t.reserve(tags.size() + 1u);
+    t.emplace_back(); // Adding empty tag
+    std::transform(tags.begin(), tags.end(), std::back_inserter(t),
+                   [](const auto &tt) { return Tag{ tt, QRect() }; });
     impl->tags = std::move(t);
     impl->editing_index = 0;
     impl->moveCursor(0, false);
@@ -820,13 +817,10 @@ void TagsEdit::setTags(const QStringList &tags)
 
 QStringList TagsEdit::getTags() const
 {
-    std::vector<QString> ret;
-    std::transform(EmptySkipIterator(impl->tags.begin(), impl->tags.end()),
-                   EmptySkipIterator(impl->tags.end()), std::back_inserter(ret),
-                   [](Tag const &tag) { return tag.text; });
     QStringList res;
-    for (auto r : ret)
-        res.push_back(r);
+    std::transform(EmptySkipIterator(impl->tags.begin(), impl->tags.end()),
+                   EmptySkipIterator(impl->tags.end()), std::back_inserter(res),
+                   [](Tag const &tag) { return tag.text; });
     return res;
 }
 
@@ -834,9 +828,11 @@ void TagsEdit::clearTags() { setTags(QStringList{}); }
 
 void TagsEdit::pushTag(const QString &value)
 {
-    for (const auto &t : impl->tags)
-        if (value == t.text)
+    for (const auto &t : impl->tags) {
+        if (value == t.text) {
             return;
+        }
+    }
 
     auto t = Tag();
     t.text = value;
@@ -849,8 +845,9 @@ void TagsEdit::pushTag(const QString &value)
 
 void TagsEdit::popTag()
 {
-    if (impl->tags.empty())
+    if (impl->tags.empty()) {
         return;
+    }
     impl->tags.pop_back();
     update();
 }
