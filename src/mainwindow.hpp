@@ -16,6 +16,7 @@
 #include <QTableView>
 #include <QVariant>
 #include <qnamespace.h>
+#include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "tagsedit.hpp"
@@ -96,20 +97,20 @@ class MainWindow : public QMainWindow {
     /// Flag to decide: close application or hide it to tray
     bool m_is_quit;
 
-    QWidget *m_window;
-    QGridLayout *m_layout;
-    SystemTrayIcon *m_tray_icon;
-    TasksView *m_tasks_view;
-    QToolBar *m_task_toolbar;
-    QLineEdit *m_task_shell;
-    TagsEdit *m_task_filter;
+    QWidget *const m_window;
+    QGridLayout *const m_layout;
+    SystemTrayIcon *const m_tray_icon;
+    TasksView *const m_tasks_view;
+    QToolBar *const m_task_toolbar;
+    QLineEdit *const m_task_shell;
+    TagsEdit *const m_task_filter;
 
     // Allocates and holds pointers to view menu actions.
     // Parent is set to this menu.
     struct TViewMenuActions {
         QPointer<QAction> m_toggle_task_shell_action;
         explicit TViewMenuActions(QMenu &parent);
-    } m_view_menu_actions;
+    } const m_view_menu_actions;
 
     // Allocates and holds pointers for toolbar actions.
     // Parent is set to toolbar.
@@ -125,7 +126,7 @@ class MainWindow : public QMainWindow {
         QPointer<QAction> m_start_action;
         QPointer<QAction> m_stop_action;
         explicit TToolbarActionsDefined(QToolBar &parent);
-    } m_toolbar_actions;
+    } const m_toolbar_actions;
 
     std::unique_ptr<Taskwarrior> m_task_provider;
     std::unique_ptr<TaskWatcher> m_task_watcher;

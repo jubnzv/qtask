@@ -215,8 +215,6 @@ void MainWindow::initTasksTable()
 
 void MainWindow::initTrayIcon()
 {
-    m_tray_icon = new SystemTrayIcon(this);
-
     connect(m_tray_icon, &SystemTrayIcon::muteNotificationsRequested, this,
             &MainWindow::onMuteNotifications);
     connect(m_tray_icon, &SystemTrayIcon::addTaskRequested, this,
