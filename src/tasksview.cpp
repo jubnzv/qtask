@@ -1,11 +1,17 @@
 #include "tasksview.hpp"
 
 #include <QApplication>
+#include <QCursor>
 #include <QDebug>
 #include <QModelIndex>
 #include <QMouseEvent>
+#include <QObject>
+#include <QPoint>
 #include <QTableView>
+#include <QWidget>
+#include <qnamespace.h>
 
+#include "task.hpp"
 #include "taskdescriptiondelegate.hpp"
 #include "tasksmodel.hpp"
 
@@ -20,7 +26,7 @@ void TasksView::mousePressEvent(QMouseEvent *event)
 {
     constexpr int project_column = 1;
 
-    QModelIndex idx = indexAt(event->pos());
+    const auto idx = indexAt(event->pos());
 
     // Enable "stop" button if the selected task is active
     if (idx.isValid() && event->buttons() & Qt::LeftButton) {
@@ -35,8 +41,9 @@ void TasksView::mousePressEvent(QMouseEvent *event)
     if (idx.isValid() && idx.column() == project_column &&
         event->buttons() & Qt::RightButton) {
         auto d = idx.data();
-        if (!d.isNull())
+        if (!d.isNull()) {
             emit pushProjectFilter("pro:" + d.toString());
+        }
     }
 
     auto anchor = anchorAt(event->pos());
@@ -82,10 +89,12 @@ void TasksView::mouseReleaseEvent(QMouseEvent *event)
 
 QString TasksView::anchorAt(const QPoint &pos) const
 {
-    auto index = indexAt(pos);
+    const auto index = indexAt(pos);
     if (index.isValid()) {
-        auto delegate = itemDelegate(index);
-        auto task_delegate = qobject_cast<TaskDescriptionDelegate *>(delegate);
+        const auto delegate = itemDelegate(index);
+        const auto task_delegate =
+            qobject_cast<TaskDescriptionDelegate *>(delegate);
+
         if (task_delegate) {
             auto item_rect = visualRect(index);
             auto relative_click_position = pos - item_rect.topLeft();
@@ -94,5 +103,5 @@ QString TasksView::anchorAt(const QPoint &pos) const
         }
     }
 
-    return QString();
+    return {};
 }
