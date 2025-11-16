@@ -7,7 +7,7 @@
 class TaskwarriorReferenceDialog : public QDialog {
   public:
     explicit TaskwarriorReferenceDialog(QWidget *parent = nullptr);
-    ~TaskwarriorReferenceDialog() = default;
+    ~TaskwarriorReferenceDialog() override;
 
   private:
     void initUI();
