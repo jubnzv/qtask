@@ -597,12 +597,14 @@ void MainWindow::onAddTask()
         }
     }
 
-    auto *dlg = new AddTaskDialog(default_project, this);
+    auto dlg =
+        QPointer<AddTaskDialog>(new AddTaskDialog(default_project, this));
     dlg->open();
 
     QObject::connect(this, &MainWindow::acceptContinueCreatingTasks, dlg,
                      &AddTaskDialog::acceptContinue);
     QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
+        Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
             updateTasks();
@@ -610,6 +612,7 @@ void MainWindow::onAddTask()
     });
     QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasks(); });
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
+        Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
             updateTasks();
@@ -689,7 +692,7 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
         return;
     }
 
-    auto *dlg = new EditTaskDialog(task, this);
+    auto dlg = QPointer<EditTaskDialog>(new EditTaskDialog(task, this));
     dlg->open();
 
     QObject::connect(dlg, &EditTaskDialog::deleteTask, this,
@@ -699,11 +702,12 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                          updateTasks();
                      });
     QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str, task]() {
+        Q_ASSERT(dlg);
         auto saved_tags = task.tags;
         auto saved_pri = task.priority;
         auto t = dlg->getTask();
         auto new_tags = t.tags;
-        t.removed_tags = QStringList();
+        t.removed_tags.clear();
         for (auto const &st : saved_tags) {
             if (!new_tags.contains(st)) {
                 t.removed_tags.push_back(st);
