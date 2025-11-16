@@ -10,18 +10,14 @@ class DateTimeDialog : public QDialog {
 
   public:
     DateTimeDialog(QWidget *parent = nullptr);
-    DateTimeDialog(const QDateTime &, QWidget *parent = nullptr);
-    ~DateTimeDialog();
+    DateTimeDialog(QDateTime, QWidget *parent = nullptr);
+    ~DateTimeDialog() override;
 
-    QDateTime getDateTime() const;
-
-  private:
-    void initUI();
+    const QDateTime &getDateTime() const;
 
   private:
-    QDateTimeEdit *m_datetime_edit;
-    QCalendarWidget *m_calendar;
-
+    QCalendarWidget *const m_calendar;
+    QDateTimeEdit *const m_datetime_edit;
     QDateTime m_datetime;
 };
 

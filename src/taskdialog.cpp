@@ -22,46 +22,12 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <Qt>
 #include <qtmetamacros.h>
-#include <qtversionchecks.h>
 
 #include "optionaldatetimeedit.hpp"
 #include "qtutil.hpp"
 #include "tagsedit.hpp"
 #include "task.hpp"
-
-namespace
-{
-/**
- * * @returns true if Ok-Cancel order of the buttons should be used (Ok/Positive
- * is 1st).
- */
-bool IsOkCancelOrder()
-{
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    const int layout =
-        QApplication::style()->styleHint(QStyle::SH_DialogButtonLayout);
-    if (layout == static_cast<int>(Qt::LeftToRight)) {
-        return true;
-    }
-    return false;
-
-#elif QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    const QStyle::LayoutDirection layout =
-        QApplication::style()->standardButtonLayout();
-
-    if (layout == QStyle::LeftToRight || layout == QStyle::WindowsLayout) {
-        return true;
-    }
-    return false;
-
-#else
-    // Fallback to "Cancel" is 1st
-    return false;
-#endif
-}
-} // namespace
 
 TaskDialogBase::TaskDialogBase(QWidget *parent)
     : QDialog(parent)
@@ -168,7 +134,7 @@ QHBoxLayout *TaskDialogBase::Create3ButtonsLayout(QPushButton *positive_button,
                                                   QPushButton *mid_button)
 {
     auto *button_layout = new QHBoxLayout(this);
-    if (IsOkCancelOrder()) {
+    if (isOkCancelOrder()) {
         button_layout->addWidget(positive_button);
         button_layout->addWidget(mid_button);
         button_layout->addWidget(negative_button);
