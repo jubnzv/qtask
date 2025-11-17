@@ -202,20 +202,23 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
                               << "+PENDING"
                               << "minimal";
 
-    if (!execCmd(args, out, /*filter_enabled=*/true))
+    if (!execCmd(args, out, /*filter_enabled=*/true)) {
         return false;
+    }
 
     auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 6)
+    if (out_bytes.size() < 6) {
         return true; // no tasks
+    }
 
     // Get positions from the labels string
     QVector<int> positions;
     constexpr int columns_num = 6;
     for (int i = 0; i < out_bytes[1].size(); ++i) {
         const auto b = out_bytes[1][i];
-        if (b == '|')
+        if (b == '|') {
             positions.push_back(i);
+        }
     }
     if (positions.size() != columns_num) {
         return false;
@@ -224,11 +227,13 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
     bool found_annotation = false;
     for (size_t i = 3; i < out_bytes.size() - 3; ++i) {
         const QByteArray &bytes = out_bytes[i];
-        if (bytes.isEmpty())
+        if (bytes.isEmpty()) {
             continue;
+        }
         QString line(bytes);
-        if (line.size() < positions[3])
+        if (line.size() < positions[3]) {
             return false;
+        }
 
         Task task;
 
@@ -239,13 +244,15 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
             // It's probably a continuation of the multiline description or an
             // annotation from the previous task.
             if ((line.size() < positions[3]) || tasks.isEmpty() ||
-                found_annotation)
+                found_annotation) {
                 continue;
+            }
 
             QString desc_line =
                 line.right(line.size() - positions[3]).simplified();
-            if (desc_line.isEmpty())
+            if (desc_line.isEmpty()) {
                 continue;
+            }
 
             // The annotations always start with a timestamp. And they always
             // follows the description.
@@ -274,13 +281,15 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
         auto sched = QDateTime::fromString(
             line.mid(positions[3], positions[4] - positions[3]).simplified(),
             Qt::ISODate);
-        if (sched.isValid())
+        if (sched.isValid()) {
             task.sched = sched;
+        }
         auto due = QDateTime::fromString(
             line.mid(positions[4], positions[5] - positions[4]).simplified(),
             Qt::ISODate);
-        if (due.isValid())
+        if (due.isValid()) {
             task.due = due;
+        }
         task.description = line.right(line.size() - positions[5]).simplified();
 
         tasks.push_back(task);

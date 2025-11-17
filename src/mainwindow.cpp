@@ -62,6 +62,9 @@ const auto kActivateTaskShellShortcut = QKeySequence("CTRL+T");
 const auto kDoneShortcut = QKeySequence("CTRL+D");
 const auto kEditShortcut = QKeySequence("CTRL+E");
 const auto kWaitShortcut = QKeySequence("CTRL+W");
+const auto kAgendaViewShortcut = QKeySequence("ALT+A");
+const auto kRecurrentViewShortcut = QKeySequence("ALT+R");
+
 } // namespace
 
 MainWindow::MainWindow()
@@ -261,7 +264,7 @@ void MainWindow::initToolsMenu()
 
     auto *agenda_action = new QAction("&Agenda view", this);
     tools_menu->addAction(agenda_action);
-    agenda_action->setShortcut(tr("ALT+A"));
+    agenda_action->setShortcut(kAgendaViewShortcut);
     connect(agenda_action, &QAction::triggered, this, [&]() {
         QList<Task> tasks = {};
         if (!m_task_provider->getTasks(tasks)) {
@@ -274,7 +277,7 @@ void MainWindow::initToolsMenu()
 
     auto *recurring_action = new QAction("&Recurring templates", this);
     tools_menu->addAction(recurring_action);
-    recurring_action->setShortcut(tr("ALT+R"));
+    recurring_action->setShortcut(kRecurrentViewShortcut);
     connect(recurring_action, &QAction::triggered, this, [&]() {
         QList<RecurringTask> tasks;
         if (!m_task_provider->getRecurringTasks(tasks)) {
