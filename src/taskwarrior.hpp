@@ -5,22 +5,38 @@
 #include <QDateTime>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QVariant>
 
 #include "task.hpp"
+
+#include <cstddef>
 
 class Taskwarrior {
   public:
     Taskwarrior();
     ~Taskwarrior();
+    Taskwarrior(const Taskwarrior &) = delete;
+    Taskwarrior &operator=(const Taskwarrior &) = delete;
+    Taskwarrior(Taskwarrior &&) = delete;
+    Taskwarrior &operator=(Taskwarrior &&) = delete;
 
     /// Detect the version of task and check that it works. This function
     /// will also runs garbage collection. This will un-waiting tasks and add
     /// new recurring tasks.
     bool init();
 
-    size_t getActionsCounter() const { return m_actions_counter; }
-    QVariant getTaskVersion() const { return m_task_version; }
+    [[nodiscard]]
+    size_t getActionsCounter() const
+    {
+        return m_actions_counter;
+    }
+
+    [[nodiscard]]
+    QVariant getTaskVersion() const
+    {
+        return m_task_version;
+    }
 
     bool addTask(const Task &task);
     bool startTask(const QString &id);
@@ -50,6 +66,7 @@ class Taskwarrior {
 
     bool getActiveIds(QStringList &result);
 
+    [[nodiscard]]
     QString formatDateTime(const QDateTime &) const;
 
   private:

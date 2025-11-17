@@ -5,10 +5,17 @@
 #include <QList>
 #include <QProcess>
 #include <QString>
+#include <QStringList>
 #include <QVariant>
+#include <QVector>
+#include <qlogging.h>
+#include <qnamespace.h>
+#include <qtversionchecks.h>
 
 #include "configmanager.hpp"
 #include "task.hpp"
+
+#include <cstddef>
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 constexpr auto s_split_behaviour = Qt::SkipEmptyParts;
@@ -25,24 +32,28 @@ Taskwarrior::Taskwarrior()
 {
 }
 
-Taskwarrior::~Taskwarrior() {}
+Taskwarrior::~Taskwarrior() = default;
 
 bool Taskwarrior::init()
 {
     QByteArray out;
-    if (!execCmd({ "version" }, out, false, false))
+    if (!execCmd({ "version" }, out, false, false)) {
         return false;
-    auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 2)
+    }
+    const auto out_bytes = out.split('\n');
+    if (out_bytes.size() < 2) {
         return false;
-    QString line = out_bytes[1];
-    QString task_version = line.split(' ', s_split_behaviour)[1];
-    if (task_version.isEmpty())
+    }
+    const QString line = out_bytes[1];
+    const QString task_version = line.split(' ', s_split_behaviour)[1];
+    if (task_version.isEmpty()) {
         return false;
+    }
     m_task_version = { QString(task_version) };
 
-    if (!execCmd({ "rc.gc=on" }, false, false))
+    if (!execCmd({ "rc.gc=on" }, false, false)) {
         return false;
+    }
 
     return true;
 }
@@ -97,18 +108,21 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
 {
     QByteArray out;
     auto args = QStringList() << id << "information";
-    if (!execCmd(args, out))
+    if (!execCmd(args, out)) {
         return false;
+    }
 
     auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 5)
+    if (out_bytes.size() < 5) {
         return false; // not found
+    }
     bool desc_done = false;
     for (size_t i = 3; i < out_bytes.size() - 3; ++i) {
         const QByteArray &bytes = out_bytes[i];
-        if (bytes.isEmpty())
+        if (bytes.isEmpty()) {
             continue;
-        QString line(bytes);
+        }
+        const QString line(bytes);
         if (line.startsWith("ID")) {
             task.uuid = line.section(' ', 1).simplified();
             continue;
@@ -137,32 +151,38 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
         }
         if (line.startsWith("Waiting")) {
             const QStringList lexemes = line.split(' ', s_split_behaviour);
-            if (lexemes.size() != 4)
+            if (lexemes.size() != 4) {
                 continue;
+            }
             auto dt = QDateTime::fromString(
                 QString{ "%1T%2" }.arg(lexemes[2], lexemes[3]), Qt::ISODate);
-            if (dt.isValid())
+            if (dt.isValid()) {
                 task.wait = dt;
+            }
             continue;
         }
         if (line.startsWith("Scheduled")) {
             const QStringList lexemes = line.split(' ', s_split_behaviour);
-            if (lexemes.size() != 3)
+            if (lexemes.size() != 3) {
                 continue;
+            }
             auto dt = QDateTime::fromString(
                 QString{ "%1T%2" }.arg(lexemes[1], lexemes[2]), Qt::ISODate);
-            if (dt.isValid())
+            if (dt.isValid()) {
                 task.sched = dt;
+            }
             continue;
         }
         if (line.startsWith("Due")) {
             const QStringList lexemes = line.split(' ', s_split_behaviour);
-            if (lexemes.size() != 3)
+            if (lexemes.size() != 3) {
                 continue;
+            }
             auto dt = QDateTime::fromString(
                 QString{ "%1T%2" }.arg(lexemes[1], lexemes[2]), Qt::ISODate);
-            if (dt.isValid())
+            if (dt.isValid()) {
                 task.due = dt;
+            }
             continue;
         } else {
             // Searching multiline description
@@ -171,13 +191,14 @@ bool Taskwarrior::getTask(const QString &id, Task &task)
                 continue;
             }
 
-            QString desc_line = line.section(' ', 1).simplified();
-            if (desc_line.isEmpty())
+            const QString desc_line = line.section(' ', 1).simplified();
+            if (desc_line.isEmpty()) {
                 continue;
+            }
 
-            QString first_word =
+            const QString first_word =
                 line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
-            QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
+            const QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
             if (dt.isValid()) {
                 desc_done = true;
                 continue;
@@ -230,7 +251,7 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
         if (bytes.isEmpty()) {
             continue;
         }
-        QString line(bytes);
+        const QString line(bytes);
         if (line.size() < positions[3]) {
             return false;
         }
@@ -248,7 +269,7 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
                 continue;
             }
 
-            QString desc_line =
+            const QString desc_line =
                 line.right(line.size() - positions[3]).simplified();
             if (desc_line.isEmpty()) {
                 continue;
@@ -256,9 +277,9 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
 
             // The annotations always start with a timestamp. And they always
             // follows the description.
-            QString first_word =
+            const QString first_word =
                 line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
-            QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
+            const QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
             if (dt.isValid()) {
                 // We won't handle the annotations at all.
                 found_annotation = true;
@@ -308,12 +329,14 @@ bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
                               << "rc.report.recurring_full.labels=',|,|,|'"
                               << "status:Recurring";
 
-    if (!execCmd(args, out))
+    if (!execCmd(args, out)) {
         return false;
+    }
 
     auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 5)
+    if (out_bytes.size() < 5) {
         return true; // no tasks
+    }
 
     // Get positions from the labels string
     // id created mod status recur wait due project description mask
@@ -321,8 +344,9 @@ bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
     constexpr int columns_num = 3;
     for (int i = 0; i < out_bytes[2].size(); ++i) {
         const auto b = out_bytes[2][i];
-        if (b == ' ')
+        if (b == ' ') {
             positions.push_back(i);
+        }
     }
     if (positions.size() != columns_num) {
         return false;
@@ -330,9 +354,10 @@ bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
 
     for (size_t i = 3; i < out_bytes.size() - 2; ++i) {
         const QByteArray &bytes = out_bytes[i];
-        if (bytes.isEmpty())
+        if (bytes.isEmpty()) {
             continue;
-        QString line(bytes);
+        }
+        const QString line(bytes);
 
         RecurringTask task;
         task.uuid =
@@ -360,8 +385,9 @@ bool Taskwarrior::deleteTask(const QString &id)
 
 bool Taskwarrior::deleteTask(const QStringList &ids)
 {
-    if (ids.isEmpty())
+    if (ids.isEmpty()) {
         return true;
+    }
     if (execCmd({ "delete", ids.join(',') })) {
         ++m_actions_counter;
         return true;
@@ -380,8 +406,9 @@ bool Taskwarrior::setTaskDone(const QString &id)
 
 bool Taskwarrior::setTaskDone(const QStringList &ids)
 {
-    if (ids.isEmpty())
+    if (ids.isEmpty()) {
         return true;
+    }
     if (execCmd({ "done", ids.join(',') })) {
         ++m_actions_counter;
         return true;
@@ -401,8 +428,9 @@ bool Taskwarrior::waitTask(const QString &id, const QDateTime &datetime)
 
 bool Taskwarrior::waitTask(const QStringList &ids, const QDateTime &datetime)
 {
-    if (ids.isEmpty())
+    if (ids.isEmpty()) {
         return true;
+    }
     if (execCmd({ "modify", ids.join(','),
                   QString("wait:%1").arg(formatDateTime(datetime)) })) {
         ++m_actions_counter;
@@ -413,8 +441,9 @@ bool Taskwarrior::waitTask(const QStringList &ids, const QDateTime &datetime)
 
 bool Taskwarrior::undoTask()
 {
-    if (m_actions_counter == 0)
+    if (m_actions_counter == 0) {
         return true;
+    }
     if (execCmd({ "undo" })) {
         --m_actions_counter;
         return true;
@@ -425,8 +454,9 @@ bool Taskwarrior::undoTask()
 bool Taskwarrior::applyFilter(const QStringList &filter)
 {
     m_filter = filter;
-    if (filter.isEmpty())
+    if (filter.isEmpty()) {
         return true;
+    }
     if (execCmd({ "ids" }, /*filter_enabled=*/true)) { // test the new filter
         return true;
     }
@@ -439,13 +469,14 @@ int Taskwarrior::directCmd(const QString &cmd)
     QProcess proc;
     int rc = -1;
 
-    QStringList args = cmd.split(' ', s_split_behaviour) << s_args;
+    const QStringList args = cmd.split(' ', s_split_behaviour) << s_args;
 
     proc.start(ConfigManager::config().getTaskBin(), args);
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished() &&
-            (proc.exitStatus() == QProcess::NormalExit))
+            (proc.exitStatus() == QProcess::NormalExit)) {
             rc = proc.exitCode();
+        }
     }
 
     return rc;
@@ -458,10 +489,12 @@ bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled,
     int rc = -1;
 
     QStringList real_args;
-    if (filter_enabled)
+    if (filter_enabled) {
         real_args << m_filter;
-    if (use_standard_args)
+    }
+    if (use_standard_args) {
         real_args << s_args;
+    }
     real_args << args;
 
     qDebug() << ConfigManager::config().getTaskBin() << real_args;
@@ -469,8 +502,9 @@ bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled,
 
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished(1000) &&
-            (proc.exitStatus() == QProcess::NormalExit))
+            (proc.exitStatus() == QProcess::NormalExit)) {
             rc = proc.exitCode();
+        }
     }
 
     return rc == 0;
@@ -483,10 +517,12 @@ bool Taskwarrior::execCmd(const QStringList &args, QByteArray &out,
     int rc = -1;
 
     QStringList real_args;
-    if (filter_enabled)
+    if (filter_enabled) {
         real_args << m_filter;
-    if (use_standard_args)
+    }
+    if (use_standard_args) {
         real_args << s_args;
+    }
     real_args << args;
 
     qDebug() << ConfigManager::config().getTaskBin() << real_args;
@@ -494,12 +530,14 @@ bool Taskwarrior::execCmd(const QStringList &args, QByteArray &out,
 
     if (proc.waitForStarted(1000)) {
         if (proc.waitForFinished(1000) &&
-            (proc.exitStatus() == QProcess::NormalExit))
+            (proc.exitStatus() == QProcess::NormalExit)) {
             rc = proc.exitCode();
+        }
     }
 
-    if (rc != 0)
+    if (rc != 0) {
         return false;
+    }
     out = proc.readAllStandardOutput();
     return true;
 }
