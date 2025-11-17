@@ -11,22 +11,21 @@ class SettingsDialog : public QDialog {
     Q_OBJECT
 
   public:
-    SettingsDialog(QWidget *parent = nullptr);
-    ~SettingsDialog();
-
-  private:
-    void initUI();
-    void applySettings();
+    explicit SettingsDialog(QWidget *parent = nullptr);
+    ~SettingsDialog() override;
 
   private slots:
     void onButtonBoxClicked(QAbstractButton *);
 
   private:
-    QLineEdit *m_task_bin_edit;
-    QLineEdit *m_task_data_path_edit;
-    QCheckBox *m_hide_on_startup_cb;
-    QCheckBox *m_save_filter_on_exit;
-    QDialogButtonBox *m_buttons;
+    void initUI();
+    void applySettings();
+
+    QLineEdit *const m_task_bin_edit;
+    QLineEdit *const m_task_data_path_edit;
+    QCheckBox *const m_hide_on_startup_cb;
+    QCheckBox *const m_save_filter_on_exit;
+    QDialogButtonBox *const m_buttons;
 };
 
 #endif // SETTINGSDIALOG_HPP

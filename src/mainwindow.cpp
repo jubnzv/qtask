@@ -1,5 +1,7 @@
 #include "mainwindow.hpp"
 
+#include <QAbstractItemView>
+#include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDesktopServices>
@@ -7,14 +9,24 @@
 #include <QEvent>
 #include <QGridLayout>
 #include <QHeaderView>
+#include <QItemSelectionModel>
+#include <QLineEdit>
+#include <QList>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QObject>
+#include <QStringList>
+#include <QSystemTrayIcon>
 #include <QTableView>
 #include <QToolBar>
 #include <QVariant>
 #include <QWindowStateChangeEvent>
+
 #include <qassert.h>
+#include <qnamespace.h>
+#include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "aboutdialog.hpp"
 #include "agendadialog.hpp"
@@ -24,23 +36,48 @@
 #include "recurringdialog.hpp"
 #include "settingsdialog.hpp"
 #include "tagsedit.hpp"
+#include "task.hpp"
 #include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
 #include "tasksmodel.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
+#include "taskwatcher.hpp"
 #include "trayicon.hpp"
 
+#include <cassert>
+#include <map>
 #include <memory>
+#include <optional>
+#include <utility>
 
 using namespace ui;
+
+namespace
+{
+const auto kStartStopShortcut = QKeySequence("CTRL+S");
+const auto kSettingsButtonShortcut = QKeySequence("CTRL+SHIFT+S");
+const auto kActivateTaskShellShortcut = QKeySequence("CTRL+T");
+const auto kDoneShortcut = QKeySequence("CTRL+D");
+const auto kEditShortcut = QKeySequence("CTRL+E");
+const auto kWaitShortcut = QKeySequence("CTRL+W");
+} // namespace
 
 MainWindow::MainWindow()
     : m_window_prev_state(Qt::WindowNoState)
     , m_is_quit(false)
+    , m_window(new QWidget(this))
+    , m_layout(new QGridLayout(m_window))
+    , m_tray_icon(new SystemTrayIcon(this))
+    , m_tasks_view(new TasksView(m_window))
+    , m_task_toolbar(new QToolBar(tr("Task Toolbar"), m_window))
+    , m_task_shell(new QLineEdit(m_window))
+    , m_task_filter(new TagsEdit(m_window))
+    , m_view_menu_actions(*menuBar()->addMenu(tr("&View")))
+    , m_toolbar_actions(*m_task_toolbar)
     , m_task_provider(std::make_unique<Taskwarrior>())
-    , m_task_watcher(nullptr)
+    , m_task_watcher(std::make_unique<TaskWatcher>(nullptr))
 {
     if (!m_task_provider->init()) {
         QMessageBox::critical(
@@ -61,7 +98,7 @@ MainWindow::MainWindow()
     initMainWindow();
     initTrayIcon();
     initFileMenu();
-    initViewMenu();
+    connectViewMenuActions();
     initToolsMenu();
     initHelpMenu();
     initShortcuts();
@@ -86,8 +123,7 @@ MainWindow::~MainWindow()
 
 bool MainWindow::initTaskWatcher()
 {
-    Q_ASSERT(!m_task_watcher);
-    m_task_watcher.reset(new TaskWatcher(this));
+    Q_ASSERT(m_task_watcher);
     if (!m_task_watcher->setup(ConfigManager::config().getTaskDataPath())) {
         m_task_watcher = nullptr;
         return false;
@@ -104,22 +140,15 @@ void MainWindow::initMainWindow()
     setWindowTitle(QCoreApplication::applicationName());
     setMinimumSize(400, 500);
 
-    m_window = new QWidget();
-
-    m_layout = new QGridLayout();
-
-    initTaskToolbar();
-
+    connectTaskToolbarActions();
     initTasksTable();
 
-    m_task_shell = new QLineEdit();
     m_task_shell->addAction(QIcon(":/icons/taskwarrior.png"),
                             QLineEdit::LeadingPosition);
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
     m_task_shell->setVisible(ConfigManager::config().getShowTaskShell());
 
-    m_task_filter = new TagsEdit(/* TODO: QIcon(":/icons/filter.svg")*/);
     connect(m_task_filter, &TagsEdit::tagsChanged, this,
             &MainWindow::onApplyFilter);
 
@@ -136,14 +165,13 @@ void MainWindow::initMainWindow()
 
 void MainWindow::initTasksTable()
 {
-    m_tasks_view = new TasksView(m_window);
     m_tasks_view->setShowGrid(true);
 
     m_tasks_view->verticalHeader()->setVisible(false);
     m_tasks_view->horizontalHeader()->setStretchLastSection(true);
     m_tasks_view->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    TasksModel *model = new TasksModel();
+    auto *model = new TasksModel(this);
     m_tasks_view->setModel(model);
     m_tasks_view->setItemDelegateForColumn(2 /* description */,
                                            new TaskDescriptionDelegate(this));
@@ -164,19 +192,21 @@ void MainWindow::initTasksTable()
     connect(m_tasks_view, &TasksView::selectedTaskIsActive, this,
             [&](bool is_active) {
                 if (is_active) {
-                    removeShortcutFromToolTip(m_start_action);
-                    removeShortcutFromToolTip(m_stop_action);
-                    m_stop_action->setShortcut(tr("CTRL+S"));
-                    addShortcutToToolTip(m_stop_action);
-                    m_start_action->setEnabled(false);
-                    m_stop_action->setEnabled(true);
+                    removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
+                    removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
+                    m_toolbar_actions.m_stop_action->setShortcut(
+                        kStartStopShortcut);
+                    addShortcutToToolTip(m_toolbar_actions.m_stop_action);
+                    m_toolbar_actions.m_start_action->setEnabled(false);
+                    m_toolbar_actions.m_stop_action->setEnabled(true);
                 } else {
-                    removeShortcutFromToolTip(m_stop_action);
-                    removeShortcutFromToolTip(m_start_action);
-                    m_start_action->setShortcut(tr("CTRL+S"));
-                    addShortcutToToolTip(m_start_action);
-                    m_start_action->setEnabled(true);
-                    m_stop_action->setEnabled(false);
+                    removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
+                    removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
+                    m_toolbar_actions.m_start_action->setShortcut(
+                        kStartStopShortcut);
+                    addShortcutToToolTip(m_toolbar_actions.m_start_action);
+                    m_toolbar_actions.m_start_action->setEnabled(true);
+                    m_toolbar_actions.m_stop_action->setEnabled(false);
                 }
             });
 
@@ -185,8 +215,6 @@ void MainWindow::initTasksTable()
 
 void MainWindow::initTrayIcon()
 {
-    m_tray_icon = new SystemTrayIcon(this);
-
     connect(m_tray_icon, &SystemTrayIcon::muteNotificationsRequested, this,
             &MainWindow::onMuteNotifications);
     connect(m_tray_icon, &SystemTrayIcon::addTaskRequested, this,
@@ -206,64 +234,58 @@ void MainWindow::initTrayIcon()
 
 void MainWindow::initFileMenu()
 {
-    QMenu *file_menu = menuBar()->addMenu(tr("&File"));
+    auto *file_menu = menuBar()->addMenu(tr("&File"));
     file_menu->setToolTipsVisible(true);
 
-    QAction *settings = new QAction("&Settings", this);
-    settings->setShortcut(tr("CTRL+SHIFT+P"));
+    auto *settings = new QAction("&Settings", this);
+    settings->setShortcut(kSettingsButtonShortcut);
     file_menu->addAction(settings);
     connect(settings, &QAction::triggered, this, &MainWindow::onOpenSettings);
 
-    QAction *quit = new QAction("&Quit", this);
-    quit->setShortcut(tr("CTRL+Q"));
+    auto *quit = new QAction("&Quit", this);
+    quit->setShortcut(QKeySequence::Quit);
     file_menu->addAction(quit);
     connect(quit, &QAction::triggered, this, &MainWindow::quitApp);
 }
 
-void MainWindow::initViewMenu()
+void MainWindow::connectViewMenuActions()
 {
-    QMenu *view_menu = menuBar()->addMenu(tr("&View"));
-    view_menu->setToolTipsVisible(true);
-
-    m_toggle_task_shell_action = new QAction("&Task shell", this);
-    m_toggle_task_shell_action->setCheckable(true);
-    m_toggle_task_shell_action->setChecked(
-        ConfigManager::config().getShowTaskShell());
-    view_menu->addAction(m_toggle_task_shell_action);
-    connect(m_toggle_task_shell_action, &QAction::triggered, this,
-            &MainWindow::onToggleTaskShell);
+    connect(m_view_menu_actions.m_toggle_task_shell_action, &QAction::triggered,
+            this, &MainWindow::onToggleTaskShell);
 }
 
 void MainWindow::initToolsMenu()
 {
-    QMenu *tools_menu = menuBar()->addMenu(tr("&Tools"));
+    auto *tools_menu = menuBar()->addMenu(tr("&Tools"));
     tools_menu->setToolTipsVisible(true);
 
-    QAction *agenda_action = new QAction("&Agenda view", this);
+    auto *agenda_action = new QAction("&Agenda view", this);
     tools_menu->addAction(agenda_action);
     agenda_action->setShortcut(tr("ALT+A"));
     connect(agenda_action, &QAction::triggered, this, [&]() {
         QList<Task> tasks = {};
-        if (!m_task_provider->getTasks(tasks))
+        if (!m_task_provider->getTasks(tasks)) {
             return;
-        auto *dlg = new AgendaDialog(tasks, this);
+        }
+        auto *dlg = new AgendaDialog(std::move(tasks), this);
         dlg->open();
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
     });
 
-    QAction *recurring_action = new QAction("&Recurring templates", this);
+    auto *recurring_action = new QAction("&Recurring templates", this);
     tools_menu->addAction(recurring_action);
     recurring_action->setShortcut(tr("ALT+R"));
     connect(recurring_action, &QAction::triggered, this, [&]() {
         QList<RecurringTask> tasks;
-        if (!m_task_provider->getRecurringTasks(tasks))
+        if (!m_task_provider->getRecurringTasks(tasks)) {
             return;
-        auto *dlg = new RecurringDialog(tasks, this);
+        }
+        auto *dlg = new RecurringDialog(std::move(tasks), this);
         dlg->open();
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
     });
 
-    QAction *history_stats_action = new QAction("&Statistics", this);
+    auto *history_stats_action = new QAction("&Statistics", this);
     history_stats_action->setEnabled(false);
     tools_menu->addAction(history_stats_action);
     connect(history_stats_action, &QAction::triggered, this,
@@ -277,8 +299,7 @@ void MainWindow::initHelpMenu()
     QMenu *help_menu = menuBar()->addMenu(tr("&Help"));
     help_menu->setToolTipsVisible(true);
 
-    QAction *reference_action =
-        new QAction("&Taskwarrior quick reference", this);
+    auto *reference_action = new QAction("&Taskwarrior quick reference", this);
     help_menu->addAction(reference_action);
     connect(reference_action, &QAction::triggered, this, [&]() {
         auto *dlg = new TaskwarriorReferenceDialog(this);
@@ -288,7 +309,7 @@ void MainWindow::initHelpMenu()
 
     help_menu->addSeparator();
 
-    QAction *about_action = new QAction("&About", this);
+    auto *about_action = new QAction("&About", this);
     help_menu->addAction(about_action);
     about_action->setShortcut(tr("F1"));
     connect(about_action, &QAction::triggered, this, [&]() {
@@ -300,131 +321,78 @@ void MainWindow::initHelpMenu()
 
 void MainWindow::initShortcuts()
 {
-    QAction *focus_task_shell = new QAction(this);
-    focus_task_shell->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_T));
+    auto *focus_task_shell = new QAction(this);
+    focus_task_shell->setShortcut(kActivateTaskShellShortcut);
     connect(focus_task_shell, &QAction::triggered, this, [&]() {
         if (m_task_shell->isVisible()) {
             m_task_shell->setFocus();
         }
     });
-    this->addAction(focus_task_shell);
+    addAction(focus_task_shell);
 
-    QAction *filter_tasks = new QAction(this);
-    filter_tasks->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
+    auto *filter_tasks = new QAction(this);
+    filter_tasks->setShortcut(QKeySequence::Find);
     connect(filter_tasks, &QAction::triggered, this,
             [&]() { m_task_filter->setFocus(); });
-    this->addAction(filter_tasks);
+    addAction(filter_tasks);
 }
 
-void MainWindow::initTaskToolbar()
+void MainWindow::connectTaskToolbarActions()
 {
-    m_task_toolbar = new QToolBar("Task toolbar");
-
-    m_add_action = new QAction(QIcon(":/icons/add.svg"), tr("Add task"));
-    connect(m_add_action, &QAction::triggered, this, [&]() {
+    connect(m_toolbar_actions.m_add_action, &QAction::triggered, this, [&]() {
         m_tasks_view->selectionModel()->clearSelection();
         onAddTask();
     });
-    m_add_action->setShortcut(tr("CTRL+N"));
-    removeShortcutFromToolTip(m_add_action);
-    addShortcutToToolTip(m_add_action);
-    m_task_toolbar->addAction(m_add_action);
 
-    m_undo_action =
-        new QAction(QIcon(":/icons/undo.png"), tr("Undo last action"));
-    connect(m_undo_action, &QAction::triggered, this, [&]() {
-        if (m_task_provider->undoTask())
+    connect(m_toolbar_actions.m_undo_action, &QAction::triggered, this, [&]() {
+        if (m_task_provider->undoTask()) {
             m_tasks_view->selectionModel()->clearSelection();
-        m_undo_action->setEnabled(m_task_provider->getActionsCounter() > 0);
+        }
+        m_toolbar_actions.m_undo_action->setEnabled(
+            m_task_provider->getActionsCounter() > 0);
     });
-    m_undo_action->setEnabled(false);
-    m_undo_action->setShortcut(tr("CTRL+Z"));
-    removeShortcutFromToolTip(m_undo_action);
-    addShortcutToToolTip(m_undo_action);
-    m_task_toolbar->addAction(m_undo_action);
 
-    m_update_action =
-        new QAction(QIcon(":/icons/refresh.png"), tr("Update tasks"));
-    connect(m_update_action, &QAction::triggered, this, [&]() {
-        m_tasks_view->selectionModel()->clearSelection();
-        updateTasks(/*force=*/true);
-    });
-    m_update_action->setShortcut(tr("CTRL+R"));
-    removeShortcutFromToolTip(m_update_action);
-    addShortcutToToolTip(m_update_action);
-    m_task_toolbar->addAction(m_update_action);
+    connect(m_toolbar_actions.m_update_action, &QAction::triggered, this,
+            [&]() {
+                m_tasks_view->selectionModel()->clearSelection();
+                updateTasks(/*force=*/true);
+            });
 
-    m_task_toolbar->addSeparator();
-
-    m_done_action = new QAction(QIcon(":/icons/done.svg"), tr("Done"));
-    connect(m_done_action, &QAction::triggered, this,
+    connect(m_toolbar_actions.m_done_action, &QAction::triggered, this,
             &MainWindow::onSetTasksDone);
-    m_done_action->setShortcut(tr("CTRL+D"));
-    removeShortcutFromToolTip(m_done_action);
-    addShortcutToToolTip(m_done_action);
-    m_task_toolbar->addAction(m_done_action);
-    m_task_toolbar->addAction(m_done_action);
-    m_done_action->setEnabled(false);
 
-    m_edit_action = new QAction(QIcon(":/icons/edit.svg"), tr("Edit"));
-    connect(m_edit_action, &QAction::triggered, this,
+    connect(m_toolbar_actions.m_edit_action, &QAction::triggered, this,
             &MainWindow::onEditTaskAction);
-    m_edit_action->setShortcut(tr("CTRL+E"));
-    removeShortcutFromToolTip(m_edit_action);
-    addShortcutToToolTip(m_edit_action);
-    m_task_toolbar->addAction(m_edit_action);
-    m_edit_action->setEnabled(false);
 
-    m_wait_action = new QAction(QIcon(":/icons/wait.svg"), tr("Wait"));
-    connect(m_wait_action, &QAction::triggered, this, [&]() {
+    connect(m_toolbar_actions.m_wait_action, &QAction::triggered, this, [&]() {
         auto *dlg =
             new DateTimeDialog(QDateTime::currentDateTime().addDays(1), this);
         dlg->open();
         QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
-            auto dt = dlg->getDateTime();
-            if (m_task_provider->waitTask(getSelectedTaskIds(), dt))
+            if (m_task_provider->waitTask(getSelectedTaskIds(),
+                                          dlg->getDateTime())) {
                 updateTasks();
+            }
         });
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
     });
-    m_wait_action->setShortcut(tr("CTRL+W"));
-    removeShortcutFromToolTip(m_wait_action);
-    addShortcutToToolTip(m_wait_action);
-    m_task_toolbar->addAction(m_wait_action);
-    m_wait_action->setEnabled(false);
 
-    m_delete_action = new QAction(QIcon(":/icons/delete.svg"), tr("Delete"));
-    connect(m_delete_action, &QAction::triggered, this,
+    connect(m_toolbar_actions.m_delete_action, &QAction::triggered, this,
             &MainWindow::onDeleteTasks);
-    m_delete_action->setShortcut(tr("Delete"));
-    removeShortcutFromToolTip(m_delete_action);
-    addShortcutToToolTip(m_delete_action);
-    m_task_toolbar->addAction(m_delete_action);
-    m_delete_action->setEnabled(false);
 
-    m_task_toolbar->addSeparator();
-
-    m_start_action = new QAction(QIcon(":/icons/start.svg"), tr("Start"));
-    connect(m_start_action, &QAction::triggered, this, [&]() {
-        auto t_opt = getSelectedTaskId();
-        if (t_opt.isNull())
-            return;
-        m_task_provider->startTask(t_opt.toString());
-        updateTasks();
+    connect(m_toolbar_actions.m_start_action, &QAction::triggered, this, [&]() {
+        if (auto t_opt = getSelectedTaskId()) {
+            m_task_provider->startTask(*t_opt);
+            updateTasks();
+        }
     });
-    m_task_toolbar->addAction(m_start_action);
-    m_start_action->setEnabled(false);
 
-    m_stop_action = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"));
-    connect(m_stop_action, &QAction::triggered, this, [&]() {
-        auto t_opt = getSelectedTaskId();
-        if (t_opt.isNull())
-            return;
-        m_task_provider->stopTask(t_opt.toString());
-        updateTasks();
+    connect(m_toolbar_actions.m_stop_action, &QAction::triggered, this, [&]() {
+        if (auto t_opt = getSelectedTaskId()) {
+            m_task_provider->stopTask(*t_opt);
+            updateTasks();
+        }
     });
-    m_task_toolbar->addAction(m_stop_action);
-    m_stop_action->setEnabled(false);
 }
 
 void MainWindow::toggleMainWindow()
@@ -461,7 +429,7 @@ void MainWindow::showMainWindow()
     this->activateWindow();
 }
 
-void MainWindow::receiveNewInstanceMessage(quint32, QByteArray message)
+void MainWindow::receiveNewInstanceMessage(quint32, const QByteArray &message)
 {
     if (message == "add_task") {
         onAddTask();
@@ -483,39 +451,42 @@ void MainWindow::quitApp()
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
     auto set_task_priority = [&](Task::Priority p) {
-        auto *smodel = m_tasks_view->selectionModel();
-        if (!smodel->hasSelection())
+        const auto *smodel = m_tasks_view->selectionModel();
+        if (!smodel->hasSelection()) {
             return;
-        auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
+        }
+        const auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
         for (const QModelIndex idx : smodel->selectedRows()) {
             auto item = dmodel->itemData(idx);
-            if (item[0].isNull())
-                continue;
-            QString tid_str = item[0].toString();
-            m_task_provider->setPriority(tid_str, p);
+            if (!item[0].isNull()) {
+                m_task_provider->setPriority(item[0].toString(), p);
+                break;
+            }
         }
     };
 
     if (watched == m_tasks_view && event->type() == QEvent::KeyPress) {
-        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_Escape) {
+        const auto keyEvent = dynamic_cast<QKeyEvent *>(event);
+        assert(keyEvent);
+
+        switch (keyEvent->key()) {
+        case Qt::Key_Escape:
             m_tasks_view->selectionModel()->clearSelection();
             return true;
-        }
-        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_0) {
-            set_task_priority(Task::Priority::Unset);
+        default: {
+            static const std::map<int, Task::Priority> key2priority{
+                { Qt::Key_0, Task::Priority::Unset },
+                { Qt::Key_3, Task::Priority::L },
+                { Qt::Key_2, Task::Priority::M },
+                { Qt::Key_1, Task::Priority::H },
+            };
+            const auto it = key2priority.find(keyEvent->key());
+            if (it == key2priority.end()) {
+                break;
+            }
+            set_task_priority(it->second);
             return true;
         }
-        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_3) {
-            set_task_priority(Task::Priority::L);
-            return true;
-        }
-        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_2) {
-            set_task_priority(Task::Priority::M);
-            return true;
-        }
-        if (static_cast<QKeyEvent *>(event)->key() == Qt::Key_1) {
-            set_task_priority(Task::Priority::H);
-            return true;
         }
     }
 
@@ -526,8 +497,8 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 void MainWindow::changeEvent(QEvent *evt)
 {
     if (evt->type() == QEvent::WindowStateChange) {
-        QWindowStateChangeEvent *e =
-            dynamic_cast<QWindowStateChangeEvent *>(evt);
+        const auto e = dynamic_cast<QWindowStateChangeEvent *>(evt);
+        assert(e);
         m_window_prev_state = e->oldState();
     }
 
@@ -546,38 +517,42 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 }
 
-QVariant MainWindow::getSelectedTaskId()
+std::optional<QString> MainWindow::getSelectedTaskId() const
 {
     Q_ASSERT(m_tasks_view);
 
     auto *smodel = m_tasks_view->selectionModel();
-    if (smodel->selectedRows().size() != 1)
+    if (smodel->selectedRows().size() != 1) {
         return {};
+    }
 
     auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
     for (const QModelIndex idx : smodel->selectedRows()) {
         auto item = dmodel->itemData(idx);
-        if (item[0].isNull())
+        if (item[0].isNull()) {
             continue;
+        }
         return item[0].toString();
     }
 
     return {};
 }
 
-QStringList MainWindow::getSelectedTaskIds()
+QStringList MainWindow::getSelectedTaskIds() const
 {
     auto *smodel = m_tasks_view->selectionModel();
-    if (!smodel->hasSelection())
+    if (!smodel->hasSelection()) {
         return {};
+    }
 
     QStringList ids;
 
     auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
     for (const QModelIndex idx : smodel->selectedRows()) {
         auto item = dmodel->itemData(idx);
-        if (item[0].isNull())
+        if (item[0].isNull()) {
             continue;
+        }
         ids.push_back(item[0].toString());
     }
 
@@ -586,14 +561,15 @@ QStringList MainWindow::getSelectedTaskIds()
 
 void MainWindow::pushFilterTag(const QString &value)
 {
-    if (!m_task_filter->isVisible())
+    if (!m_task_filter->isVisible()) {
         return;
+    }
     m_task_filter->pushTag(value);
 }
 
 void MainWindow::onToggleTaskShell()
 {
-    if (m_toggle_task_shell_action->isChecked()) {
+    if (m_view_menu_actions.m_toggle_task_shell_action->isChecked()) {
         m_task_shell->setVisible(true);
         ConfigManager::config().setShowTaskShell(true);
     } else {
@@ -619,18 +595,22 @@ void MainWindow::onAddTask()
         }
     }
 
-    auto *dlg = new AddTaskDialog(default_project, this);
+    auto dlg =
+        QPointer<AddTaskDialog>(new AddTaskDialog(default_project, this));
     dlg->open();
 
     QObject::connect(this, &MainWindow::acceptContinueCreatingTasks, dlg,
                      &AddTaskDialog::acceptContinue);
     QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
+        Q_ASSERT(dlg);
         auto t = dlg->getTask();
-        if (m_task_provider->addTask(t))
+        if (m_task_provider->addTask(t)) {
             updateTasks();
+        }
     });
-    QObject::connect(dlg, &QDialog::rejected, [this, dlg]() { updateTasks(); });
+    QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasks(); });
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
+        Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
             updateTasks();
@@ -644,26 +624,29 @@ void MainWindow::onAddTask()
 
 void MainWindow::onDeleteTasks()
 {
-    auto *smodel = m_tasks_view->selectionModel();
-    QString q;
-    if (smodel->selectedRows().size() == 1)
-        q = tr("Delete task?");
-    else
-        q = tr("Delete %1 tasks?").arg(smodel->selectedRows().size());
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, tr("Conifrm action"), q,
-                                  QMessageBox::Yes | QMessageBox::No);
-    if (reply == QMessageBox::Yes) {
-        m_task_provider->deleteTask(getSelectedTaskIds());
-        smodel->clearSelection();
+    const auto selectedTasks = getSelectedTaskIds();
+    const auto selectedCount = selectedTasks.size();
+    if (selectedCount == 0) {
+        return;
+    }
+    const auto question_to_show =
+        (selectedCount == 1) ? tr("Delete task?")
+                             : tr("Delete %1 tasks?").arg(selectedCount);
+
+    if (QMessageBox::question(this, tr("Conifrm action"), question_to_show,
+                              QMessageBox::Yes | QMessageBox::No) ==
+        QMessageBox::Yes) {
+        m_tasks_view->selectionModel()->clearSelection();
+        m_task_provider->deleteTask(selectedTasks);
         updateTasks();
     }
 }
 
 void MainWindow::onSetTasksDone()
 {
-    if (!m_tasks_view->selectionModel()->hasSelection())
+    if (!m_tasks_view->selectionModel()->hasSelection()) {
         return;
+    }
     m_task_provider->setTaskDone(getSelectedTaskIds());
     m_tasks_view->selectionModel()->clearSelection();
     updateTasks();
@@ -671,8 +654,9 @@ void MainWindow::onSetTasksDone()
 
 void MainWindow::onApplyFilter()
 {
-    if (!m_task_provider->applyFilter(m_task_filter->getTags()))
+    if (!m_task_provider->applyFilter(m_task_filter->getTags())) {
         m_task_filter->popTag();
+    }
     // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
     //     m_task_filter->clearTags();
     updateTasks(/*force=*/true);
@@ -681,8 +665,9 @@ void MainWindow::onApplyFilter()
 void MainWindow::onEnterTaskCommand()
 {
     auto cmd = m_task_shell->text();
-    if (cmd.isEmpty())
+    if (cmd.isEmpty()) {
         return;
+    }
     auto rc = m_task_provider->directCmd(cmd);
     if (rc == 0) {
         updateTasks();
@@ -690,11 +675,10 @@ void MainWindow::onEnterTaskCommand()
     m_task_shell->setText("");
 }
 
-void MainWindow::showEditTaskDialog(const QModelIndex &idx)
+void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
 {
     const auto *model = m_tasks_view->selectionModel();
-
-    QString id_str = model->selectedRows()[0].data().toString();
+    const auto id_str = model->selectedRows()[0].data().toString();
     if (id_str.isEmpty()) {
         updateTasks();
         return;
@@ -706,7 +690,7 @@ void MainWindow::showEditTaskDialog(const QModelIndex &idx)
         return;
     }
 
-    auto *dlg = new EditTaskDialog(task, this);
+    auto dlg = QPointer<EditTaskDialog>(new EditTaskDialog(task, this));
     dlg->open();
 
     QObject::connect(dlg, &EditTaskDialog::deleteTask, this,
@@ -716,23 +700,28 @@ void MainWindow::showEditTaskDialog(const QModelIndex &idx)
                          updateTasks();
                      });
     QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str, task]() {
+        Q_ASSERT(dlg);
         auto saved_tags = task.tags;
         auto saved_pri = task.priority;
         auto t = dlg->getTask();
         auto new_tags = t.tags;
-        t.removed_tags = QStringList();
-        for (auto const &st : saved_tags)
-            if (!new_tags.contains(st))
+        t.removed_tags.clear();
+        for (auto const &st : saved_tags) {
+            if (!new_tags.contains(st)) {
                 t.removed_tags.push_back(st);
+            }
+        }
         t.uuid = id_str;
-        if (!m_task_provider->editTask(t))
+        if (!m_task_provider->editTask(t)) {
             return;
+        }
         if (saved_pri != t.priority &&
-            !m_task_provider->setPriority(t.uuid, t.priority))
+            !m_task_provider->setPriority(t.uuid, t.priority)) {
             return;
+        }
         updateTasks();
     });
-    QObject::connect(dlg, &QDialog::rejected, [this, dlg]() { updateTasks(); });
+    QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasks(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 }
 
@@ -749,8 +738,9 @@ void MainWindow::updateTasks(bool force)
 
     // The commands from m_task_provider will modify the taskwarrior
     // database files. This will trigger TaskWatcher to emit update event.
-    if (!force && m_task_watcher && m_task_watcher->isActive())
+    if (!force && m_task_watcher && m_task_watcher->isActive()) {
         return;
+    }
 
     QList<Task> tasks = {};
     m_task_provider->getTasks(tasks);
@@ -764,27 +754,86 @@ void MainWindow::updateTasks(bool force)
 void MainWindow::updateTaskToolbar()
 {
     const auto *model = m_tasks_view->selectionModel();
-    const int num_selected = model->selectedRows().size();
+    const auto num_selected = model->selectedRows().size();
 
-    m_undo_action->setEnabled(m_task_provider->getActionsCounter() > 0);
+    m_toolbar_actions.m_undo_action->setEnabled(
+        m_task_provider->getActionsCounter() > 0);
 
-    if (num_selected == 0) {
-        m_done_action->setEnabled(false);
-        m_edit_action->setEnabled(false);
-        m_wait_action->setEnabled(false);
-        m_delete_action->setEnabled(false);
-        m_start_action->setEnabled(false);
-        m_stop_action->setEnabled(false);
-        removeShortcutFromToolTip(m_stop_action);
-        removeShortcutFromToolTip(m_start_action);
+    if (num_selected == 0u) {
+        m_toolbar_actions.m_done_action->setEnabled(false);
+        m_toolbar_actions.m_edit_action->setEnabled(false);
+        m_toolbar_actions.m_wait_action->setEnabled(false);
+        m_toolbar_actions.m_delete_action->setEnabled(false);
+        m_toolbar_actions.m_start_action->setEnabled(false);
+        m_toolbar_actions.m_stop_action->setEnabled(false);
+        removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
+        removeShortcutFromToolTip(m_toolbar_actions.m_start_action);
     } else {
-        m_done_action->setEnabled(true);
+        m_toolbar_actions.m_done_action->setEnabled(true);
         if (num_selected == 1) {
-            m_edit_action->setEnabled(true);
+            m_toolbar_actions.m_edit_action->setEnabled(true);
         } else {
-            m_edit_action->setEnabled(false);
+            m_toolbar_actions.m_edit_action->setEnabled(false);
         }
-        m_wait_action->setEnabled(true);
-        m_delete_action->setEnabled(true);
+        m_toolbar_actions.m_wait_action->setEnabled(true);
+        m_toolbar_actions.m_delete_action->setEnabled(true);
     }
+}
+
+MainWindow::TToolbarActionsDefined::TToolbarActionsDefined(QToolBar &parent)
+{
+    const auto allocate = [&parent](const QString &path, const QString &text,
+                                    const QKeySequence &short_cut) {
+        auto action = new QAction(QIcon(path), text, &parent);
+        action->setEnabled(true);
+        action->setShortcut(short_cut);
+        removeShortcutFromToolTip(action);
+        addShortcutToToolTip(action);
+        parent.addAction(action);
+        return action;
+    };
+
+    m_add_action =
+        allocate(":/icons/add.svg", tr("Add task"), QKeySequence::New);
+    m_undo_action = allocate(":/icons/undo.png", tr("Undo last action"),
+                             QKeySequence::Undo);
+    m_undo_action->setEnabled(false);
+
+    m_update_action = allocate(":/icons/refresh.png", tr("Update tasks"),
+                               QKeySequence::Refresh);
+
+    parent.addSeparator();
+
+    m_done_action = allocate(":/icons/done.svg", tr("Done"), kDoneShortcut);
+    m_done_action->setEnabled(false);
+
+    m_edit_action = allocate(":/icons/edit.svg", tr("Edit"), kEditShortcut);
+    m_edit_action->setEnabled(false);
+
+    m_wait_action = allocate(":/icons/wait.svg", tr("Wait"), kWaitShortcut);
+    m_wait_action->setEnabled(false);
+
+    m_delete_action =
+        allocate(":/icons/delete.svg", tr("Delete"), QKeySequence::Delete);
+    m_delete_action->setEnabled(false);
+
+    parent.addSeparator();
+
+    m_start_action =
+        allocate(":/icons/start.svg", tr("Start"), QKeySequence::UnknownKey);
+    m_start_action->setEnabled(false);
+
+    m_stop_action =
+        allocate(":/icons/stop.svg", tr("Stop"), QKeySequence::UnknownKey);
+    m_stop_action->setEnabled(false);
+}
+
+MainWindow::TViewMenuActions::TViewMenuActions(QMenu &parent)
+{
+    parent.setToolTipsVisible(true);
+    m_toggle_task_shell_action = new QAction(tr("&Task shell"), &parent);
+    m_toggle_task_shell_action->setCheckable(true);
+    m_toggle_task_shell_action->setChecked(
+        ConfigManager::config().getShowTaskShell());
+    parent.addAction(m_toggle_task_shell_action);
 }

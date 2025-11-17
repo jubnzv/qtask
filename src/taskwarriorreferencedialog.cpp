@@ -10,13 +10,14 @@
 TaskwarriorReferenceDialog::TaskwarriorReferenceDialog(QWidget *parent)
     : QDialog(parent)
 {
+    setWindowTitle(tr("Taskwarrior Quick Reference"));
     initUI();
 }
 
+TaskwarriorReferenceDialog::~TaskwarriorReferenceDialog() = default;
+
 void TaskwarriorReferenceDialog::initUI()
 {
-    setWindowTitle(QCoreApplication::applicationName() +
-                   " - Taskwarrior quick reference");
 
     const auto group = QPalette::Active;
     const auto role = QPalette::Window;
@@ -69,8 +70,8 @@ void TaskwarriorReferenceDialog::initUI()
                 "</body></html>")
             .arg(c1.name(), c2.name());
 
-    QVBoxLayout *main_layout = new QVBoxLayout();
-    QLabel *info_label = new QLabel(info);
+    auto *main_layout = new QVBoxLayout(this);
+    auto *info_label = new QLabel(info, this);
     info_label->setOpenExternalLinks(true);
     info_label->setTextInteractionFlags(Qt::TextBrowserInteraction);
     main_layout->addWidget(info_label);

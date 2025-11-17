@@ -3,25 +3,27 @@
 
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QList>
+#include <QObject>
 #include <QTableView>
 #include <QWidget>
 
-#include "recurringtasksmodel.hpp"
 #include "task.hpp"
 
 class RecurringDialog : public QDialog {
     Q_OBJECT
 
   public:
-    RecurringDialog(const QList<RecurringTask> &, QWidget *parent = nullptr);
-    ~RecurringDialog();
+    explicit RecurringDialog(QList<RecurringTask> tasks,
+                             QWidget *parent = nullptr);
+    ~RecurringDialog() override;
 
   private:
-    void initUI(const QList<RecurringTask> &);
+    void initUI(QList<RecurringTask> tasks);
 
   private:
-    QTableView *m_tasks_view;
-    QDialogButtonBox *m_btn_box;
+    QTableView *const m_tasks_view;
+    QDialogButtonBox *const m_btn_box;
 };
 
 #endif // RECURRINGDIALOG_HPP

@@ -19,4 +19,9 @@ void removeShortcutFromToolTip(QAction *action);
 /// See: https://doc.qt.io/qt-5/qdate.html#startOfDay
 QDateTime startOfDay(const QDate &);
 
+/**
+ * * @returns true if Ok-Cancel order of the buttons should be used (Ok/Positive
+ * is 1st).
+ */
+bool isOkCancelOrder();
 #endif // QTUTIL_HPP

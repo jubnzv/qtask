@@ -6,6 +6,8 @@
 #include <QList>
 #include <QVariant>
 
+#include <utility>
+
 RecurringTasksModel::RecurringTasksModel(QObject *parent)
     : QAbstractTableModel(parent)
     , m_tasks({})
@@ -40,14 +42,15 @@ QVariant RecurringTasksModel::data(const QModelIndex &index, int role) const
         }
     }
 
-    return QVariant();
+    return {};
 }
 
 bool RecurringTasksModel::setData(const QModelIndex &idx, const QVariant &value,
                                   int role)
 {
-    if (!idx.isValid())
+    if (!idx.isValid()) {
         return false;
+    }
 
     if (role == Qt::EditRole) {
         int row = idx.row();
@@ -61,8 +64,9 @@ QVariant RecurringTasksModel::headerData(int section,
                                          Qt::Orientation orientation,
                                          int role) const
 {
-    if (role != Qt::DisplayRole)
+    if (role != Qt::DisplayRole) {
         return {};
+    }
 
     if (orientation == Qt::Horizontal) {
         switch (section) {
@@ -80,16 +84,9 @@ QVariant RecurringTasksModel::headerData(int section,
     return {};
 }
 
-void RecurringTasksModel::setTasks(const QList<RecurringTask> &tasks)
+void RecurringTasksModel::setTasks(QList<RecurringTask> tasks)
 {
     beginResetModel();
-    m_tasks = tasks;
-    endResetModel();
-}
-
-void RecurringTasksModel::setTasks(QList<RecurringTask> &&tasks)
-{
-    beginResetModel();
-    m_tasks = tasks;
+    m_tasks = std::move(tasks);
     endResetModel();
 }

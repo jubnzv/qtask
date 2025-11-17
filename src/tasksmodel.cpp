@@ -1,11 +1,20 @@
 #include "tasksmodel.hpp"
 
+#include <utility>
+
+#include <QAbstractTableModel>
 #include <QBrush>
 #include <QColor>
 #include <QDebug>
 #include <QIcon>
 #include <QList>
+#include <QModelIndex>
+#include <QObject>
 #include <QVariant>
+#include <qlogging.h>
+#include <qnamespace.h>
+
+#include "task.hpp"
 
 TasksModel::TasksModel(QObject *parent)
     : QAbstractTableModel(parent)
@@ -15,7 +24,7 @@ TasksModel::TasksModel(QObject *parent)
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const
 {
-    return m_tasks.size();
+    return static_cast<int>(m_tasks.size());
 }
 
 int TasksModel::columnCount(const QModelIndex & /*parent*/) const { return 3; }
@@ -23,7 +32,7 @@ int TasksModel::columnCount(const QModelIndex & /*parent*/) const { return 3; }
 QVariant TasksModel::data(const QModelIndex &index, int role) const
 {
     if (role == Qt::DisplayRole) {
-        Task task = m_tasks.at(index.row());
+        const Task task = m_tasks.at(index.row());
         switch (index.column()) {
         case 0:
             return task.uuid;
@@ -32,32 +41,31 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
         case 2:
             return task.description;
         default:
-            return false;
+            qDebug() << "Unexpected case in TasksModel::data";
+            break;
         }
-    }
-
-    else if (role == Qt::DecorationRole) {
+    } else if (role == Qt::DecorationRole) {
         if (index.column() == 0) {
-            Task task = m_tasks.at(index.row());
-            return (task.active) ? QIcon(":/icons/active.svg") : QVariant();
+            return (m_tasks.at(index.row()).active)
+                       ? QIcon(":/icons/active.svg")
+                       : QVariant{};
         }
-    }
-
-    else if (role == Qt::BackgroundRole) {
+    } else if (role == Qt::BackgroundRole) {
         return QVariant(QBrush(rowColor(index.row())));
     }
 
-    return QVariant();
+    return {};
 }
 
-bool TasksModel::setData(const QModelIndex &idx, const QVariant &value,
+bool TasksModel::setData(const QModelIndex &idx, const QVariant & /*value*/,
                          int role)
 {
-    if (!idx.isValid())
+    if (!idx.isValid()) {
         return false;
+    }
 
     if (role == Qt::EditRole) {
-        int row = idx.row();
+        const int row = idx.row();
         qDebug() << "Requested edit " << row;
     }
 
@@ -67,8 +75,9 @@ bool TasksModel::setData(const QModelIndex &idx, const QVariant &value,
 QVariant TasksModel::headerData(int section, Qt::Orientation orientation,
                                 int role) const
 {
-    if (role != Qt::DisplayRole)
+    if (role != Qt::DisplayRole) {
         return {};
+    }
 
     if (orientation == Qt::Horizontal) {
         switch (section) {
@@ -78,30 +87,27 @@ QVariant TasksModel::headerData(int section, Qt::Orientation orientation,
             return tr("Project");
         case 2:
             return tr("Description");
+        default:
+            qDebug() << "Unexpected case in TasksModel::headerData";
+            break;
         }
     }
 
     return {};
 }
 
-void TasksModel::setTasks(const QList<Task> &tasks)
+void TasksModel::setTasks(QList<Task> tasks)
 {
     beginResetModel();
-    m_tasks = tasks;
-    endResetModel();
-}
-
-void TasksModel::setTasks(QList<Task> &&tasks)
-{
-    beginResetModel();
-    m_tasks = tasks;
+    m_tasks = std::move(tasks);
     endResetModel();
 }
 
 QVariant TasksModel::getTask(const QModelIndex &index) const
 {
-    if (index.isValid() && index.row() < m_tasks.size())
+    if (index.isValid() && index.row() < m_tasks.size()) {
         return QVariant::fromValue(m_tasks.at(index.row()));
+    }
     return {};
 }
 

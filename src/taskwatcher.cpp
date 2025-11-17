@@ -3,9 +3,17 @@
 #include <QDir>
 #include <QFile>
 #include <QFileSystemWatcher>
+#include <QObject>
 #include <QString>
+#include <QStringList>
 
-TaskWatcher::TaskWatcher(QObject *parent) {}
+#include <algorithm>
+#include <memory>
+
+TaskWatcher::TaskWatcher(QObject *parent)
+    : QObject(parent)
+{
+}
 
 TaskWatcher::~TaskWatcher() = default;
 

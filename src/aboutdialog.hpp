@@ -3,12 +3,13 @@
 
 #include <QDialog>
 #include <QVariant>
+#include <QWidget>
 
-class AboutDialog : public QDialog {
+class AboutDialog final : public QDialog {
   public:
     explicit AboutDialog(const QVariant &task_version,
                          QWidget *parent = nullptr);
-    ~AboutDialog() = default;
+    ~AboutDialog() final;
 
   private:
     void initUI(const QVariant &task_version);

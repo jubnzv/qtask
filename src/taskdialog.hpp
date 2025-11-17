@@ -6,59 +6,63 @@
 #include <QDateTimeEdit>
 #include <QDialog>
 #include <QKeyEvent>
+#include <QObject>
 #include <QPushButton>
+#include <QString>
 #include <QTextEdit>
 #include <QWidget>
+#include <qtmetamacros.h>
 
 #include "optionaldatetimeedit.hpp"
 #include "tagsedit.hpp"
 #include "task.hpp"
-#include "taskwarrior.hpp"
 
-class TaskDialog : public QDialog {
+class TaskDialogBase : public QDialog {
     Q_OBJECT
-
   public:
-    explicit TaskDialog(QWidget *parent = nullptr);
-    virtual ~TaskDialog() = default;
+    explicit TaskDialogBase(QWidget *parent = nullptr);
+    ~TaskDialogBase() override;
+    TaskDialogBase(const TaskDialogBase &) = delete;
+    TaskDialogBase &operator=(const TaskDialogBase &) = delete;
+    TaskDialogBase(TaskDialogBase &&) = delete;
+    TaskDialogBase &operator=(TaskDialogBase &&) = delete;
 
     Task getTask();
-
-  protected:
-    void keyPressEvent(QKeyEvent *) override;
-
-    void initUI();
-    void setTask(const Task &task);
 
   protected slots:
     virtual void onDescriptionChanged() = 0;
 
   protected:
-    QVBoxLayout *m_main_layout;
-    QTextEdit *m_task_description;
-    QComboBox *m_task_priority;
-    QLineEdit *m_task_project;
-    TagsEdit *m_task_tags;
-    OptionalDateTimeEdit *m_task_sched;
-    OptionalDateTimeEdit *m_task_due;
-    OptionalDateTimeEdit *m_task_wait;
+    // Create horizontal layout of 3 buttons. Positive and negative buttons are
+    // aligned according to the system (desktop) settings.
+    QHBoxLayout *Create3ButtonsLayout(QPushButton *positive_button,
+                                      QPushButton *negative_button,
+                                      QPushButton *mid_button);
 
-    QString m_task_uuid = "";
+    void keyPressEvent(QKeyEvent *) override;
+    void setTask(const Task &task);
+
+    QVBoxLayout *const m_main_layout;
+    QTextEdit *const m_task_description;
+    QComboBox *const m_task_priority;
+    QLineEdit *const m_task_project;
+    TagsEdit *const m_task_tags;
+    OptionalDateTimeEdit *const m_task_sched;
+    OptionalDateTimeEdit *const m_task_due;
+    OptionalDateTimeEdit *const m_task_wait;
+    QString m_task_uuid;
+
+  private:
+    void constructUi();
 };
 
-class AddTaskDialog final : public TaskDialog {
+class AddTaskDialog final : public TaskDialogBase {
     Q_OBJECT
 
   public:
     explicit AddTaskDialog(const QVariant &default_project = {},
                            QWidget *parent = nullptr);
-    ~AddTaskDialog() = default;
-
-  protected slots:
-    void onDescriptionChanged() override;
-
-  private:
-    void initUI();
+    ~AddTaskDialog() final;
 
   public slots:
     void acceptContinue();
@@ -66,31 +70,34 @@ class AddTaskDialog final : public TaskDialog {
   signals:
     void createTaskAndContinue();
 
+  protected slots:
+    void onDescriptionChanged() final;
+
   private:
-    QPushButton *m_ok_btn;
-    QPushButton *m_continue_btn;
+    void constructUi();
+
+    QPushButton *const m_ok_btn;
+    QPushButton *const m_continue_btn;
 };
 
-class EditTaskDialog final : public TaskDialog {
+class EditTaskDialog final : public TaskDialogBase {
     Q_OBJECT
-
   public:
     explicit EditTaskDialog(const Task &, QWidget *parent = nullptr);
-    ~EditTaskDialog() = default;
-
-  protected slots:
-    void onDescriptionChanged() override;
-
-  private:
-    void initUI();
-    void requestDeleteTask();
+    ~EditTaskDialog() final;
 
   signals:
     void deleteTask(const QString &uuid);
 
+  protected slots:
+    void onDescriptionChanged() final;
+
   private:
-    QPushButton *m_ok_btn;
-    QPushButton *m_delete_btn;
+    void constructUi();
+    void requestDeleteTask();
+
+    QPushButton *const m_ok_btn;
+    QPushButton *const m_delete_btn;
 };
 
 #endif // TASKDIALOG_HPP
