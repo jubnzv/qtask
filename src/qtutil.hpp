@@ -4,6 +4,7 @@
 #include <QAction>
 #include <QDate>
 #include <QDateTime>
+#include <QString>
 
 /// Adds possible shortcut information to the tooltip of the action.
 /// This provides consistent behavior both with default and custom tooltips
@@ -24,4 +25,6 @@ QDateTime startOfDay(const QDate &);
  * is 1st).
  */
 bool isOkCancelOrder();
+bool isInteger(const QString &what);
+
 #endif // QTUTIL_HPP

@@ -1,28 +1,28 @@
 #ifndef TASK_HPP
 #define TASK_HPP
 
-#include <QDate>
+#include <QDateTime>
 #include <QString>
 #include <QStringList>
-#include <QVariant>
+#include <qdatetime.h>
+
+#include <optional>
 
 struct AbstractTask {
-    AbstractTask()
-        : uuid("")
-        , description("")
-        , project("")
-        , tags({})
-        , sched(QVariant{})
-        , due(QVariant{})
-    {
-    }
+    using OptionalDateTime = std::optional<QDateTime>;
 
     QString uuid;
     QString description;
     QString project;
     QStringList tags;
-    QVariant sched;
-    QVariant due;
+    OptionalDateTime sched;
+    OptionalDateTime due;
+
+    /// @brief It MUST be called once description is read from "task".
+    /// Because taskwarrior does escaping too.
+    /// @note Placing it here because getCmdArgs() will do escaping. So they
+    /// both are close and not forgotten.
+    void unescapeStoredDescription();
 };
 
 struct Task final : public AbstractTask {
@@ -30,16 +30,9 @@ struct Task final : public AbstractTask {
     static QString priorityToString(const Priority &p);
     static Priority priorityFromString(const QString &p);
 
-    Task()
-        : priority(Priority::Unset)
-        , active(false)
-        , wait(QVariant{})
-    {
-    }
-
-    Priority priority;
-    bool active;
-    QVariant wait;
+    Priority priority{ Priority::Unset };
+    bool active{ false };
+    OptionalDateTime wait;
 
     /// Tags that will be removed at the next command.
     QStringList removed_tags;
@@ -50,11 +43,6 @@ struct Task final : public AbstractTask {
 Q_DECLARE_METATYPE(Task)
 
 struct RecurringTask final : public AbstractTask {
-    RecurringTask()
-        : period("")
-    {
-    }
-
     // Recurring period with date suffix:
     // https://taskwarrior.org/docs/design/recurrence.html#special-month-handling
     QString period;

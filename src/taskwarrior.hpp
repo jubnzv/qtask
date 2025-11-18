@@ -11,6 +11,7 @@
 #include "task.hpp"
 
 #include <cstddef>
+#include <optional>
 
 class Taskwarrior {
   public:
@@ -43,9 +44,9 @@ class Taskwarrior {
     bool stopTask(const QString &id);
     bool editTask(const Task &task);
     bool setPriority(const QString &id, Task::Priority);
-    bool getTask(const QString &id, Task &out_task);
-    bool getTasks(QList<Task> &task);
-    bool getRecurringTasks(QList<RecurringTask> &out_tasks);
+    std::optional<Task> getTask(const QString &id) const;
+    std::optional<QList<Task>> getTasks() const;
+    std::optional<QList<RecurringTask>> getRecurringTasks() const;
     bool deleteTask(const QString &id);
     bool deleteTask(const QStringList &ids);
     bool setTaskDone(const QString &id);
@@ -59,19 +60,9 @@ class Taskwarrior {
     int directCmd(const QString &cmd);
 
   private:
-    bool execCmd(const QStringList &args, bool filter_enabled = false,
-                 bool use_standard_args = true);
-    bool execCmd(const QStringList &args, QByteArray &out,
-                 bool filter_enabled = false, bool use_standard_args = true);
-
     bool getActiveIds(QStringList &result);
 
-    [[nodiscard]]
-    QString formatDateTime(const QDateTime &) const;
-
   private:
-    static const QStringList s_args;
-
     QStringList m_filter;
 
     /// Counter of changes in the taskwarrior database that can be undone.

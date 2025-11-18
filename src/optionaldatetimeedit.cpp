@@ -2,11 +2,13 @@
 #include "qtutil.hpp"
 
 #include <QCheckBox>
+#include <QDateTime>
 #include <QDateTimeEdit>
 #include <QHBoxLayout>
 #include <QString>
-#include <QVariant>
 #include <QWidget>
+
+#include <optional>
 
 OptionalDateTimeEdit::OptionalDateTimeEdit(const QString &label,
                                            const QDateTime &dt, QWidget *parent)
@@ -36,10 +38,11 @@ OptionalDateTimeEdit::OptionalDateTimeEdit(const QString &label,
 
 OptionalDateTimeEdit::~OptionalDateTimeEdit() = default;
 
-QVariant OptionalDateTimeEdit::getDateTime() const
+std::optional<QDateTime> OptionalDateTimeEdit::getDateTime() const
 {
-    return (m_enabled->isChecked()) ? QVariant{ m_datetime_edit->dateTime() }
-                                    : QVariant{};
+    return (m_enabled->isChecked())
+               ? std::make_optional(m_datetime_edit->dateTime())
+               : std::nullopt;
 }
 
 void OptionalDateTimeEdit::setDateTime(const QDateTime &dt)
@@ -47,13 +50,11 @@ void OptionalDateTimeEdit::setDateTime(const QDateTime &dt)
     m_datetime_edit->setDateTime(dt);
 }
 
-void OptionalDateTimeEdit::setDateTime(const QVariant &dt_opt)
+void OptionalDateTimeEdit::setDateTime(const std::optional<QDateTime> &dt_opt)
 {
-    if (dt_opt.isNull()) {
-        setChecked(false);
-    } else {
-        m_datetime_edit->setDateTime(dt_opt.toDateTime());
-        setChecked(true);
+    setChecked(dt_opt.has_value());
+    if (dt_opt) {
+        m_datetime_edit->setDateTime(*dt_opt);
     }
 }
 

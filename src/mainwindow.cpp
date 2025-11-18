@@ -266,26 +266,24 @@ void MainWindow::initToolsMenu()
     tools_menu->addAction(agenda_action);
     agenda_action->setShortcut(kAgendaViewShortcut);
     connect(agenda_action, &QAction::triggered, this, [&]() {
-        QList<Task> tasks = {};
-        if (!m_task_provider->getTasks(tasks)) {
-            return;
+        if (auto tasks = m_task_provider->getTasks()) {
+            auto *dlg = new AgendaDialog(std::move(*tasks), this);
+            dlg->open();
+            QObject::connect(dlg, &QDialog::finished, dlg,
+                             &QDialog::deleteLater);
         }
-        auto *dlg = new AgendaDialog(std::move(tasks), this);
-        dlg->open();
-        QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
     });
 
     auto *recurring_action = new QAction("&Recurring templates", this);
     tools_menu->addAction(recurring_action);
     recurring_action->setShortcut(kRecurrentViewShortcut);
     connect(recurring_action, &QAction::triggered, this, [&]() {
-        QList<RecurringTask> tasks;
-        if (!m_task_provider->getRecurringTasks(tasks)) {
-            return;
+        if (auto tasks = m_task_provider->getRecurringTasks()) {
+            auto *dlg = new RecurringDialog(std::move(*tasks), this);
+            dlg->open();
+            QObject::connect(dlg, &QDialog::finished, dlg,
+                             &QDialog::deleteLater);
         }
-        auto *dlg = new RecurringDialog(std::move(tasks), this);
-        dlg->open();
-        QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
     });
 
     auto *history_stats_action = new QAction("&Statistics", this);
@@ -687,45 +685,46 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
         return;
     }
 
-    Task task;
-    if (!m_task_provider->getTask(id_str, task)) {
+    const auto task = m_task_provider->getTask(id_str);
+    if (!task) {
         updateTasks();
         return;
     }
 
-    auto dlg = QPointer<EditTaskDialog>(new EditTaskDialog(task, this));
-    dlg->open();
-
+    auto dlg = QPointer<EditTaskDialog>(new EditTaskDialog(*task, this));
     QObject::connect(dlg, &EditTaskDialog::deleteTask, this,
                      [&](const QString &uuid) {
                          m_task_provider->deleteTask(uuid);
                          m_tasks_view->selectionModel()->clearSelection();
                          updateTasks();
                      });
-    QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str, task]() {
-        Q_ASSERT(dlg);
-        auto saved_tags = task.tags;
-        auto saved_pri = task.priority;
-        auto t = dlg->getTask();
-        auto new_tags = t.tags;
-        t.removed_tags.clear();
-        for (auto const &st : saved_tags) {
-            if (!new_tags.contains(st)) {
-                t.removed_tags.push_back(st);
+    QObject::connect(
+        dlg, &QDialog::accepted,
+        [this, dlg, id_str, saved_tags = task->tags,
+         saved_pri = task->priority]() {
+            Q_ASSERT(dlg);
+            auto t = dlg->getTask();
+            auto new_tags = t.tags;
+            t.removed_tags.clear();
+            for (auto const &st : saved_tags) {
+                if (!new_tags.contains(st)) {
+                    t.removed_tags.push_back(st);
+                }
             }
-        }
-        t.uuid = id_str;
-        if (!m_task_provider->editTask(t)) {
-            return;
-        }
-        if (saved_pri != t.priority &&
-            !m_task_provider->setPriority(t.uuid, t.priority)) {
-            return;
-        }
-        updateTasks();
-    });
+            t.uuid = id_str;
+            if (!m_task_provider->editTask(t)) {
+                return;
+            }
+            if (saved_pri != t.priority &&
+                !m_task_provider->setPriority(t.uuid, t.priority)) {
+                return;
+            }
+            updateTasks();
+        });
     QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasks(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
+
+    dlg->open();
 }
 
 void MainWindow::onEditTaskAction()
@@ -745,11 +744,9 @@ void MainWindow::updateTasks(bool force)
         return;
     }
 
-    QList<Task> tasks = {};
-    m_task_provider->getTasks(tasks);
-
+    auto tasks = m_task_provider->getTasks();
     auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-    model->setTasks(std::move(tasks));
+    model->setTasks(tasks.value_or({}));
 
     updateTaskToolbar();
 }

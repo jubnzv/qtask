@@ -4,27 +4,249 @@
 #include <QDebug>
 #include <QList>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
 #include <QVector>
+#include <qassert.h>
 #include <qlogging.h>
 #include <qnamespace.h>
 #include <qtversionchecks.h>
+#include <qtypes.h>
 
 #include "configmanager.hpp"
+#include "qtutil.hpp"
 #include "task.hpp"
 
-#include <cstddef>
+#include <algorithm>
+#include <array>
+#include <functional>
+#include <iterator>
+#include <optional>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <variant>
 
+namespace
+{
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-constexpr auto s_split_behaviour = Qt::SkipEmptyParts;
+constexpr auto kSplitBehaviour = Qt::SkipEmptyParts;
 #else
-constexpr auto s_split_behaviour = QString::SkipEmptyParts;
+constexpr auto kSplitBehaviour = QString::SkipEmptyParts;
 #endif // QT_VERSION_CHECK
 
-const QStringList Taskwarrior::s_args = { "rc.gc=off", "rc.confirmation=off",
-                                          "rc.bulk=0", "rc.defaultwidth=0" };
+/// @brief Splits space separated string into QStringList.
+/// @returns QStringList, each element is part of string between spaces or line
+/// ends.
+[[nodiscard]] QStringList
+splitSpaceSeparatedString(const QString &args_as_space_separated_string)
+{
+    static const QRegularExpression kWhitespaceRx("\\s+");
+    return args_as_space_separated_string.split(kWhitespaceRx, kSplitBehaviour);
+}
+
+template <qsizetype taExpectedColumnsAmount>
+using OptionalPositions =
+    std::optional<std::array<qsizetype, taExpectedColumnsAmount>>;
+
+/// @brief Finds in-string offsets of the "|" which are columns separator in the
+/// header.
+template <qsizetype taExpectedColumnsAmount>
+OptionalPositions<taExpectedColumnsAmount>
+findColumnPositions(const QString &line)
+{
+    std::array<qsizetype, taExpectedColumnsAmount> positions{ 0 };
+    qsizetype current_size = 0;
+
+    for (qsizetype i = 0, sz = line.size(); i < sz; ++i) {
+        if (line.at(i) == QChar('|')) {
+            if (current_size >= taExpectedColumnsAmount) {
+                return std::nullopt; // Too many of columns.
+            }
+            positions.at(current_size++) = i;
+        }
+    }
+    if (current_size != taExpectedColumnsAmount) {
+        return std::nullopt; // Not enough of columns.
+    }
+    return std::make_optional(std::move(positions));
+}
+
+constexpr qsizetype kRowIndexOfDividers = 0;
+constexpr qsizetype kHeadersSize = 2;
+
+/// @brief Takes 1st word as key and everything else - as value.
+/// Key must be aligned to begin of the string, any amount of space/tabs can
+/// separated key/value.
+/// @note if string begins with spaces it will be invalid object.
+struct SplitString {
+    QString key;
+    QString value;
+
+    explicit SplitString(const QString &line)
+    {
+        // (.*) ^ - string's begin
+        // (\S+) - Group 1: non-space symbols (key / left word)
+        // \s* - 0 or more space characters - delimeter
+        // (.*) - Group 2 - all other symbols till the string end
+        static const QRegularExpression kSplitRx("^(\\S+)\\s*(.*)");
+
+        if (!line.isEmpty()) {
+            const QRegularExpressionMatch match = kSplitRx.match(line);
+            if (match.hasMatch()) {
+                key = match.captured(1).simplified();
+                value = match.captured(2).simplified();
+            }
+        }
+    }
+
+    [[nodiscard]]
+    bool isValid() const
+    {
+        return !key.isEmpty();
+    }
+};
+
+QString formatDateTime(const QDateTime &datetime)
+{
+    return datetime.toString(Qt::ISODate);
+}
+
+/// @brief Parser of date/time in "task" output.
+struct DateTimeParser {
+    qsizetype expected_lexems_count;
+    qsizetype date_lexem_index;
+    qsizetype time_lexem_index;
+
+    [[nodiscard]]
+    AbstractTask::OptionalDateTime
+    parseDateTimeString(const QString &line_of_lexems) const
+    {
+        Q_ASSERT(date_lexem_index < expected_lexems_count);
+        Q_ASSERT(time_lexem_index < expected_lexems_count);
+
+        const auto lexems = splitSpaceSeparatedString(line_of_lexems);
+        if (lexems.size() != expected_lexems_count) {
+            return std::nullopt;
+        }
+        return composeDateTime(lexems.at(date_lexem_index),
+                               lexems.at(time_lexem_index));
+    }
+
+  private:
+    [[nodiscard]]
+    static AbstractTask::OptionalDateTime composeDateTime(const QString &date,
+                                                          const QString &time)
+    {
+        auto dt = QDateTime::fromString(QString{ "%1T%2" }.arg(date, time),
+                                        Qt::ISODate);
+        if (dt.isValid()) {
+            return dt;
+        }
+        return std::nullopt;
+    }
+};
+
+/// @brief Error code and error message of executing the program.
+struct TExecError {
+    int code;
+    QString message;
+};
+
+/// @brief It is resulting error code or stdout of calling external binary.
+struct TExecResult {
+    std::variant<TExecError, QStringList> exec_result_value;
+    static constexpr int kSuccessCode = 0;
+
+    [[nodiscard]]
+    const TExecError &getError() const
+    {
+        static const TExecError kNoError{ kSuccessCode, {} };
+
+        if (const TExecError *error =
+                std::get_if<TExecError>(&exec_result_value)) {
+            return *error;
+        }
+        return kNoError;
+    }
+
+    [[nodiscard]]
+    const QStringList &getStdout() const
+    {
+        static const QStringList kNoStdout;
+
+        if (const QStringList *stdout_lines =
+                std::get_if<QStringList>(&exec_result_value)) {
+            return *stdout_lines;
+        }
+        return kNoStdout;
+    }
+
+    /// @brief This object evaluates to true in bool context if it has no error.
+    /// @returns true if it was NO error.
+    [[nodiscard]]
+    operator bool() const // NOLINT
+    {
+        return getError().code == kSuccessCode;
+    }
+};
+
+/// @brief Executes configured task and @returns TExecResult.
+TExecResult execProgram(const QString &binary, const QStringList &all_params)
+{
+    constexpr int kStartDelayMs = 1000;
+    constexpr int kFinishDelayMs = 30000;
+
+    QProcess proc;
+    proc.start(binary, all_params);
+
+    if (!proc.waitForStarted(kStartDelayMs)) {
+        return { TExecError{
+            -1, QString("Failed to start: [ %1 ].").arg(proc.errorString()) } };
+    }
+
+    if (!proc.waitForFinished(kFinishDelayMs)) {
+        return { TExecError{
+            -1,
+            QString("Execution timeout after %1ms.").arg(kFinishDelayMs) } };
+    }
+
+    const int exitCode = proc.exitCode();
+    if (proc.exitStatus() != QProcess::NormalExit || exitCode != 0) {
+        return { TExecError{
+            exitCode != 0 ? exitCode : -1,
+            QString::fromLocal8Bit(proc.readAllStandardError()) } };
+    }
+
+    static const QRegularExpression kSplitter("[\r\n]");
+    return TExecResult{ QString::fromLocal8Bit(proc.readAllStandardOutput())
+                            .split(kSplitter, kSplitBehaviour) };
+}
+
+/// @brief Executes configured "task" program and @returns TExecResult.
+TExecResult execTaskProgram(const QStringList &all_params)
+{
+    const auto &binary = ConfigManager::config().getTaskBin();
+    qDebug() << binary << " " << all_params;
+    auto res = execProgram(binary, all_params);
+    qDebug() << res;
+
+    return res;
+}
+
+/// @brief Executes configured task with defaults required parameters and
+/// @returns TExecResult.
+TExecResult execTaskProgramWithDefaults(const QStringList &all_params)
+{
+    QStringList args{ "rc.gc=off", "rc.confirmation=off", "rc.bulk=0",
+                      "rc.defaultwidth=0" };
+    args << all_params;
+    return execTaskProgram(args);
+}
+
+} // namespace
 
 Taskwarrior::Taskwarrior()
     : m_actions_counter(0ull)
@@ -36,31 +258,26 @@ Taskwarrior::~Taskwarrior() = default;
 
 bool Taskwarrior::init()
 {
-    QByteArray out;
-    if (!execCmd({ "version" }, out, false, false)) {
+    const auto version_res = execTaskProgram({ "version" });
+    const auto &ver_strings = version_res.getStdout();
+    if (!version_res || ver_strings.size() < 1) {
         return false;
     }
-    const auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 2) {
-        return false;
-    }
-    const QString line = out_bytes[1];
-    const QString task_version = line.split(' ', s_split_behaviour)[1];
+
+    const auto task_version =
+        splitSpaceSeparatedString(ver_strings.at(0)).at(1);
     if (task_version.isEmpty()) {
         return false;
     }
-    m_task_version = { QString(task_version) };
+    m_task_version = { task_version };
 
-    if (!execCmd({ "rc.gc=on" }, false, false)) {
-        return false;
-    }
-
-    return true;
+    return execTaskProgram({ "rc.gc=on" });
 }
 
 bool Taskwarrior::addTask(const Task &task)
 {
-    if (execCmd(QStringList() << "add" << task.getCmdArgs())) {
+    if (execTaskProgramWithDefaults(QStringList{ "add" }
+                                    << task.getCmdArgs())) {
         ++m_actions_counter;
         return true;
     }
@@ -69,7 +286,7 @@ bool Taskwarrior::addTask(const Task &task)
 
 bool Taskwarrior::startTask(const QString &id)
 {
-    if (execCmd({ "start", id })) {
+    if (execTaskProgramWithDefaults({ "start", id })) {
         ++m_actions_counter;
         return true;
     }
@@ -78,7 +295,7 @@ bool Taskwarrior::startTask(const QString &id)
 
 bool Taskwarrior::stopTask(const QString &id)
 {
-    if (execCmd({ "stop", id })) {
+    if (execTaskProgramWithDefaults({ "stop", id })) {
         ++m_actions_counter;
         return true;
     }
@@ -87,7 +304,8 @@ bool Taskwarrior::stopTask(const QString &id)
 
 bool Taskwarrior::editTask(const Task &task)
 {
-    if (execCmd(QStringList() << task.uuid << "modify" << task.getCmdArgs())) {
+    if (execTaskProgramWithDefaults(QStringList{ task.uuid, "modify" }
+                                    << task.getCmdArgs())) {
         ++m_actions_counter;
         return true;
     }
@@ -96,176 +314,151 @@ bool Taskwarrior::editTask(const Task &task)
 
 bool Taskwarrior::setPriority(const QString &id, Task::Priority p)
 {
-    const auto p_str = QString{ "pri:'%1'" }.arg(Task::priorityToString(p));
-    if (execCmd({ id, "modify", p_str })) {
+    if (execTaskProgramWithDefaults(
+            { id, "modify",
+              QString{ "pri:'%1'" }.arg(Task::priorityToString(p)) })) {
         ++m_actions_counter;
         return true;
     }
     return false;
 }
 
-bool Taskwarrior::getTask(const QString &id, Task &task)
+std::optional<Task> Taskwarrior::getTask(const QString &id) const
 {
-    QByteArray out;
-    auto args = QStringList() << id << "information";
-    if (!execCmd(args, out)) {
-        return false;
+    using TaskProcessor = std::function<void(const SplitString &, Task &)>;
+    static const std::unordered_map<QString, TaskProcessor>
+        kSplitLineProcessors = {
+            { "ID",
+              [](const auto &line, auto &task) { task.uuid = line.value; } },
+            { "Project",
+              [](const auto &line, auto &task) { task.project = line.value; } },
+            { "Priority",
+              [](const auto &line, auto &task) {
+                  task.priority = Task::priorityFromString(line.value);
+              } },
+            { "Tags",
+              [](const auto &line, auto &task) {
+                  task.tags = splitSpaceSeparatedString(line.value);
+              } },
+            { "Start", [](const auto &, auto &task) { task.active = true; } },
+            { "Waiting",
+              [](const auto &line, auto &task) {
+                  // Waiting until 2025-11-04 00:00:00
+                  // so "until" becomes 0th token of SplitString::value
+                  static const DateTimeParser parser{ 3, 1, 2 };
+                  task.wait = parser.parseDateTimeString(line.value);
+              } },
+            { "Scheduled",
+              [](const auto &line, auto &task) {
+                  static const DateTimeParser parser{ 2, 0, 1 };
+                  task.sched = parser.parseDateTimeString(line.value);
+              } },
+            { "Due",
+              [](const auto &line, auto &task) {
+                  static const DateTimeParser parser{ 2, 0, 1 };
+                  task.due = parser.parseDateTimeString(line.value);
+              } },
+        };
+
+    enum class MultilineDescriptionStatus { NotStarted, InProgress };
+    MultilineDescriptionStatus description_status{
+        MultilineDescriptionStatus::NotStarted
+    };
+
+    const auto info_res = execTaskProgramWithDefaults({ id, "information" });
+    if (!info_res) {
+        return std::nullopt;
+    }
+    const auto &info_out = info_res.getStdout();
+    if (info_out.size() < kHeadersSize + 1) {
+        return std::nullopt; // not found
     }
 
-    auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 5) {
-        return false; // not found
-    }
-    bool desc_done = false;
-    for (size_t i = 3; i < out_bytes.size() - 3; ++i) {
-        const QByteArray &bytes = out_bytes[i];
-        if (bytes.isEmpty()) {
-            continue;
-        }
-        const QString line(bytes);
-        if (line.startsWith("ID")) {
-            task.uuid = line.section(' ', 1).simplified();
-            continue;
-        }
-        if (line.startsWith("Description")) {
-            task.description = line.section(' ', 1).simplified();
-            continue;
-        }
-        if (line.startsWith("Project")) {
-            task.project = line.section(' ', 1).simplified();
-            continue;
-        }
-        if (line.startsWith("Priority")) {
-            task.priority =
-                Task::priorityFromString(line.section(' ', 1).simplified());
-            continue;
-        }
-        if (line.startsWith("Tags")) {
-            auto tags_line = line.section(' ', 1).simplified();
-            task.tags = tags_line.split(' ', s_split_behaviour);
-            continue;
-        }
-        if (line.startsWith("Start")) {
-            task.active = true;
-            continue;
-        }
-        if (line.startsWith("Waiting")) {
-            const QStringList lexemes = line.split(' ', s_split_behaviour);
-            if (lexemes.size() != 4) {
-                continue;
+    Task task;
+    std::for_each(
+        std::next(info_out.cbegin(), kHeadersSize), info_out.cend(),
+        [&task, &description_status](const auto &whole_line) {
+            // If string begins with spaces, split_string object is invalid.
+            const SplitString split_string(whole_line);
+            if (!split_string.isValid()) {
+                if (description_status ==
+                    MultilineDescriptionStatus::InProgress) {
+                    task.description += '\n' + whole_line.simplified();
+                }
+                return;
             }
-            auto dt = QDateTime::fromString(
-                QString{ "%1T%2" }.arg(lexemes[2], lexemes[3]), Qt::ISODate);
-            if (dt.isValid()) {
-                task.wait = dt;
+            if (split_string.key == "Description") {
+                const auto descr1 = split_string.value.simplified();
+                if (!descr1.isEmpty()) {
+                    task.description = descr1;
+                    description_status = MultilineDescriptionStatus::InProgress;
+                }
+                return;
             }
-            continue;
-        }
-        if (line.startsWith("Scheduled")) {
-            const QStringList lexemes = line.split(' ', s_split_behaviour);
-            if (lexemes.size() != 3) {
-                continue;
+            if (description_status == MultilineDescriptionStatus::InProgress) {
+                task.unescapeStoredDescription();
             }
-            auto dt = QDateTime::fromString(
-                QString{ "%1T%2" }.arg(lexemes[1], lexemes[2]), Qt::ISODate);
-            if (dt.isValid()) {
-                task.sched = dt;
-            }
-            continue;
-        }
-        if (line.startsWith("Due")) {
-            const QStringList lexemes = line.split(' ', s_split_behaviour);
-            if (lexemes.size() != 3) {
-                continue;
-            }
-            auto dt = QDateTime::fromString(
-                QString{ "%1T%2" }.arg(lexemes[1], lexemes[2]), Qt::ISODate);
-            if (dt.isValid()) {
-                task.due = dt;
-            }
-            continue;
-        } else {
-            // Searching multiline description
-            if (desc_done || line.startsWith("Status")) {
-                desc_done = true;
-                continue;
-            }
+            description_status = MultilineDescriptionStatus::NotStarted;
 
-            const QString desc_line = line.section(' ', 1).simplified();
-            if (desc_line.isEmpty()) {
-                continue;
+            const auto it = kSplitLineProcessors.find(split_string.key);
+            if (it != kSplitLineProcessors.end()) {
+                it->second(split_string, task);
+                return;
             }
+        });
 
-            const QString first_word =
-                line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
-            const QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
-            if (dt.isValid()) {
-                desc_done = true;
-                continue;
-            }
-
-            task.description += '\n' + desc_line;
-        }
-    }
-
-    return true;
+    return task;
 }
 
-bool Taskwarrior::getTasks(QList<Task> &tasks)
+std::optional<QList<Task>> Taskwarrior::getTasks() const
 {
-    QByteArray out;
-    auto args = QStringList() << "rc.report.minimal.columns=id,start.active,"
-                                 "project,priority,scheduled,due,description"
-                              << "rc.report.minimal.labels=',|,|,|,|,|,|'"
-                              << "rc.report.minimal.sort=urgency-"
-                              << "rc.print.empty.columns=yes"
-                              << "rc.dateformat=Y-M-DTH:N:S"
-                              << "+PENDING"
-                              << "minimal";
-
-    if (!execCmd(args, out, /*filter_enabled=*/true)) {
-        return false;
-    }
-
-    auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 6) {
-        return true; // no tasks
-    }
-
-    // Get positions from the labels string
-    QVector<int> positions;
-    constexpr int columns_num = 6;
-    for (int i = 0; i < out_bytes[1].size(); ++i) {
-        const auto b = out_bytes[1][i];
-        if (b == '|') {
-            positions.push_back(i);
+    constexpr qsizetype kExpectedColumnsCount = 6;
+    const auto response = execTaskProgramWithDefaults(
+        QStringList{
+            // clang-format off
+            "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,description",
+            // clang-format on
+            "rc.report.minimal.labels=',|,|,|,|,|,|'",
+            "rc.report.minimal.sort=urgency-",
+            "rc.print.empty.columns=yes",
+            "rc.dateformat=Y-M-DTH:N:S",
+            "+PENDING",
+            "minimal",
         }
+        << m_filter);
+
+    const auto &tasks_strs = response.getStdout();
+    if (!response || tasks_strs.size() < kHeadersSize + 1) {
+        return std::nullopt;
     }
-    if (positions.size() != columns_num) {
-        return false;
+
+    // Get positions from the labels string.
+    const auto opt_positions = findColumnPositions<kExpectedColumnsCount>(
+        tasks_strs.at(kRowIndexOfDividers));
+    if (!opt_positions) {
+        return std::nullopt;
     }
+    const auto &positions = *opt_positions;
+
+    QList<Task> tasks_result;
 
     bool found_annotation = false;
-    for (size_t i = 3; i < out_bytes.size() - 3; ++i) {
-        const QByteArray &bytes = out_bytes[i];
-        if (bytes.isEmpty()) {
+    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize);
+         line_it != tasks_strs.end(); ++line_it) {
+        const auto &line = *line_it;
+
+        if (line.size() < positions[3]) {
             continue;
         }
-        const QString line(bytes);
-        if (line.size() < positions[3]) {
-            return false;
-        }
 
+        // TODO: it could be simplified too, probably.
         Task task;
-
         task.uuid = line.mid(0, positions[0]).simplified();
-        bool can_convert = false;
-        (void)task.uuid.toInt(&can_convert);
-        if (!can_convert) {
-            // It's probably a continuation of the multiline description or an
-            // annotation from the previous task.
-            if ((line.size() < positions[3]) || tasks.isEmpty() ||
-                found_annotation) {
+
+        if (!isInteger(task.uuid)) {
+            // It's probably a continuation of the multiline description or
+            // an annotation from the previous task.
+            if (tasks_result.isEmpty() || found_annotation) {
                 continue;
             }
 
@@ -275,18 +468,17 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
                 continue;
             }
 
-            // The annotations always start with a timestamp. And they always
-            // follows the description.
+            // The annotations always start with a timestamp. And they
+            // always follows the description.
             const QString first_word =
                 line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
-            const QDateTime dt = QDateTime::fromString(first_word, Qt::ISODate);
-            if (dt.isValid()) {
+            if (QDateTime::fromString(first_word, Qt::ISODate).isValid()) {
                 // We won't handle the annotations at all.
                 found_annotation = true;
                 continue;
             }
 
-            tasks[tasks.size() - 1].description += '\n' + desc_line;
+            tasks_result.back().description += '\n' + desc_line;
             continue;
         }
 
@@ -312,71 +504,62 @@ bool Taskwarrior::getTasks(QList<Task> &tasks)
             task.due = due;
         }
         task.description = line.right(line.size() - positions[5]).simplified();
-
-        tasks.push_back(task);
+        task.unescapeStoredDescription();
+        tasks_result.emplace_back(std::move(task));
     }
 
-    return true;
+    return tasks_result;
 }
 
-bool Taskwarrior::getRecurringTasks(QList<RecurringTask> &out_tasks)
+std::optional<QList<RecurringTask>> Taskwarrior::getRecurringTasks() const
 {
-    QByteArray out;
+    constexpr qsizetype kExpectedColumnsCount = 3;
+    const auto response = execTaskProgramWithDefaults(QStringList{
+        "recurring_full",
+        "rc.report.recurring_full.columns=id,recur,project,description",
+        "rc.report.recurring_full.labels=',|,|,|'",
+        "status:Recurring",
+    });
 
-    auto args = QStringList() << "recurring_full"
-                              << "rc.report.recurring_full.columns=id,recur,"
-                                 "project,description"
-                              << "rc.report.recurring_full.labels=',|,|,|'"
-                              << "status:Recurring";
-
-    if (!execCmd(args, out)) {
-        return false;
+    const auto &tasks_strs = response.getStdout();
+    if (!response) {
+        return std::nullopt;
     }
-
-    auto out_bytes = out.split('\n');
-    if (out_bytes.size() < 5) {
-        return true; // no tasks
+    if (tasks_strs.size() < kHeadersSize + 1) {
+        return QList<RecurringTask>{}; // no tasks
     }
 
     // Get positions from the labels string
     // id created mod status recur wait due project description mask
-    QVector<int> positions;
-    constexpr int columns_num = 3;
-    for (int i = 0; i < out_bytes[2].size(); ++i) {
-        const auto b = out_bytes[2][i];
-        if (b == ' ') {
-            positions.push_back(i);
-        }
+    const auto opt_positions = findColumnPositions<kExpectedColumnsCount>(
+        response.getStdout().at(kRowIndexOfDividers));
+    if (!opt_positions) {
+        return std::nullopt;
     }
-    if (positions.size() != columns_num) {
-        return false;
-    }
+    const auto &positions = *opt_positions;
 
-    for (size_t i = 3; i < out_bytes.size() - 2; ++i) {
-        const QByteArray &bytes = out_bytes[i];
-        if (bytes.isEmpty()) {
-            continue;
-        }
-        const QString line(bytes);
+    QList<RecurringTask> out_tasks;
+    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize);
+         line_it != tasks_strs.end(); ++line_it) {
+        const auto &line = *line_it;
 
         RecurringTask task;
-        task.uuid =
-            line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
+        task.uuid = line.mid(0, positions[0]).simplified();
         task.period =
             line.mid(positions[0], positions[1] - positions[0]).simplified();
         task.project =
             line.mid(positions[1], positions[2] - positions[1]).simplified();
         task.description = line.right(line.size() - positions[2]).simplified();
-
+        task.unescapeStoredDescription();
         out_tasks.push_back(task);
     }
 
-    return true;
+    return out_tasks;
 }
 
 bool Taskwarrior::deleteTask(const QString &id)
 {
-    if (execCmd({ "delete", id })) {
+    if (execTaskProgramWithDefaults({ "delete", id })) {
         ++m_actions_counter;
         return true;
     }
@@ -388,7 +571,7 @@ bool Taskwarrior::deleteTask(const QStringList &ids)
     if (ids.isEmpty()) {
         return true;
     }
-    if (execCmd({ "delete", ids.join(',') })) {
+    if (execTaskProgramWithDefaults({ "delete", ids.join(',') })) {
         ++m_actions_counter;
         return true;
     }
@@ -397,7 +580,7 @@ bool Taskwarrior::deleteTask(const QStringList &ids)
 
 bool Taskwarrior::setTaskDone(const QString &id)
 {
-    if (execCmd({ "done", id })) {
+    if (execTaskProgramWithDefaults({ "done", id })) {
         ++m_actions_counter;
         return true;
     }
@@ -409,7 +592,7 @@ bool Taskwarrior::setTaskDone(const QStringList &ids)
     if (ids.isEmpty()) {
         return true;
     }
-    if (execCmd({ "done", ids.join(',') })) {
+    if (execTaskProgramWithDefaults({ "done", ids.join(',') })) {
         ++m_actions_counter;
         return true;
     }
@@ -418,8 +601,9 @@ bool Taskwarrior::setTaskDone(const QStringList &ids)
 
 bool Taskwarrior::waitTask(const QString &id, const QDateTime &datetime)
 {
-    if (execCmd({ "modify", id,
-                  QString("wait:%1").arg(formatDateTime(datetime)) })) {
+    if (execTaskProgramWithDefaults(
+            { "modify", id,
+              QString("wait:%1").arg(formatDateTime(datetime)) })) {
         ++m_actions_counter;
         return true;
     }
@@ -431,8 +615,9 @@ bool Taskwarrior::waitTask(const QStringList &ids, const QDateTime &datetime)
     if (ids.isEmpty()) {
         return true;
     }
-    if (execCmd({ "modify", ids.join(','),
-                  QString("wait:%1").arg(formatDateTime(datetime)) })) {
+    if (execTaskProgramWithDefaults(
+            { "modify", ids.join(','),
+              QString("wait:%1").arg(formatDateTime(datetime)) })) {
         ++m_actions_counter;
         return true;
     }
@@ -444,7 +629,7 @@ bool Taskwarrior::undoTask()
     if (m_actions_counter == 0) {
         return true;
     }
-    if (execCmd({ "undo" })) {
+    if (execTaskProgramWithDefaults({ "undo" })) {
         --m_actions_counter;
         return true;
     }
@@ -457,7 +642,8 @@ bool Taskwarrior::applyFilter(const QStringList &filter)
     if (filter.isEmpty()) {
         return true;
     }
-    if (execCmd({ "ids" }, /*filter_enabled=*/true)) { // test the new filter
+    if (execTaskProgramWithDefaults(QStringList{ "ids" }
+                                    << m_filter)) { // test the new filter
         return true;
     }
     m_filter.clear();
@@ -466,83 +652,7 @@ bool Taskwarrior::applyFilter(const QStringList &filter)
 
 int Taskwarrior::directCmd(const QString &cmd)
 {
-    QProcess proc;
-    int rc = -1;
-
-    const QStringList args = cmd.split(' ', s_split_behaviour) << s_args;
-
-    proc.start(ConfigManager::config().getTaskBin(), args);
-    if (proc.waitForStarted(1000)) {
-        if (proc.waitForFinished() &&
-            (proc.exitStatus() == QProcess::NormalExit)) {
-            rc = proc.exitCode();
-        }
-    }
-
-    return rc;
-}
-
-bool Taskwarrior::execCmd(const QStringList &args, bool filter_enabled,
-                          bool use_standard_args)
-{
-    QProcess proc;
-    int rc = -1;
-
-    QStringList real_args;
-    if (filter_enabled) {
-        real_args << m_filter;
-    }
-    if (use_standard_args) {
-        real_args << s_args;
-    }
-    real_args << args;
-
-    qDebug() << ConfigManager::config().getTaskBin() << real_args;
-    proc.start(ConfigManager::config().getTaskBin(), real_args);
-
-    if (proc.waitForStarted(1000)) {
-        if (proc.waitForFinished(1000) &&
-            (proc.exitStatus() == QProcess::NormalExit)) {
-            rc = proc.exitCode();
-        }
-    }
-
-    return rc == 0;
-}
-
-bool Taskwarrior::execCmd(const QStringList &args, QByteArray &out,
-                          bool filter_enabled, bool use_standard_args)
-{
-    QProcess proc;
-    int rc = -1;
-
-    QStringList real_args;
-    if (filter_enabled) {
-        real_args << m_filter;
-    }
-    if (use_standard_args) {
-        real_args << s_args;
-    }
-    real_args << args;
-
-    qDebug() << ConfigManager::config().getTaskBin() << real_args;
-    proc.start(ConfigManager::config().getTaskBin(), real_args);
-
-    if (proc.waitForStarted(1000)) {
-        if (proc.waitForFinished(1000) &&
-            (proc.exitStatus() == QProcess::NormalExit)) {
-            rc = proc.exitCode();
-        }
-    }
-
-    if (rc != 0) {
-        return false;
-    }
-    out = proc.readAllStandardOutput();
-    return true;
-}
-
-QString Taskwarrior::formatDateTime(const QDateTime &datetime) const
-{
-    return datetime.toString(Qt::ISODate);
+    return execTaskProgramWithDefaults(splitSpaceSeparatedString(cmd))
+        .getError()
+        .code;
 }

@@ -3,7 +3,9 @@
 
 #include <QCalendarWidget>
 #include <QDialog>
+#include <QList>
 #include <QListWidget>
+#include <QString>
 #include <QVBoxLayout>
 
 #include "task.hpp"

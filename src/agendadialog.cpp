@@ -73,12 +73,12 @@ void AgendaDialog::setCalendarHighlight()
     due_color.setGreen(select_color(due_color.green() - 25));
     QTextCharFormat hightlight;
     for (const auto &t : std::as_const(m_tasks)) {
-        if (!t.due.isNull()) {
+        if (t.due.has_value()) {
             hightlight.setBackground(due_color);
-            m_calendar->setDateTextFormat(t.due.toDate(), hightlight);
-        } else if (!t.sched.isNull()) {
+            m_calendar->setDateTextFormat(t.due->date(), hightlight);
+        } else if (t.sched.has_value()) {
             hightlight.setBackground(sched_color);
-            m_calendar->setDateTextFormat(t.sched.toDate(), hightlight);
+            m_calendar->setDateTextFormat(t.sched->date(), hightlight);
         }
     }
 }
@@ -90,15 +90,15 @@ void AgendaDialog::onUpdateTasks()
     m_due_tasks_list->clear();
     for (const auto &t : std::as_const(m_tasks)) {
         // Scheduled tasks
-        if (!t.sched.isNull() && t.sched.toDate() == date) {
-            auto *task_item = new QListWidgetItem;
+        if (t.sched.has_value() && t.sched->date() == date) {
+            auto *task_item = new QListWidgetItem(m_sched_tasks_list);
             const auto text = QString{ "%1: %2" }.arg(t.uuid, t.description);
             task_item->setText(text);
             m_sched_tasks_list->addItem(task_item);
         }
         // Due tasks
-        if (!t.due.isNull() && t.due.toDate() == date) {
-            auto *task_item = new QListWidgetItem;
+        if (t.due.has_value() && t.due->date() == date) {
+            auto *task_item = new QListWidgetItem(m_due_tasks_list);
             const auto text = QString{ "%1: %2" }.arg(t.uuid, t.description);
             task_item->setText(text);
             m_due_tasks_list->addItem(task_item);
