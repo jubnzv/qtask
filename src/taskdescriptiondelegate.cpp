@@ -7,6 +7,9 @@
 
 #include "tasksmodel.hpp"
 
+// FIXME: this is sort of broken, for example it will not show \\ as markdown
+// but without markdown it will draw multiline string outside limits.
+
 TaskDescriptionDelegate::TaskDescriptionDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
 {
