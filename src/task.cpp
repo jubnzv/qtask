@@ -4,7 +4,9 @@
 #include <QRegularExpression>
 #include <QString>
 #include <QStringList>
+#include <QStringLiteral>
 #include <QVariant>
+#include <qnamespace.h>
 
 namespace
 {

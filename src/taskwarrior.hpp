@@ -44,9 +44,9 @@ class Taskwarrior {
     bool stopTask(const QString &id);
     bool editTask(const Task &task);
     bool setPriority(const QString &id, Task::Priority);
-    std::optional<Task> getTask(const QString &id) const;
-    std::optional<QList<Task>> getTasks() const;
-    std::optional<QList<RecurringTask>> getRecurringTasks() const;
+    [[nodiscard]] std::optional<Task> getTask(const QString &id) const;
+    [[nodiscard]] std::optional<QList<Task>> getTasks() const;
+    [[nodiscard]] std::optional<QList<RecurringTask>> getRecurringTasks() const;
     bool deleteTask(const QString &id);
     bool deleteTask(const QStringList &ids);
     bool setTaskDone(const QString &id);

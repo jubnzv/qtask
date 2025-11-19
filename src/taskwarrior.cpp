@@ -21,10 +21,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <functional>
+#include <iostream>
 #include <iterator>
 #include <optional>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -232,7 +233,11 @@ TExecResult execTaskProgram(const QStringList &all_params)
     qDebug() << binary << " " << all_params;
     auto res = execProgram(binary, all_params);
     qDebug() << res;
-
+    if (!res) {
+        std::cerr << "Error executing " << binary.toStdString() << "\n";
+        std::cerr << "Code: " << res.getError().code << ". "
+                  << res.getError().message.toStdString() << std::endl;
+    }
     return res;
 }
 
@@ -360,7 +365,10 @@ std::optional<Task> Taskwarrior::getTask(const QString &id) const
               } },
         };
 
-    enum class MultilineDescriptionStatus { NotStarted, InProgress };
+    enum class MultilineDescriptionStatus : std::uint8_t {
+        NotStarted,
+        InProgress
+    };
     MultilineDescriptionStatus description_status{
         MultilineDescriptionStatus::NotStarted
     };
