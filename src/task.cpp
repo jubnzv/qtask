@@ -84,18 +84,10 @@ QStringList Task::getCmdArgs() const
     result << QString{ "wait:%1" }.arg(
         wait.value_or(null_dt).toString(Qt::ISODate));
 
-    QString escaped_desc = description;
+    // Single \ sign is missing, need to double it.
+    auto escaped_desc = description;
     escaped_desc.replace(QStringLiteral("\\"), QStringLiteral("\\\\"));
-    escaped_desc.replace(QStringLiteral("\""), QStringLiteral("\\\""));
-    result << QString{ "\"%1\"" }.arg(escaped_desc);
+    result << escaped_desc;
 
     return result;
-}
-
-void AbstractTask::unescapeStoredDescription()
-{
-    if (!description.isEmpty()) {
-        description.replace(QStringLiteral("\\\\"), QStringLiteral("\\"));
-        description.replace(QStringLiteral("\\\""), QStringLiteral("\""));
-    }
 }

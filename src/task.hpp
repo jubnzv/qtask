@@ -17,12 +17,6 @@ struct AbstractTask {
     QStringList tags;
     OptionalDateTime sched;
     OptionalDateTime due;
-
-    /// @brief It MUST be called once description is read from "task".
-    /// Because taskwarrior does escaping too.
-    /// @note Placing it here because getCmdArgs() will do escaping. So they
-    /// both are close and not forgotten.
-    void unescapeStoredDescription();
 };
 
 struct Task final : public AbstractTask {

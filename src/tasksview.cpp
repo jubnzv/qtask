@@ -10,6 +10,7 @@
 #include <QTableView>
 #include <QWidget>
 #include <qnamespace.h>
+#include <qtmetamacros.h>
 
 #include "task.hpp"
 #include "taskdescriptiondelegate.hpp"

@@ -395,9 +395,6 @@ std::optional<Task> Taskwarrior::getTask(const QString &id) const
                 }
                 return;
             }
-            if (description_status == MultilineDescriptionStatus::InProgress) {
-                task.unescapeStoredDescription();
-            }
             description_status = MultilineDescriptionStatus::NotStarted;
 
             const auto it = kSplitLineProcessors.find(split_string.key);
@@ -504,7 +501,6 @@ std::optional<QList<Task>> Taskwarrior::getTasks() const
             task.due = due;
         }
         task.description = line.right(line.size() - positions[5]).simplified();
-        task.unescapeStoredDescription();
         tasks_result.emplace_back(std::move(task));
     }
 
@@ -550,7 +546,6 @@ std::optional<QList<RecurringTask>> Taskwarrior::getRecurringTasks() const
         task.project =
             line.mid(positions[1], positions[2] - positions[1]).simplified();
         task.description = line.right(line.size() - positions[2]).simplified();
-        task.unescapeStoredDescription();
         out_tasks.push_back(task);
     }
 
