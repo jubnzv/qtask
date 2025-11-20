@@ -79,7 +79,7 @@ constexpr qsizetype kRowIndexOfDividers = 0;
 constexpr qsizetype kHeadersSize = 2;
 constexpr qsizetype kFooterSize = 1;
 
-bool TaskSentData(const QStringList &task_output)
+bool isTaskSentData(const QStringList &task_output)
 {
     // Empty lines are expected to be removed at all for this function to work.
     constexpr qsizetype kRowsAmountWhenEmptyResponse =
@@ -388,7 +388,7 @@ std::optional<Task> Taskwarrior::getTask(const QString &id) const
         return std::nullopt;
     }
     const auto &info_out = info_res.getStdout();
-    if (!TaskSentData(info_out)) {
+    if (!isTaskSentData(info_out)) {
         return std::nullopt; // not found
     }
 
@@ -444,7 +444,7 @@ std::optional<QList<Task>> Taskwarrior::getTasks() const
         << m_filter);
 
     const auto &tasks_strs = response.getStdout();
-    if (!response || !TaskSentData(tasks_strs)) {
+    if (!response || !isTaskSentData(tasks_strs)) {
         return std::nullopt;
     }
 
@@ -541,7 +541,7 @@ std::optional<QList<RecurringTask>> Taskwarrior::getRecurringTasks() const
     if (!response) {
         return std::nullopt;
     }
-    if (!TaskSentData(tasks_strs)) {
+    if (!isTaskSentData(tasks_strs)) {
         return QList<RecurringTask>{}; // no tasks
     }
 
