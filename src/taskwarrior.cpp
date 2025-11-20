@@ -394,7 +394,8 @@ std::optional<Task> Taskwarrior::getTask(const QString &id) const
 
     Task task;
     std::for_each(
-        std::next(info_out.cbegin(), kHeadersSize), info_out.cend(),
+        std::next(info_out.cbegin(), kHeadersSize),
+        std::prev(info_out.cend(), kFooterSize),
         [&task, &description_status](const auto &whole_line) {
             // If string begins with spaces, split_string object is invalid.
             const SplitString split_string(whole_line);
