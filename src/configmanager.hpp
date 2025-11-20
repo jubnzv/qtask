@@ -16,7 +16,7 @@ class ConfigManager : public QObject {
 
     bool isNew() const { return m_is_new; }
 
-    QString getTaskBin() const { return m_task_bin; }
+    const QString &getTaskBin() const { return m_task_bin; }
     void setTaskBin(const QString &v) { m_task_bin = v; }
 
     QString getTaskDataPath() const { return m_task_data_path; }

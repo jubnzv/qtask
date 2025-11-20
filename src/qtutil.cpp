@@ -152,3 +152,10 @@ bool isOkCancelOrder()
     return false;
 #endif
 }
+
+bool isInteger(const QString &what)
+{
+    bool can_convert = false;
+    std::ignore = what.toInt(&can_convert);
+    return can_convert;
+}

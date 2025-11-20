@@ -6,8 +6,9 @@
 #include <QDateTimeEdit>
 #include <QObject>
 #include <QString>
-#include <QVariant>
 #include <QWidget>
+
+#include <optional>
 
 class OptionalDateTimeEdit : public QWidget {
     Q_OBJECT
@@ -18,9 +19,9 @@ class OptionalDateTimeEdit : public QWidget {
     OptionalDateTimeEdit(const QString &label, QWidget *parent = nullptr);
     ~OptionalDateTimeEdit() override;
 
-    QVariant getDateTime() const;
+    std::optional<QDateTime> getDateTime() const;
     void setDateTime(const QDateTime &dt);
-    void setDateTime(const QVariant &);
+    void setDateTime(const std::optional<QDateTime> &);
     void setChecked(bool);
 
     void setMinimumDateTime(const QDateTime &);

@@ -10,6 +10,7 @@
 #include <QTableView>
 #include <QWidget>
 #include <qnamespace.h>
+#include <qtmetamacros.h>
 
 #include "task.hpp"
 #include "taskdescriptiondelegate.hpp"
@@ -20,6 +21,8 @@ TasksView::TasksView(QWidget *parent)
 {
     // needed for the hover functionality
     setMouseTracking(true);
+    setWordWrap(true);
+    setTextElideMode(Qt::TextElideMode::ElideRight);
 }
 
 void TasksView::mousePressEvent(QMouseEvent *event)

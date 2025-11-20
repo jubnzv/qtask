@@ -1,9 +1,26 @@
 #include "task.hpp"
 
 #include <QDateTime>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
+#include <QStringLiteral>
 #include <QVariant>
+#include <qnamespace.h>
+
+namespace
+{
+QString escapeTag(QString cleanedTag)
+{
+    cleanedTag.replace(QRegularExpression(R"(\W)"), QString("_"));
+    cleanedTag.replace(QRegularExpression(R"(_+)"), QString("_"));
+    if (!cleanedTag.isEmpty() && cleanedTag.at(0).digitValue() != -1) {
+        // Tag cannot start with digit or everything is going bad...
+        cleanedTag = "T_" + cleanedTag;
+    }
+    return cleanedTag;
+}
+} // namespace
 
 QString Task::priorityToString(const Priority &p)
 {
@@ -21,12 +38,15 @@ QString Task::priorityToString(const Priority &p)
 
 Task::Priority Task::priorityFromString(const QString &p)
 {
-    if (p == "L")
+    if (p == "L") {
         return Priority::L;
-    if (p == "M")
+    }
+    if (p == "M") {
         return Priority::M;
-    if (p == "H")
+    }
+    if (p == "H") {
         return Priority::H;
+    }
     return Priority::Unset;
 }
 
@@ -34,38 +54,42 @@ QStringList Task::getCmdArgs() const
 {
     QStringList result;
 
-    if (priority != Priority::Unset)
-        result << QString{ " pri:'%1'" }.arg(Task::priorityToString(priority));
-    else
-        result << QString{ " pri:''" };
+    if (priority != Priority::Unset) {
+        result << QString{ "pri:'%1'" }.arg(Task::priorityToString(priority));
+    } else {
+        result << QString{ "pri:''" };
+    }
 
-    result << QString{ " project:'%1'" }.arg(project);
+    result << QString{ "project:'%1'" }.arg(project);
     for (auto const &t : tags) {
         if (!t.isEmpty()) {
-            QString t_escpaed = t;
-            t_escpaed.replace("'", "");
-            if (!t_escpaed.isEmpty())
-                result << QString{ " +%1" }.arg(t_escpaed);
+            const QString t_escpaed = escapeTag(t);
+            if (!t_escpaed.isEmpty()) {
+                result << QString{ "+%1" }.arg(t_escpaed);
+            }
         }
     }
     for (auto const &t : removed_tags) {
         if (!t.isEmpty()) {
-            QString t_escpaed = t;
-            t_escpaed.replace("'", "");
-            if (!t_escpaed.isEmpty())
-                result << QString{ " -%1" }.arg(t_escpaed);
+            const QString t_escpaed = escapeTag(t);
+            if (!t_escpaed.isEmpty()) {
+                result << QString{ "-%1" }.arg(t_escpaed);
+            }
         }
     }
 
-    result << QString{ " sched:%1" }.arg(
-        sched.toDateTime().toString(Qt::ISODate));
-    result << QString{ " due:%1" }.arg(due.toDateTime().toString(Qt::ISODate));
-    result << QString{ " wait:%1" }.arg(
-        wait.toDateTime().toString(Qt::ISODate));
+    static const QDateTime null_dt;
+    result << QString{ "sched:%1" }.arg(
+        sched.value_or(null_dt).toString(Qt::ISODate));
+    result << QString{ "due:%1" }.arg(
+        due.value_or(null_dt).toString(Qt::ISODate));
+    result << QString{ "wait:%1" }.arg(
+        wait.value_or(null_dt).toString(Qt::ISODate));
 
-    QString escaped_desc = description;
-    escaped_desc.replace("'", "\'");
-    result << QString{ " '%1'" }.arg(description);
+    // Single \ sign is missing, need to double it.
+    auto escaped_desc = description;
+    escaped_desc.replace(QStringLiteral("\\"), QStringLiteral("\\\\"));
+    result << escaped_desc;
 
     return result;
 }

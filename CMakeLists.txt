@@ -4,7 +4,7 @@ project(qtask CXX)
 
 set(QTASK_VERSION_MAJOR 1)
 set(QTASK_VERSION_MINOR 1)
-set(QTASK_VERSION_PATCH 1)
+set(QTASK_VERSION_PATCH 4)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -26,6 +26,8 @@ else()
   find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets GuiPrivate Svg)
 endif()
 
+message(STATUS "Found Qt version ${QT_VERSION}.")
+
 if(${QT_VERSION} VERSION_LESS 5.3.0)
   message(FATAL_ERROR "Found Qt version ${QT_VERSION} is too small.")
 endif()
@@ -43,12 +45,12 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
   if(ENABLE_CLAZY)
     string(
       CONCAT CLAZY_CHECKS
-             "level0",
+             "level0,"
              "no-fully-qualified-moc-types,"
              "no-lambda-in-connect,"
              "no-overloaded-signal,"
              "no-qenums,"
-             "level1",
+             "level1,"
              "no-connect-3arg-lambda,"
              "no-inefficient-qlist-soft,"
              "no-overridden-signal,"
