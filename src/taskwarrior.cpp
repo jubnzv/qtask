@@ -77,6 +77,15 @@ findColumnPositions(const QString &line)
 
 constexpr qsizetype kRowIndexOfDividers = 0;
 constexpr qsizetype kHeadersSize = 2;
+constexpr qsizetype kFooterSize = 1;
+
+bool isTaskSentData(const QStringList &task_output)
+{
+    // Empty lines are expected to be removed at all for this function to work.
+    constexpr qsizetype kRowsAmountWhenEmptyResponse =
+        kHeadersSize + kFooterSize;
+    return task_output.size() > kRowsAmountWhenEmptyResponse;
+}
 
 /// @brief Takes 1st word as key and everything else - as value.
 /// Key must be aligned to begin of the string, any amount of space/tabs can
@@ -195,6 +204,7 @@ struct TExecResult {
 };
 
 /// @brief Executes configured task and @returns TExecResult.
+/// @note Empty lines are removed because of kSplitBehaviour used here.
 TExecResult execProgram(const QString &binary, const QStringList &all_params)
 {
     constexpr int kStartDelayMs = 1000;
@@ -378,13 +388,14 @@ std::optional<Task> Taskwarrior::getTask(const QString &id) const
         return std::nullopt;
     }
     const auto &info_out = info_res.getStdout();
-    if (info_out.size() < kHeadersSize + 1) {
+    if (!isTaskSentData(info_out)) {
         return std::nullopt; // not found
     }
 
     Task task;
     std::for_each(
-        std::next(info_out.cbegin(), kHeadersSize), info_out.cend(),
+        std::next(info_out.cbegin(), kHeadersSize),
+        std::prev(info_out.cend(), kFooterSize),
         [&task, &description_status](const auto &whole_line) {
             // If string begins with spaces, split_string object is invalid.
             const SplitString split_string(whole_line);
@@ -433,7 +444,7 @@ std::optional<QList<Task>> Taskwarrior::getTasks() const
         << m_filter);
 
     const auto &tasks_strs = response.getStdout();
-    if (!response || tasks_strs.size() < kHeadersSize + 1) {
+    if (!response || !isTaskSentData(tasks_strs)) {
         return std::nullopt;
     }
 
@@ -448,8 +459,9 @@ std::optional<QList<Task>> Taskwarrior::getTasks() const
     QList<Task> tasks_result;
 
     bool found_annotation = false;
-    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize);
-         line_it != tasks_strs.end(); ++line_it) {
+    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize),
+              last_it = std::prev(tasks_strs.end(), kFooterSize);
+         line_it != last_it; ++line_it) {
         const auto &line = *line_it;
 
         if (line.size() < positions[3]) {
@@ -529,7 +541,7 @@ std::optional<QList<RecurringTask>> Taskwarrior::getRecurringTasks() const
     if (!response) {
         return std::nullopt;
     }
-    if (tasks_strs.size() < kHeadersSize + 1) {
+    if (!isTaskSentData(tasks_strs)) {
         return QList<RecurringTask>{}; // no tasks
     }
 
@@ -543,8 +555,9 @@ std::optional<QList<RecurringTask>> Taskwarrior::getRecurringTasks() const
     const auto &positions = *opt_positions;
 
     QList<RecurringTask> out_tasks;
-    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize);
-         line_it != tasks_strs.end(); ++line_it) {
+    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize),
+              last_it = std::prev(tasks_strs.end(), kFooterSize);
+         line_it != last_it; ++line_it) {
         const auto &line = *line_it;
 
         RecurringTask task;
