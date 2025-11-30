@@ -2,44 +2,159 @@
 #define TASK_HPP
 
 #include <QDateTime>
+#include <QList>
 #include <QString>
 #include <QStringList>
-#include <qdatetime.h>
+#include <qvariant.h>
 
+#include <cstdint>
 #include <optional>
 
-struct AbstractTask {
-    using OptionalDateTime = std::optional<QDateTime>;
+#include "date_time_parser.hpp"
+#include "taskproperty.hpp"
+#include "taskwarriorexecutor.hpp"
 
-    QString uuid;
-    QString description;
-    QString project;
-    QStringList tags;
-    OptionalDateTime sched;
-    OptionalDateTime due;
-};
+/// @note Classes here are responsible to produce proper commands to the
+/// taskwarrior and parse it's results intact with own fields. Actual execution
+/// of the commands is done elsewhere via TaskWarriorExecutor.
 
-struct Task final : public AbstractTask {
-    enum class Priority { Unset, L, M, H };
-    static QString priorityToString(const Priority &p);
+///@brief Represents single task.
+class DetailedTaskInfo {
+  public:
+    using OptionalDateTime = DateTimeParser::OptionalDateTime;
+
+    // TODO: revise if it should stay public.
+    enum class Priority : std::uint8_t { Unset, L, M, H }; // TODO: properties
     static Priority priorityFromString(const QString &p);
 
-    Priority priority{ Priority::Unset };
+    // task_id is special, it is always used explicit, so we do not need to
+    // track modification.
+    QString task_id;
+
+    TaskProperty<QString> description;
+    TaskProperty<QString> project;
+    TaskProperty<QStringList> tags;
+    TaskProperty<QStringList> removed_tags;
+    TaskProperty<OptionalDateTime> sched;
+    TaskProperty<OptionalDateTime> due;
+    TaskProperty<OptionalDateTime> wait;
+    TaskProperty<Priority> priority;
+
     bool active{ false };
-    OptionalDateTime wait;
 
     /// Tags that will be removed at the next command.
-    QStringList removed_tags;
 
-    QStringList getCmdArgs() const;
+    /// @brief tries to add this object as new task to taskwarrior.
+    /// @returns true if task was added
+    /// @note Does not require task_id field initially set and field is not
+    /// updated.
+    bool execAddNewTask(const TaskWarriorExecutor &executor);
+
+    /// @brief uses this object to update existing task in taskwarrior.
+    /// @note All fields of this are written.
+    /// @returns true if this object updated data in taskwarrior.
+    bool execModifyExisting(const TaskWarriorExecutor &executor);
+
+    /// @brief Tries to read all data from task_warrior and fill this object.
+    /// @note task_id field must be set prior the call.
+    /// @returns true if object was properly read.
+    bool execReadExisting(const TaskWarriorExecutor &executor);
+
+  public:
+    /// @brief Constructs object with defaults, except given @p task_id set.
+    explicit DetailedTaskInfo(QString task_id);
+    /// @brief Constructs object with defaults, except given @p task_id set.
+    explicit DetailedTaskInfo(int task_id);
+
+    DetailedTaskInfo();
+
+  private:
+    [[nodiscard]]
+    QStringList getAddModifyCmdArgsFieldsRepresentation() const;
 };
 
-Q_DECLARE_METATYPE(Task)
+Q_DECLARE_METATYPE(DetailedTaskInfo)
 
-struct RecurringTask final : public AbstractTask {
+/// @brief This object allows Start/Stop/Done/Delete task(s) (1 or more at
+/// once).
+class BatchTasksManager {
+  public:
+    explicit BatchTasksManager(const QList<DetailedTaskInfo> &tasks);
+    explicit BatchTasksManager(QStringList tasks);
+
+    /// @returns true if call succeed.
+    [[nodiscard]]
+    bool execDeleteTask(const TaskWarriorExecutor &executor) const;
+
+    [[nodiscard]]
+    bool execStartTask(const TaskWarriorExecutor &executor) const;
+
+    [[nodiscard]]
+    bool execStopTask(const TaskWarriorExecutor &executor) const;
+
+    [[nodiscard]]
+    bool execDoneTask(const TaskWarriorExecutor &executor) const;
+
+    [[nodiscard]]
+    bool execWaitTask(const QDateTime &datetime,
+                      const TaskWarriorExecutor &executor) const;
+
+  private:
+    QStringList m_tasks_ids;
+
+    [[nodiscard]]
+    bool execVerb(const QString &verb, const TaskWarriorExecutor &executor,
+                  const QString &after_ids = {}) const;
+};
+
+/// @brief Keywords set by user. `task` finds all IDs which contain ALL
+/// keywords.
+class AllAtOnceKeywordsFinder {
+  public:
+    explicit AllAtOnceKeywordsFinder(QStringList keywords);
+
+    [[nodiscard]]
+    bool readIds(const TaskWarriorExecutor &executor);
+
+    [[nodiscard]]
+    const auto &getIds() const
+    {
+        return m_ids;
+    }
+
+  private:
+    QStringList m_user_keywords;
+    std::optional<QString> m_ids;
+};
+
+/// @brief Commands to read tasks list. Tasks will have particulary filled data
+/// fields, and they should be read in full later if details are needed.
+class FilteredTasksListReader {
+  public:
+    QList<DetailedTaskInfo> tasks;
+
+  public:
+    explicit FilteredTasksListReader(AllAtOnceKeywordsFinder filter);
+
+    [[nodiscard]]
+    bool readTaskList(const TaskWarriorExecutor &executor);
+
+  private:
+    AllAtOnceKeywordsFinder m_filter;
+};
+
+struct RecurringTaskTemplate {
     // Recurring period with date suffix:
     // https://taskwarrior.org/docs/design/recurrence.html#special-month-handling
+    QString uuid;
     QString period;
+    QString project;
+    QString description;
+
+    [[nodiscard]]
+    static std::optional<QList<RecurringTaskTemplate>>
+    readAll(const TaskWarriorExecutor &executor);
 };
+// Q_DECLARE_METATYPE(RecurringTaskTemplate);
 
 #endif // TASK_HPP

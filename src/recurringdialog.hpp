@@ -14,12 +14,12 @@ class RecurringDialog : public QDialog {
     Q_OBJECT
 
   public:
-    explicit RecurringDialog(QList<RecurringTask> tasks,
+    explicit RecurringDialog(QList<RecurringTaskTemplate> tasks,
                              QWidget *parent = nullptr);
     ~RecurringDialog() override;
 
   private:
-    void initUI(QList<RecurringTask> tasks);
+    void initUI(QList<RecurringTaskTemplate> tasks);
 
   private:
     QTableView *const m_tasks_view;

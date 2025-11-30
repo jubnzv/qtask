@@ -35,7 +35,7 @@ void TasksView::mousePressEvent(QMouseEvent *event)
     if (idx.isValid() && event->buttons() & Qt::LeftButton) {
         const auto task_opt = qobject_cast<TasksModel *>(model())->getTask(idx);
         if (task_opt.isValid()) {
-            const auto task = task_opt.value<Task>();
+            const auto task = task_opt.value<DetailedTaskInfo>();
             emit selectedTaskIsActive(task.active);
         }
     }

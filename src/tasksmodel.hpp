@@ -24,13 +24,13 @@ class TasksModel : public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation,
                         int role = Qt::DisplayRole) const override;
 
-    void setTasks(QList<Task>);
+    void setTasks(QList<DetailedTaskInfo>);
     QVariant getTask(const QModelIndex &) const;
 
     QColor rowColor(int row) const;
 
   private:
-    QList<Task> m_tasks;
+    QList<DetailedTaskInfo> m_tasks;
 };
 
 #endif // TASKSMODEL_HPP

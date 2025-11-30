@@ -27,7 +27,7 @@ class TaskDialogBase : public QDialog {
     TaskDialogBase(TaskDialogBase &&) = delete;
     TaskDialogBase &operator=(TaskDialogBase &&) = delete;
 
-    Task getTask();
+    DetailedTaskInfo getTask();
 
   protected slots:
     virtual void onDescriptionChanged() = 0;
@@ -40,7 +40,7 @@ class TaskDialogBase : public QDialog {
                                       QPushButton *mid_button);
 
     void keyPressEvent(QKeyEvent *) override;
-    void setTask(const Task &task);
+    void setTask(const DetailedTaskInfo &task);
 
     QVBoxLayout *const m_main_layout;
     QTextEdit *const m_task_description;
@@ -83,7 +83,7 @@ class AddTaskDialog final : public TaskDialogBase {
 class EditTaskDialog final : public TaskDialogBase {
     Q_OBJECT
   public:
-    explicit EditTaskDialog(const Task &, QWidget *parent = nullptr);
+    explicit EditTaskDialog(const DetailedTaskInfo &, QWidget *parent = nullptr);
     ~EditTaskDialog() final;
 
   signals:

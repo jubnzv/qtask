@@ -32,14 +32,14 @@ int TasksModel::columnCount(const QModelIndex & /*parent*/) const { return 3; }
 QVariant TasksModel::data(const QModelIndex &index, int role) const
 {
     if (role == Qt::DisplayRole) {
-        const Task task = m_tasks.at(index.row());
+        const DetailedTaskInfo task = m_tasks.at(index.row());
         switch (index.column()) {
         case 0:
-            return task.uuid;
+            return task.task_id;
         case 1:
-            return task.project;
+            return task.project.get();
         case 2:
-            return task.description;
+            return task.description.get();
         default:
             qDebug() << "Unexpected case in TasksModel::data";
             break;
@@ -96,7 +96,7 @@ QVariant TasksModel::headerData(int section, Qt::Orientation orientation,
     return {};
 }
 
-void TasksModel::setTasks(QList<Task> tasks)
+void TasksModel::setTasks(QList<DetailedTaskInfo> tasks)
 {
     beginResetModel();
     m_tasks = std::move(tasks);
@@ -121,16 +121,16 @@ QColor TasksModel::rowColor(int row) const
     }
 
     switch (m_tasks.at(row).priority) {
-    case Task::Priority::Unset:
+    case DetailedTaskInfo::Priority::Unset:
         c.setRgb(0xffffff);
         break;
-    case Task::Priority::L:
+    case DetailedTaskInfo::Priority::L:
         c.setRgb(0xf7ffe4);
         break;
-    case Task::Priority::M:
+    case DetailedTaskInfo::Priority::M:
         c.setRgb(0xfffae4);
         break;
-    case Task::Priority::H:
+    case DetailedTaskInfo::Priority::H:
         c.setRgb(0xd5acbe);
         break;
     default:
