@@ -75,8 +75,7 @@ bool Taskwarrior::setPriority(const QString &id, DetailedTaskInfo::Priority p)
 std::optional<DetailedTaskInfo> Taskwarrior::getTask(const QString &id)
 {
     DetailedTaskInfo task(id);
-    if (execCommandAndAccountUndo(
-            [this, &task]() { return task.execReadExisting(*m_executor); })) {
+    if (task.execReadExisting(*m_executor)) {
         return task;
     }
     return std::nullopt;
