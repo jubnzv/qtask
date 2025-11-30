@@ -13,8 +13,9 @@
 #include "task.hpp"
 #include "taskwarriorexecutor.hpp"
 
+#include <exception>
 #include <iostream>
-#include <iterator>
+#include <memory>
 #include <optional>
 #include <utility>
 
