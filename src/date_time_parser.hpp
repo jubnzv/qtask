@@ -56,7 +56,7 @@ struct DateTimeParser {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     static constexpr auto kSplitSkipEmptyParts = Qt::SkipEmptyParts;
 #else
-    static constexpr auto kSplitBehaviour = QString::SkipEmptyParts;
+    static constexpr auto kSplitSkipEmptyParts = QString::SkipEmptyParts;
 #endif // QT_VERSION_CHECK
   private:
     /// @brief tries to compose 2 strings into QDateTime as ISODate.

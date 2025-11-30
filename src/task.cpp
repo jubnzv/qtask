@@ -287,31 +287,15 @@ DetailedTaskInfo::priorityFromString(const QString &p)
     return Priority::Unset;
 }
 
-std::optional<int>
-DetailedTaskInfo::execAddNewTask(const TaskWarriorExecutor &executor)
+bool DetailedTaskInfo::execAddNewTask(const TaskWarriorExecutor &executor)
 {
-    // Task returns:
-    // Created task 8.
-    static QRegularExpression regex("Created task\\s+(\\d+)\\.");
-
     const auto exec_res = executor.execTaskProgramWithDefaults(
         QStringList{ "add" } << getAddModifyCmdArgsFieldsRepresentation());
-    if (!exec_res || exec_res.getStdout().size() != 1) {
-        return std::nullopt;
+    if (!exec_res) {
+        return false;
     }
-    const auto match = regex.match(exec_res.getStdout().first());
-    if (match.hasMatch()) {
-        auto numStr = match.captured(1);
-
-        bool ok = false;
-        int value = numStr.toInt(&ok);
-        if (ok) {
-            task_id = std::move(numStr);
-            SetPropertiesNotChanged(ok, TASK_PROPERTIES_LIST);
-            return value;
-        }
-    }
-    return std::nullopt;
+    SetPropertiesNotChanged(true, TASK_PROPERTIES_LIST);
+    return true;
 }
 
 bool DetailedTaskInfo::execModifyExisting(const TaskWarriorExecutor &executor)
@@ -456,7 +440,7 @@ FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
 bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 {
     constexpr qsizetype kExpectedColumnsCount = 6;
-    const auto cmd = QStringList{
+    auto cmd = QStringList{
         // clang-format off
                          "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,description",
         // clang-format on
@@ -466,7 +450,10 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
         "rc.dateformat=Y-M-DTH:N:S",
         "+PENDING",
         "minimal",
-    } << m_filter.getIds().value_or("");
+    };
+    if (m_filter.getIds().has_value()) {
+        cmd << *m_filter.getIds();
+    }
     const auto res = executor.execTaskProgramWithDefaults(cmd);
     if (!res) {
         return false;
@@ -606,7 +593,7 @@ RecurringTaskTemplate::readAll(const TaskWarriorExecutor &executor)
     // Get positions from the labels string
     // id created mod status recur wait due project description mask
     const auto opt_positions = findColumnPositions<kExpectedColumnsCount>(
-        response.getStdout().at(kRowIndexOfDividers));
+        tasks_strs.at(kRowIndexOfDividers));
     if (!opt_positions) {
         return std::nullopt;
     }

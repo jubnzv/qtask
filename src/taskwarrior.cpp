@@ -7,26 +7,16 @@
 #include <QStringList>
 #include <QVariant>
 #include <QVector>
-#include <qlogging.h>
-#include <qnamespace.h>
-#include <qtypes.h>
 
 #include "configmanager.hpp"
 #include "date_time_parser.hpp"
-#include "qtutil.hpp"
 #include "task.hpp"
 #include "taskwarriorexecutor.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <functional>
 #include <iostream>
 #include <iterator>
 #include <optional>
-#include <unordered_map>
 #include <utility>
-#include <variant>
 
 Taskwarrior::Taskwarrior()
     : m_actions_counter(0ull)
@@ -166,6 +156,9 @@ bool Taskwarrior::undoTask()
 
 bool Taskwarrior::applyFilter(QStringList user_keywords)
 {
+    if (!m_executor) {
+        return false;
+    }
     const bool is_empty = user_keywords.empty();
     m_filter = AllAtOnceKeywordsFinder(std::move(user_keywords));
     if (is_empty) {

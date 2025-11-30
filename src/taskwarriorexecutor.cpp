@@ -2,12 +2,12 @@
 
 #include "date_time_parser.hpp"
 
+#include <QDebug>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QStringLiteral>
-#include <QtLogging>
 
 #include <iostream>
 #include <stdexcept>

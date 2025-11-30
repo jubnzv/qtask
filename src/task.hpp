@@ -45,10 +45,10 @@ class DetailedTaskInfo {
     /// Tags that will be removed at the next command.
 
     /// @brief tries to add this object as new task to taskwarrior.
-    /// @returns std::nullopt if failure detected or newly assigned task_id.
-    /// @note Does not require task_id field initially set and updates
-    /// internal field by returned value.
-    std::optional<int> execAddNewTask(const TaskWarriorExecutor &executor);
+    /// @returns true if task was added
+    /// @note Does not require task_id field initially set and field is not
+    /// updated.
+    bool execAddNewTask(const TaskWarriorExecutor &executor);
 
     /// @brief uses this object to update existing task in taskwarrior.
     /// @note All fields of this are written.

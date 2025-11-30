@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <functional>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -91,14 +92,13 @@ class TaskProperty {
     QStringList getStringsForCmd() const
     {
         const LambdaVisitor visitors = {
-            [this](const QString &format) {
+            [this](const QString &format) -> QStringList {
                 if constexpr (is_arg_compatible<taStoredType>::value) {
                     return QStringList() << format.arg(m_value);
                 } else {
-                    assert(false &&
-                           "taStoredType is incompatible with QString::arg and "
-                           "cannot be formatted via QString pattern.");
-                    return QStringList() << format;
+                    throw std::runtime_error(
+                        "taStoredType is incompatible with QString::arg and "
+                        "cannot be formatted via QString pattern.");
                 }
             },
             [this](const FormatterToSingleStr &format) {
