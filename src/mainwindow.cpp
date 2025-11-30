@@ -451,7 +451,7 @@ void MainWindow::quitApp()
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    auto set_task_priority = [&](Task::Priority p) {
+    auto set_task_priority = [&](DetailedTaskInfo::Priority p) {
         const auto *smodel = m_tasks_view->selectionModel();
         if (!smodel->hasSelection()) {
             return;
@@ -475,11 +475,11 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             m_tasks_view->selectionModel()->clearSelection();
             return true;
         default: {
-            static const std::map<int, Task::Priority> key2priority{
-                { Qt::Key_0, Task::Priority::Unset },
-                { Qt::Key_3, Task::Priority::L },
-                { Qt::Key_2, Task::Priority::M },
-                { Qt::Key_1, Task::Priority::H },
+            static const std::map<int, DetailedTaskInfo::Priority> key2priority{
+                { Qt::Key_0, DetailedTaskInfo::Priority::Unset },
+                { Qt::Key_3, DetailedTaskInfo::Priority::L },
+                { Qt::Key_2, DetailedTaskInfo::Priority::M },
+                { Qt::Key_1, DetailedTaskInfo::Priority::H },
             };
             const auto it = key2priority.find(keyEvent->key());
             if (it == key2priority.end()) {
@@ -700,23 +700,23 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                      });
     QObject::connect(
         dlg, &QDialog::accepted,
-        [this, dlg, id_str, saved_tags = task->tags,
+        [this, dlg, id_str, saved_tags = task->tags.get(),
          saved_pri = task->priority]() {
             Q_ASSERT(dlg);
             auto t = dlg->getTask();
-            auto new_tags = t.tags;
-            t.removed_tags.clear();
+            const auto &new_tags = t.tags.get();
+            t.removed_tags = QStringList{};
             for (auto const &st : saved_tags) {
                 if (!new_tags.contains(st)) {
-                    t.removed_tags.push_back(st);
+                    t.removed_tags.modify([&st](auto &lst) { lst << st; });
                 }
             }
-            t.uuid = id_str;
+            t.task_id = id_str;
             if (!m_task_provider->editTask(t)) {
                 return;
             }
             if (saved_pri != t.priority &&
-                !m_task_provider->setPriority(t.uuid, t.priority)) {
+                !m_task_provider->setPriority(t.task_id, t.priority)) {
                 return;
             }
             updateTasks();

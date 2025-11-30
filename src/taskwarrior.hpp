@@ -9,8 +9,10 @@
 #include <QVariant>
 
 #include "task.hpp"
+#include "taskwarriorexecutor.hpp"
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 
 class Taskwarrior {
@@ -36,17 +38,21 @@ class Taskwarrior {
     [[nodiscard]]
     QVariant getTaskVersion() const
     {
-        return m_task_version;
+        if (m_executor) {
+            return m_executor->getTaskVersion();
+        }
+        return {};
     }
 
-    bool addTask(const Task &task);
+    bool addTask(DetailedTaskInfo &task);
     bool startTask(const QString &id);
     bool stopTask(const QString &id);
-    bool editTask(const Task &task);
-    bool setPriority(const QString &id, Task::Priority);
-    [[nodiscard]] std::optional<Task> getTask(const QString &id) const;
-    [[nodiscard]] std::optional<QList<Task>> getTasks() const;
-    [[nodiscard]] std::optional<QList<RecurringTask>> getRecurringTasks() const;
+    bool editTask(DetailedTaskInfo &task);
+    bool setPriority(const QString &id, DetailedTaskInfo::Priority);
+    [[nodiscard]] std::optional<DetailedTaskInfo> getTask(const QString &id);
+    [[nodiscard]] std::optional<QList<DetailedTaskInfo>> getTasks();
+    [[nodiscard]] std::optional<QList<RecurringTaskTemplate>>
+    getRecurringTasks() const;
     bool deleteTask(const QString &id);
     bool deleteTask(const QStringList &ids);
     bool setTaskDone(const QString &id);
@@ -55,20 +61,29 @@ class Taskwarrior {
     bool waitTask(const QStringList &ids, const QDateTime &datetime);
     bool undoTask();
 
-    bool applyFilter(const QStringList &);
+    bool applyFilter(QStringList user_keywords);
 
     int directCmd(const QString &cmd);
 
   private:
     bool getActiveIds(QStringList &result);
 
+    template <typename taCallable>
+    bool execCommandAndAccountUndo(const taCallable &callable)
+    {
+        if (m_executor && callable()) {
+            ++m_actions_counter;
+            return true;
+        }
+        return false;
+    }
+
   private:
-    QStringList m_filter;
-
-    /// Counter of changes in the taskwarrior database that can be undone.
+    /// @brief Counter of changes in the taskwarrior database that can be
+    /// undone.
     size_t m_actions_counter;
-
-    QVariant m_task_version;
+    std::unique_ptr<TaskWarriorExecutor> m_executor;
+    AllAtOnceKeywordsFinder m_filter;
 };
 
 #endif // TASKWARRIOR_HPP

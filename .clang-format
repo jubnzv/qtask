@@ -29,3 +29,5 @@ BraceWrapping: {
     IndentBraces : 'false'
 }
 AlignAfterOpenBracket: Align
+BreakTemplateDeclarations: Yes
+
