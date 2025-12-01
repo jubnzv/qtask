@@ -27,7 +27,7 @@ int RecurringTasksModel::columnCount(const QModelIndex & /*parent*/) const
 QVariant RecurringTasksModel::data(const QModelIndex &index, int role) const
 {
     if (role == Qt::DisplayRole) {
-        RecurringTask task = m_tasks.at(index.row());
+        RecurringTaskTemplate task = m_tasks.at(index.row());
         switch (index.column()) {
         case 0:
             return task.uuid;
@@ -84,7 +84,7 @@ QVariant RecurringTasksModel::headerData(int section,
     return {};
 }
 
-void RecurringTasksModel::setTasks(QList<RecurringTask> tasks)
+void RecurringTasksModel::setTasks(QList<RecurringTaskTemplate> tasks)
 {
     beginResetModel();
     m_tasks = std::move(tasks);

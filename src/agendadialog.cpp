@@ -21,7 +21,7 @@
 
 #include "task.hpp"
 
-AgendaDialog::AgendaDialog(QList<Task> tasks, QWidget *parent)
+AgendaDialog::AgendaDialog(QList<DetailedTaskInfo> tasks, QWidget *parent)
     : QDialog(parent)
     , m_calendar(new QCalendarWidget(this))
     , m_sched_tasks_list(new QListWidget(this))
@@ -73,12 +73,12 @@ void AgendaDialog::setCalendarHighlight()
     due_color.setGreen(select_color(due_color.green() - 25));
     QTextCharFormat hightlight;
     for (const auto &t : std::as_const(m_tasks)) {
-        if (t.due.has_value()) {
+        if (t.due.get().has_value()) {
             hightlight.setBackground(due_color);
-            m_calendar->setDateTextFormat(t.due->date(), hightlight);
-        } else if (t.sched.has_value()) {
+            m_calendar->setDateTextFormat(t.due.get()->date(), hightlight);
+        } else if (t.sched.get().has_value()) {
             hightlight.setBackground(sched_color);
-            m_calendar->setDateTextFormat(t.sched->date(), hightlight);
+            m_calendar->setDateTextFormat(t.sched.get()->date(), hightlight);
         }
     }
 }
@@ -90,16 +90,16 @@ void AgendaDialog::onUpdateTasks()
     m_due_tasks_list->clear();
     for (const auto &t : std::as_const(m_tasks)) {
         // Scheduled tasks
-        if (t.sched.has_value() && t.sched->date() == date) {
+        if (t.sched.get().has_value() && t.sched.get()->date() == date) {
             auto *task_item = new QListWidgetItem(m_sched_tasks_list);
-            const auto text = QString{ "%1: %2" }.arg(t.uuid, t.description);
+            const auto text = QString{ "%1: %2" }.arg(t.task_id, t.description);
             task_item->setText(text);
             m_sched_tasks_list->addItem(task_item);
         }
         // Due tasks
-        if (t.due.has_value() && t.due->date() == date) {
+        if (t.due.get().has_value() && t.due.get()->date() == date) {
             auto *task_item = new QListWidgetItem(m_due_tasks_list);
-            const auto text = QString{ "%1: %2" }.arg(t.uuid, t.description);
+            const auto text = QString{ "%1: %2" }.arg(t.task_id, t.description);
             task_item->setText(text);
             m_due_tasks_list->addItem(task_item);
         }

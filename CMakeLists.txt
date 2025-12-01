@@ -4,18 +4,21 @@ project(qtask CXX)
 
 set(QTASK_VERSION_MAJOR 1)
 set(QTASK_VERSION_MINOR 1)
-set(QTASK_VERSION_PATCH 5)
+set(QTASK_VERSION_PATCH 6)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+
+option(BUILD_TESTS "Build tests" OFF)
 
 #Detect best qt version in the system.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
@@ -102,3 +105,7 @@ install(FILES res/qtask.desktop
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
 install(FILES res/icons/qtask.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
+
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

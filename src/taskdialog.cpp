@@ -102,12 +102,13 @@ void TaskDialogBase::constructUi()
     setLayout(m_main_layout);
 }
 
-Task TaskDialogBase::getTask()
+DetailedTaskInfo TaskDialogBase::getTask()
 {
-    Task task;
+    DetailedTaskInfo task("");
 
     task.description = m_task_description->toPlainText();
-    task.priority = Task::priorityFromString(m_task_priority->currentText());
+    task.priority =
+        DetailedTaskInfo::priorityFromString(m_task_priority->currentText());
 
     auto project = m_task_project->text();
     project.replace("pro:", "");
@@ -118,7 +119,7 @@ Task TaskDialogBase::getTask()
         QString t(tag);
         t.remove(QChar('+'));
         if (!t.isEmpty()) {
-            task.tags.push_back(t);
+            task.tags.modify([&t](auto &lst) { lst.push_back(t); });
         }
     }
 
@@ -156,7 +157,7 @@ void TaskDialogBase::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void TaskDialogBase::setTask(const Task &task)
+void TaskDialogBase::setTask(const DetailedTaskInfo &task)
 {
     m_task_description->setText(task.description);
     m_task_project->setText(task.project);
@@ -167,21 +168,21 @@ void TaskDialogBase::setTask(const Task &task)
     m_task_wait->setDateTime(task.wait);
 
     switch (task.priority) {
-    case Task::Priority::Unset:
+    case DetailedTaskInfo::Priority::Unset:
         m_task_priority->setCurrentIndex(0);
         break;
-    case Task::Priority::L:
+    case DetailedTaskInfo::Priority::L:
         m_task_priority->setCurrentIndex(1);
         break;
-    case Task::Priority::M:
+    case DetailedTaskInfo::Priority::M:
         m_task_priority->setCurrentIndex(2);
         break;
-    case Task::Priority::H:
+    case DetailedTaskInfo::Priority::H:
         m_task_priority->setCurrentIndex(3);
         break;
     }
 
-    m_task_uuid = task.uuid;
+    m_task_uuid = task.task_id;
 }
 
 AddTaskDialog::AddTaskDialog(const QVariant &default_project, QWidget *parent)
@@ -249,7 +250,7 @@ void AddTaskDialog::onDescriptionChanged()
     }
 }
 
-EditTaskDialog::EditTaskDialog(const Task &task, QWidget *parent)
+EditTaskDialog::EditTaskDialog(const DetailedTaskInfo &task, QWidget *parent)
     : TaskDialogBase(parent)
     , m_ok_btn(new QPushButton(
           QApplication::style()->standardIcon(QStyle::SP_DialogOkButton),

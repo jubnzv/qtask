@@ -16,7 +16,7 @@
 
 #include <utility>
 
-RecurringDialog::RecurringDialog(QList<RecurringTask> tasks, QWidget *parent)
+RecurringDialog::RecurringDialog(QList<RecurringTaskTemplate> tasks, QWidget *parent)
     : QDialog(parent)
     , m_tasks_view(new QTableView(this))
     , m_btn_box(new QDialogButtonBox(
@@ -29,7 +29,7 @@ RecurringDialog::RecurringDialog(QList<RecurringTask> tasks, QWidget *parent)
 
 RecurringDialog::~RecurringDialog() = default;
 
-void RecurringDialog::initUI(QList<RecurringTask> tasks)
+void RecurringDialog::initUI(QList<RecurringTaskTemplate> tasks)
 {
     setWindowIcon(QIcon(":/icons/qtask.svg"));
     m_tasks_view->setShowGrid(true);
