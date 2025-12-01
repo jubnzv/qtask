@@ -1,5 +1,7 @@
 #include "qtutil.hpp"
 
+#include <tuple>
+
 #include <QAction>
 #include <QApplication>
 #include <QColor>

@@ -35,6 +35,7 @@ if (TESTS_LIST_FILES_COUNT GREATER 0)
     source_group("tests" FILES ${TESTS_LIST})
     add_executable(qtask_tests
                    ${TESTS_LIST}
+                   ../src/qtutil.cpp
     )
     target_link_libraries(qtask_tests PRIVATE
                         gtest
