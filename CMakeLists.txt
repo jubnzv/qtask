@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(qtask CXX)
 
@@ -27,6 +27,7 @@ if (${QT_VERSION} VERSION_LESS 5.15.0)
 else()
   #Not sure, if should search/link GuiPrivate Svg with old versions.
   find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets GuiPrivate Svg)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 endif()
 
 message(STATUS "Found Qt version ${QT_VERSION}.")
@@ -88,6 +89,7 @@ set(QAPPLICATION_CLASS
     CACHE STRING "Inheritance class for SingleApplication")
 add_subdirectory(src/third-party/singleapplication)
 target_link_libraries(qtask SingleApplication::SingleApplication)
+target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets)
 
 
 set(GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
