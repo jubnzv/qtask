@@ -4,7 +4,6 @@
 #include <QRegularExpression>
 #include <QString>
 #include <QStringList>
-#include <qassert.h>
 #include <qnamespace.h>
 #include <qtversionchecks.h>
 #include <qtypes.h>
@@ -31,9 +30,10 @@ struct DateTimeParser {
     [[nodiscard]]
     OptionalDateTime parseDateTimeString(const QString &line_of_lexems) const
     {
-        Q_ASSERT(date_lexem_index < expected_lexems_count);
-        Q_ASSERT(time_lexem_index < expected_lexems_count);
-
+        if (date_lexem_index >= expected_lexems_count ||
+            time_lexem_index >= expected_lexems_count) {
+            return std::nullopt;
+        }
         const auto lexems = splitSpaceSeparatedString(line_of_lexems);
         if (lexems.size() != expected_lexems_count) {
             return std::nullopt;

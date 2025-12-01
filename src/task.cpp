@@ -3,6 +3,7 @@
 #include "date_time_parser.hpp"
 #include "qtutil.hpp"
 #include "split_string.hpp"
+#include "taskwarriorexecutor.hpp"
 
 #include <QDateTime>
 #include <QList>
@@ -15,10 +16,12 @@
 #include <qtypes.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 
@@ -38,7 +41,7 @@ QString escapeTag(QString cleanedTag)
     return cleanedTag;
 }
 
-QStringList escapeTags(QStringList tags, QChar symbol)
+QStringList escapeTags(const QStringList &tags, QChar symbol)
 {
     QStringList result;
     for (auto const &t : tags) {
@@ -53,15 +56,9 @@ QStringList escapeTags(QStringList tags, QChar symbol)
     return result;
 }
 
-auto escapeAddTags(QStringList tags)
-{
-    return escapeTags(std::move(tags), '+');
-}
+auto escapeAddTags(const QStringList &tags) { return escapeTags(tags, '+'); }
 
-auto escapeDelTags(QStringList tags)
-{
-    return escapeTags(std::move(tags), '-');
-}
+auto escapeDelTags(const QStringList &tags) { return escapeTags(tags, '-'); }
 
 QString escapeDescription(QString descr)
 {
@@ -92,8 +89,9 @@ QChar priorityToChar(const DetailedTaskInfo::Priority &p)
     case DetailedTaskInfo::Priority::H:
         return 'H';
     case DetailedTaskInfo::Priority::Unset:
-        throw std::runtime_error("Unset priority cannot be converted.");
+        break;
     }
+    throw std::runtime_error("Unset priority cannot be converted.");
 }
 
 QString formatPriority(const DetailedTaskInfo::Priority pri)
