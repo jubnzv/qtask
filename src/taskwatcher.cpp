@@ -46,8 +46,8 @@ TaskWatcher::TaskWatcher(QObject *parent)
             if (opt && opt->isDifferent(m_latestDbState)) {
                 m_latestDbState = *opt;
                 m_check_for_changes_timer.start();
-                emit dataOnDiskWereChanged();
             }
+            emit dataOnDiskWereChanged();
         },
         Qt::QueuedConnection);
 }
