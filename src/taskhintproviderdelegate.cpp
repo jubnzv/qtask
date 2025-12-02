@@ -7,6 +7,7 @@
 #include <QHelpEvent>
 #include <QModelIndex>
 #include <QObject>
+#include <QStringList>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
 #include <QTimer>
@@ -50,7 +51,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     const QDateTime now = QDateTime::currentDateTime();
     const qint64 oneDayMs = 24 * 60 * 60 * 1000;
     auto getDateCssClass = [&](const QDateTime &dt) -> QString {
-        qint64 diffMs = now.msecsTo(dt);
+        const qint64 diffMs = now.msecsTo(dt);
 
         if (dt < now) {
             return "date-overdue";
@@ -95,36 +96,33 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
         // DUE DATE
         if (optionalDue.has_value()) {
             const QDateTime &dt = optionalDue.value();
-            QString dateStr = dt.toString();
-            QString cssClass = getDateCssClass(dt);
+            const QString dateStr = dt.toString();
+            const QString cssClass = getDateCssClass(dt);
 
             html +=
                 QString(
                     "<p class='date-due'><span class='%1'>Due: %2</span></p>")
-                    .arg(cssClass)
-                    .arg(dateStr);
+                    .arg(cssClass, dateStr);
         }
 
         // SCHED DATE
         if (optionalSched.has_value()) {
             const QDateTime &dt = optionalSched.value();
-            QString dateStr = dt.toString();
-            QString cssClass = getDateCssClass(dt);
+            const QString dateStr = dt.toString();
+            const QString cssClass = getDateCssClass(dt);
 
             html += QString("<p><span class='%1'>Scheduled: %2</span></p>")
-                        .arg(cssClass)
-                        .arg(dateStr);
+                        .arg(cssClass, dateStr);
         }
 
         // WAIT DATE
         if (optionalWait.has_value()) {
             const QDateTime &dt = optionalWait.value();
-            QString dateStr = dt.toString();
-            QString cssClass = getDateCssClass(dt);
+            const QString dateStr = dt.toString();
+            const QString cssClass = getDateCssClass(dt);
 
             html += QString("<p><span class='%1'>Wait until: %2</span></p>")
-                        .arg(cssClass)
-                        .arg(dateStr);
+                        .arg(cssClass, dateStr);
         }
 
         html += "</div>";

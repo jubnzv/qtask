@@ -13,6 +13,16 @@
 
 #include "async_task_loader.hpp"
 
+/// @brief This delegate provides detailed tooltip on row.
+///
+/// @note We implement custom tooltip handling (using QStyledItemDelegate)
+/// instead of relying on the model's Qt::ToolTipRole.
+///
+/// Rationale: When switching between the "loading" tooltip state and the "full
+/// details" state, using the model handler would require the user to move the
+/// mouse to trigger the new content. The delegate allows us to dynamically
+/// **update the tooltip content in place** without requiring any mouse
+/// movement, resulting in a much smoother and better user experience.
 class TaskHintProviderDelegate : public QStyledItemDelegate {
     Q_OBJECT
   public:
