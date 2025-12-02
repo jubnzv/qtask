@@ -84,7 +84,7 @@ class MainWindow : public QMainWindow {
     void onEditTaskAction();
     void showEditTaskDialog(const QModelIndex &);
 
-    void updateTasks();
+    void updateTasksListTable();
     void updateTaskToolbar();
 
   signals:
