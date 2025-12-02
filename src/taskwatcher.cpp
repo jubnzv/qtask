@@ -31,6 +31,21 @@ TaskWatcher::TaskWatcher(QObject *parent)
     : QObject(parent)
     , m_state_reader(new QFutureWatcher<TaskWarriorDbState::Optional>(this))
 {
+    /*
+     * This reflects a crucial architectural trade-off.
+     * * 1. Single-Shot (Current approach):
+     * The timer is explicitly restarted upon both the timer's timeout and the
+     * async operation's completion (checkNow/finished slots). This guarantees
+     * that a new check WILL NOT overlap with the previous one.
+     * The trade-off is a floating delay: the interval between checks will vary
+     * (kCheckPeriod + async_duration), sacrificing precise timing for
+     * reliability.
+     * * 2. Multi-Shot (Rejected approach):
+     * A steady, periodic timer risks starting a new check before the previous
+     * asynchronous database reading (which takes ~100ms with 9 tasks present)
+     * has finished, leading to race conditions or unnecessary overlapping
+     * requests, especially when dealing with large databases.
+     */
     m_check_for_changes_timer.setSingleShot(true);
     m_check_for_changes_timer.setInterval(kCheckPeriod);
 
