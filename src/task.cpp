@@ -361,7 +361,13 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
         });
     // After reading those are "not modified".
     SetPropertiesNotChanged(true, TASK_PROPERTIES_LIST);
+    dataState = ReadAs::FullRead;
     return true;
+}
+
+bool DetailedTaskInfo::isFullRead() const
+{
+    return dataState == ReadAs::FullRead;
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)

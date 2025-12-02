@@ -1,21 +1,26 @@
 #ifndef TASKDESCRIPTIONDELEGATE_HPP
 #define TASKDESCRIPTIONDELEGATE_HPP
 
+#include <QObject>
 #include <QPainter>
 #include <QString>
+#include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
 
-class TaskDescriptionDelegate : public QStyledItemDelegate {
+#include "taskhintproviderdelegate.hpp"
+
+class TaskDescriptionDelegate : public TaskHintProviderDelegate {
     Q_OBJECT
 
   public:
-    TaskDescriptionDelegate(QObject *parent = nullptr);
+    explicit TaskDescriptionDelegate(QObject *parent = nullptr);
 
     QString anchorAt(const QString &markdown, const QPoint &point) const;
 
   protected:
     void paint(QPainter *painter, const QStyleOptionViewItem &option,
                const QModelIndex &index) const override;
+    [[nodiscard]]
     QSize sizeHint(const QStyleOptionViewItem &option,
                    const QModelIndex &index) const override;
 };

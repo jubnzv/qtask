@@ -4,7 +4,7 @@ project(qtask CXX)
 
 set(QTASK_VERSION_MAJOR 1)
 set(QTASK_VERSION_MINOR 1)
-set(QTASK_VERSION_PATCH 6)
+set(QTASK_VERSION_PATCH 7)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -18,30 +18,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 
-option(BUILD_TESTS "Build tests" OFF)
-
-#Detect best qt version in the system.
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
-if (${QT_VERSION} VERSION_LESS 5.15.0)
-  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
-else()
-  #Not sure, if should search/link GuiPrivate Svg with old versions.
-  find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets GuiPrivate Svg)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
-endif()
-
-message(STATUS "Found Qt version ${QT_VERSION}.")
-
-if(${QT_VERSION} VERSION_LESS 5.3.0)
-  message(FATAL_ERROR "Found Qt version ${QT_VERSION} is too small.")
-endif()
-
-message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(DEBUG_MODE 1)
-else()
-  set(DEBUG_MODE 0)
-endif()
+option(BUILD_TESTS "Build tests." OFF)
 
 # To activate clazy: cmake . -DENABLE_CLAZY -DCMAKE_CXX_COMPILER=clazy
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
@@ -66,6 +43,25 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
   endif()
 endif()
 
+# List of Qt components we will need to find. Note, there is linking list below yet.
+set(QT_COMPONENTS_WE_NEED Core Widgets Concurrent GuiPrivate Svg)
+
+# Detect best qt version in the system.
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
+message(STATUS "Found Qt version ${QT_VERSION}.")
+if(${QT_VERSION} VERSION_LESS 5.3.0)
+  message(FATAL_ERROR "Found Qt version ${QT_VERSION} is too small.")
+endif()
+# Bind tools to the version if both found, list must be the same in 2 calls.
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
+
+message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(DEBUG_MODE 1)
+else()
+  set(DEBUG_MODE 0)
+endif()
+
 #List and add all files by mask to the project, no manual enlisting is required.
 file(GLOB qtask_SRCS
         src/*.h
@@ -78,18 +74,28 @@ set(qtask_MOC_HEADERS src/configmanager.hpp)
 set(qtask_RESOURCES res/qtask.qrc)
 add_executable(qtask ${qtask_SRCS} ${qtask_RESOURCES})
 
-target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::GuiPrivate)
-if (${QT_VERSION} VERSION_GREATER_EQUAL 5.15.0)
-  target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Svg)
-endif()
-
 # Replacement of the QtSingleApplication for Qt5 and Qt6.
 set(QAPPLICATION_CLASS
     QApplication
     CACHE STRING "Inheritance class for SingleApplication")
 add_subdirectory(src/third-party/singleapplication)
+
+# Linking Qt components we found. This is a little tricky depending on major version used.
+target_link_libraries(qtask
+             Qt::Core
+             Qt::Widgets
+             Qt::Concurrent
+             SingleApplication::SingleApplication
+             Qt${QT_VERSION_MAJOR}::GuiPrivate # "Private" requires explicit version mention.
+)
+# Fallback to the historical code, linkage was not needed all years before. Cannot check in 2025.
+# Delete if () in case you have problems with missing Svg module.
+if (${QT_VERSION} VERSION_GREATER_EQUAL 5.15.0)
+  target_link_libraries(qtask Qt::Svg)
+endif()
+
+
 target_link_libraries(qtask SingleApplication::SingleApplication)
-target_link_libraries(qtask Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets)
 
 
 set(GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)

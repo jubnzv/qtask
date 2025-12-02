@@ -60,6 +60,10 @@ class DetailedTaskInfo {
     /// @returns true if object was properly read.
     bool execReadExisting(const TaskWarriorExecutor &executor);
 
+    /// @returns true if this object has all possible data read from `task`.
+    [[nodiscard]]
+    bool isFullRead() const;
+
   public:
     /// @brief Constructs object with defaults, except given @p task_id set.
     explicit DetailedTaskInfo(QString task_id);
@@ -69,6 +73,13 @@ class DetailedTaskInfo {
     DetailedTaskInfo();
 
   private:
+    enum class ReadAs {
+        ParticularRead,
+        FullRead,
+    };
+
+    ReadAs dataState{ ReadAs::ParticularRead };
+
     [[nodiscard]]
     QStringList getAddModifyCmdArgsFieldsRepresentation() const;
 };

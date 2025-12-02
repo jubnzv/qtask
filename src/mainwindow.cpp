@@ -176,8 +176,11 @@ void MainWindow::initTasksTable()
 
     auto *model = new TasksModel(this);
     m_tasks_view->setModel(model);
-    m_tasks_view->setItemDelegateForColumn(2 /* description */,
-                                           new TaskDescriptionDelegate(this));
+
+    // All show hint, description column has additional logic too.
+    m_tasks_view->setItemDelegate(new TaskHintProviderDelegate(m_tasks_view));
+    m_tasks_view->setItemDelegateForColumn(
+        2 /* description */, new TaskDescriptionDelegate(m_tasks_view));
 
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,
