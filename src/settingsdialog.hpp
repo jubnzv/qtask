@@ -22,7 +22,6 @@ class SettingsDialog : public QDialog {
     void applySettings();
 
     QLineEdit *const m_task_bin_edit;
-    QLineEdit *const m_task_data_path_edit;
     QCheckBox *const m_hide_on_startup_cb;
     QCheckBox *const m_save_filter_on_exit;
     QDialogButtonBox *const m_buttons;
