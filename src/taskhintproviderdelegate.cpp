@@ -203,9 +203,13 @@ bool TaskHintProviderDelegate::helpEvent(QHelpEvent *event,
         return true;
     }
     const auto task = variantTask.value<DetailedTaskInfo>();
+    const TaskLoaderParameters params{ index, view, event->globalPos() };
 
-    if (!task.isFullRead()) {
-        const TaskLoaderParameters params{ index, view, event->globalPos() };
+    if (task.isFullRead()) {
+        QToolTip::showText(params.cursor_pos,
+                           generateTooltip(task, getToolTipFooter()),
+                           params.view);
+    } else {
         const auto currentRequestId =
             m_task_loader->startTaskLoad(params, task);
         // It is safe, because lambda which will write it is in the same GUI

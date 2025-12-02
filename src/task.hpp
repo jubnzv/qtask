@@ -73,7 +73,7 @@ class DetailedTaskInfo {
     DetailedTaskInfo();
 
   private:
-    enum class ReadAs {
+    enum class ReadAs : std::uint8_t {
         ParticularRead,
         FullRead,
     };
@@ -172,6 +172,7 @@ struct RecurringTaskTemplate {
 /// if we must reload data from taskwarrior.
 class TaskWarriorDbState {
   public:
+    using Optional = std::optional<TaskWarriorDbState>;
     struct DataFields {
         ulong fieldTotal{ 0u };
         ulong fieldUndo{ 0u };
@@ -200,8 +201,7 @@ class TaskWarriorDbState {
     /// @note We select only fields we think can help us to detect modifications
     /// when we should update our GUI.
     [[nodiscard]]
-    static std::optional<TaskWarriorDbState>
-    readCurrent(const TaskWarriorExecutor &executor);
+    static Optional readCurrent(const TaskWarriorExecutor &executor);
 
   private:
     DataFields fields;

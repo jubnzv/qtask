@@ -1,52 +1,81 @@
 #include "taskwatcher.hpp"
 
-#include <QDir>
-#include <QFile>
-#include <QFileSystemWatcher>
-#include <QObject>
-#include <QString>
-#include <QStringList>
+#include "configmanager.hpp"
+#include "exec_on_exit.hpp"
+#include "task.hpp"
+#include "taskwarriorexecutor.hpp"
 
-#include <algorithm>
-#include <memory>
+#include <atomic>
+#include <utility>
+
+#include <QFuture>
+#include <QObject>
+#include <QtConcurrent>
 
 namespace
 {
-///  @brief How often at most we will read new data.
-constexpr int kDebounceTimerPeriodMs = 10000;
+///  @brief How often at most we will check for new data.
+// TODO: add config settings in UI instead.
+constexpr int kCheckPeriod = 10000;
+
+// tests atomic bool for expected, if it is - sets it to !expected and returns
+// true
+inline bool test_and_flip(std::atomic<bool> &var, const bool expected)
+{
+    bool exp{ expected };
+    return var.compare_exchange_strong(exp, !expected);
+}
 } // namespace
 
 TaskWatcher::TaskWatcher(QObject *parent)
     : QObject(parent)
+    , m_state_reader(new QFutureWatcher<TaskWarriorDbState::Optional>(this))
 {
-    m_debounce_timer.setSingleShot(true);
-    m_debounce_timer.setInterval(kDebounceTimerPeriodMs);
+    m_check_for_changes_timer.setSingleShot(true);
+    m_check_for_changes_timer.setInterval(kCheckPeriod);
 
-    connect(&m_debounce_timer, &QTimer::timeout, this,
-            [this]() { emit dataOnDiskWereChanged(); });
+    connect(&m_check_for_changes_timer, &QTimer::timeout, this,
+            &TaskWatcher::checkNow);
+
+    connect(
+        m_state_reader, &QFutureWatcher<TaskWarriorDbState::Optional>::finished,
+        this,
+        [this]() {
+            // This is GUI thread.
+            auto opt = m_state_reader->future().result();
+            if (opt && opt->isDifferent(m_latestDbState)) {
+                m_latestDbState = *opt;
+                m_check_for_changes_timer.start();
+                emit dataOnDiskWereChanged();
+            }
+        },
+        Qt::QueuedConnection);
 }
 
-bool TaskWatcher::setup(const QString &task_data_path)
+void TaskWatcher::checkNow()
 {
-    const auto addPath = [&task_data_path](const QString &fileName) {
-        return task_data_path + QDir::separator() + fileName;
-    };
-
-    const QStringList fileNamesCandidates = {
-        addPath("pending.data"),
-        addPath("taskchampion.sqlite3"),
-    };
-
-    const auto it =
-        std::find_if(fileNamesCandidates.begin(), fileNamesCandidates.end(),
-                     [](const auto &p) { return QFile::exists(p); });
-
-    if (it == fileNamesCandidates.end()) {
-        return false;
+    // This slot is in progress of something, drop incoming request.
+    if (!test_and_flip(m_slot_once, false)) {
+        return;
     }
+    if (!m_state_reader->isFinished()) {
+        return;
+    }
+    const exec_on_exit when_slot_ends([this]() {
+        m_check_for_changes_timer.start();
+        m_slot_once = false;
+    });
 
-    m_task_data_watcher.reset(new QFileSystemWatcher({ *it }));
-    connect(m_task_data_watcher.get(), &QFileSystemWatcher::fileChanged, this,
-            [this](const auto &) { m_debounce_timer.start(); });
-    return true;
+    const auto future = QtConcurrent::run(
+        [](const auto &pathToBinary) -> TaskWarriorDbState::Optional {
+            try {
+                // This is non-GUI thread.
+                return TaskWarriorDbState::readCurrent(
+                    TaskWarriorExecutor(pathToBinary));
+            } catch (...) { // NOLINT
+            }
+            return std::nullopt;
+        },
+        ConfigManager::config().getTaskBin());
+    m_state_reader->setFuture(future);
 }

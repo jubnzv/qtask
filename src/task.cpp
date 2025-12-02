@@ -697,8 +697,7 @@ RecurringTaskTemplate::readAll(const TaskWarriorExecutor &executor)
     return out_tasks;
 }
 
-std::optional<TaskWarriorDbState>
-TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
+TaskWarriorDbState::Optional TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
 {
     static const QStringList cmd = { "stat" };
     const auto exec_res = executor.execTaskProgramWithDefaults(cmd);
@@ -726,6 +725,6 @@ TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
         return std::nullopt;
     }
     TaskWarriorDbState res;
-    res.fields = std::move(fields);
+    res.fields = fields;
     return res;
 }

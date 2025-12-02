@@ -80,7 +80,7 @@ MainWindow::MainWindow()
     , m_view_menu_actions(*menuBar()->addMenu(tr("&View")))
     , m_toolbar_actions(*m_task_toolbar)
     , m_task_provider(std::make_unique<Taskwarrior>())
-    , m_task_watcher(std::make_unique<TaskWatcher>(nullptr))
+    , m_task_watcher(new TaskWatcher(this))
 {
     if (!m_task_provider->init()) {
         QMessageBox::critical(
@@ -90,14 +90,7 @@ MainWindow::MainWindow()
                "path to the 'task' executable in the settings."));
     }
 
-    if (!initTaskWatcher()) {
-        QMessageBox::warning(
-            this, tr("Error"),
-            tr("Can't initialize file watcher service for %1. The task "
-               "list will not be updated after external changes.")
-                .arg(ConfigManager::config().getTaskDataPath()));
-    }
-
+    initTaskWatcher();
     initMainWindow();
     initTrayIcon();
     initFileMenu();
@@ -118,21 +111,12 @@ MainWindow::MainWindow()
     }
 }
 
-MainWindow::~MainWindow()
-{
-    m_task_watcher.reset();
-    m_task_provider.reset();
-}
+MainWindow::~MainWindow() { m_task_provider.reset(); }
 
 bool MainWindow::initTaskWatcher()
 {
-    Q_ASSERT(m_task_watcher);
-    if (!m_task_watcher->setup(ConfigManager::config().getTaskDataPath())) {
-        m_task_watcher = nullptr;
-        return false;
-    }
-    connect(m_task_watcher.get(), &TaskWatcher::dataOnDiskWereChanged, this,
-            [&]() { updateTasks(/*force=*/true); });
+    connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this,
+            [&]() { updateTasks(); });
     return true;
 }
 
@@ -162,7 +146,7 @@ void MainWindow::initMainWindow()
     m_window->setLayout(m_layout);
     setCentralWidget(m_window);
 
-    updateTasks(/*force=*/true);
+    m_task_watcher->checkNow();
 }
 
 void MainWindow::initTasksTable()
@@ -358,7 +342,7 @@ void MainWindow::connectTaskToolbarActions()
     connect(m_toolbar_actions.m_update_action, &QAction::triggered, this,
             [&]() {
                 m_tasks_view->selectionModel()->clearSelection();
-                updateTasks(/*force=*/true);
+                updateTasks();
             });
 
     connect(m_toolbar_actions.m_done_action, &QAction::triggered, this,
@@ -662,7 +646,7 @@ void MainWindow::onApplyFilter()
     }
     // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
     //     m_task_filter->clearTags();
-    updateTasks(/*force=*/true);
+    updateTasks();
 }
 
 void MainWindow::onEnterTaskCommand()
@@ -736,15 +720,9 @@ void MainWindow::onEditTaskAction()
     showEditTaskDialog(model->selectedRows()[0]);
 }
 
-void MainWindow::updateTasks(bool force)
+void MainWindow::updateTasks()
 {
     Q_ASSERT(m_task_provider);
-
-    // The commands from m_task_provider will modify the taskwarrior
-    // database files. This will trigger TaskWatcher to emit update event.
-    if (!force && m_task_watcher && m_task_watcher->isActive()) {
-        return;
-    }
 
     auto tasks = m_task_provider->getTasks();
     auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());

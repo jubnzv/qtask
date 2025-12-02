@@ -1,34 +1,36 @@
 #ifndef TASKWATCHER_HPP
 #define TASKWATCHER_HPP
 
-#include <QFileSystemWatcher>
+#include <QFutureWatcher>
 #include <QObject>
-#include <QString>
 #include <QTimer>
 
-#include <memory>
+#include <atomic>
 
-/// @brief This object watches changes of the TaskWarrior specifiec data files
-/// on filesystem and triggers full re-read if those were changed.
+#include "task.hpp"
+
+/// @brief This object polls TaskWarrior and fires signal when re-read data is
+/// needed.
+/// @note It is initialized in untracking state. You must call checkNow() at
+/// least once.
 class TaskWatcher : public QObject {
     Q_OBJECT
 
   public:
     explicit TaskWatcher(QObject *parent = nullptr);
 
-    bool setup(const QString &task_data_path);
-    [[nodiscard]] bool isActive() const
-    {
-        return m_task_data_watcher != nullptr;
-    }
-
   signals:
+    // FIXME/TODO: what will happen when we will have 100'000 records in DB?
     void dataOnDiskWereChanged();
 
+  public slots:
+    void checkNow();
+
   private:
-    std::unique_ptr<QFileSystemWatcher> m_task_data_watcher{ nullptr };
-    // Do not react too often.
-    QTimer m_debounce_timer;
+    QFutureWatcher<TaskWarriorDbState::Optional> *m_state_reader;
+    QTimer m_check_for_changes_timer;
+    TaskWarriorDbState m_latestDbState;
+    std::atomic<bool> m_slot_once{ false };
 };
 
 #endif // TASKWATCHER_HPP

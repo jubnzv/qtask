@@ -84,7 +84,7 @@ class MainWindow : public QMainWindow {
     void onEditTaskAction();
     void showEditTaskDialog(const QModelIndex &);
 
-    void updateTasks(bool force = false);
+    void updateTasks();
     void updateTaskToolbar();
 
   signals:
@@ -129,7 +129,7 @@ class MainWindow : public QMainWindow {
     } const m_toolbar_actions;
 
     std::unique_ptr<Taskwarrior> m_task_provider;
-    std::unique_ptr<TaskWatcher> m_task_watcher;
+    TaskWatcher *m_task_watcher;
 };
 
 } // namespace ui
