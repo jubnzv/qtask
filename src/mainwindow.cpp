@@ -115,8 +115,16 @@ MainWindow::~MainWindow() { m_task_provider.reset(); }
 
 bool MainWindow::initTaskWatcher()
 {
-    connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this,
-            [&]() { updateTasks(); });
+    connect(
+        m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this, [this]() {
+            if (m_task_provider) {
+                auto tasks = m_task_provider->getTasks();
+                auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
+                model->setTasks(tasks.value_or({}));
+
+                updateTaskToolbar();
+            }
+        });
     return true;
 }
 
@@ -146,7 +154,7 @@ void MainWindow::initMainWindow()
     m_window->setLayout(m_layout);
     setCentralWidget(m_window);
 
-    m_task_watcher->checkNow();
+    updateTasks();
 }
 
 void MainWindow::initTasksTable()
@@ -720,16 +728,7 @@ void MainWindow::onEditTaskAction()
     showEditTaskDialog(model->selectedRows()[0]);
 }
 
-void MainWindow::updateTasks()
-{
-    Q_ASSERT(m_task_provider);
-
-    auto tasks = m_task_provider->getTasks();
-    auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-    model->setTasks(tasks.value_or({}));
-
-    updateTaskToolbar();
-}
+void MainWindow::updateTasks() { m_task_watcher->checkNow(); }
 
 void MainWindow::updateTaskToolbar()
 {

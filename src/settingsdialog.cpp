@@ -9,6 +9,7 @@
 #include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
+#include <QWidget>
 
 #include "configmanager.hpp"
 
