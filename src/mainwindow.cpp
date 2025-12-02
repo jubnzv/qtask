@@ -120,7 +120,7 @@ bool MainWindow::initTaskWatcher()
             if (m_task_provider) {
                 auto tasks = m_task_provider->getTasks();
                 auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-                model->setTasks(tasks.value_or({}));
+                model->setTasks(tasks.value_or({}), getSelectedTaskIds());
 
                 updateTaskToolbar();
             }
@@ -204,6 +204,21 @@ void MainWindow::initTasksTable()
                     addShortcutToToolTip(m_toolbar_actions.m_start_action);
                     m_toolbar_actions.m_start_action->setEnabled(true);
                     m_toolbar_actions.m_stop_action->setEnabled(false);
+                }
+            });
+
+    // Support for restoring selection after model reset.
+    connect(model, &TasksModel::selectIndices, this,
+            [this](const QModelIndexList &indices) {
+                m_tasks_view->selectionModel()->clearSelection();
+                for (const auto &index : indices) {
+                    m_tasks_view->selectionModel()->select(
+                        index, QItemSelectionModel::Select |
+                                   QItemSelectionModel::Rows);
+                }
+                // Scroll to the 1st selected (UX).
+                if (!indices.isEmpty()) {
+                    m_tasks_view->scrollTo(indices.first());
                 }
             });
 
@@ -597,7 +612,8 @@ void MainWindow::onAddTask()
             updateTasksListTable();
         }
     });
-    QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasksListTable(); });
+    QObject::connect(dlg, &QDialog::rejected,
+                     [this]() { updateTasksListTable(); });
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
@@ -709,7 +725,8 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
             }
             updateTasksListTable();
         });
-    QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasksListTable(); });
+    QObject::connect(dlg, &QDialog::rejected,
+                     [this]() { updateTasksListTable(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 
     dlg->open();

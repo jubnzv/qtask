@@ -35,12 +35,17 @@ class TasksModel : public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation,
                         int role = Qt::DisplayRole) const override;
 
-    void setTasks(QList<DetailedTaskInfo>);
+    void setTasks(QList<DetailedTaskInfo>,
+                  const QStringList &currentlySelectedTaskIds);
 
     [[nodiscard]]
     QVariant getTask(const QModelIndex &) const;
 
     QColor rowColor(int row) const;
+  signals:
+    // View can listen this signal if it wants to restore selection after model
+    // reset.
+    void selectIndices(const QModelIndexList &);
 
   private:
     QList<DetailedTaskInfo> m_tasks;

@@ -128,11 +128,34 @@ QVariant TasksModel::headerData(int section, Qt::Orientation orientation,
     return {};
 }
 
-void TasksModel::setTasks(QList<DetailedTaskInfo> tasks)
+void TasksModel::setTasks(QList<DetailedTaskInfo> tasks,
+                          const QStringList &currentlySelectedTaskIds)
 {
     beginResetModel();
     m_tasks = std::move(tasks);
     endResetModel();
+
+    QModelIndexList indicesToSelect;
+
+    for (int i = 0, sz = m_tasks.count(); i < sz; ++i) {
+        // Do not read m_tasks directly, use data(), because it ensures proper
+        // mapping of the index.
+        const QModelIndex newIndex = createIndex(i, 0);
+        const auto task = data(newIndex, TaskReadRole);
+
+        if (!task.isValid() || !task.canConvert<DetailedTaskInfo>()) {
+            continue;
+        }
+        // FIXME: need stable UUID here instead task_id.
+        // TODO:  switch to `task rc.json.array=on export` instead console.
+        const auto taskUuid = task.value<DetailedTaskInfo>().task_id;
+        if (currentlySelectedTaskIds.contains(taskUuid)) {
+            indicesToSelect.append(newIndex);
+        }
+    }
+    if (!indicesToSelect.isEmpty()) {
+        emit selectIndices(indicesToSelect);
+    }
 }
 
 QVariant TasksModel::getTask(const QModelIndex &index) const
