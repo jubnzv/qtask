@@ -32,7 +32,7 @@ class AsyncTaskLoader : public QObject {
     AsyncTaskLoader() = delete;
 
     template <typename taUserParameters>
-    RequestId startTaskLoad(taUserParameters &&userParameters,
+    RequestId startTaskLoad(taUserParameters userParameters,
                             const DetailedTaskInfo &partialTask)
     {
         const auto currentRequestId = ++m_latestRequestId;
