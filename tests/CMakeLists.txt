@@ -26,6 +26,7 @@ set(TASK_DEPENDENT_FILES
 # Reverse, those files are part of main binary, and should be linked if task tests remain active.
 set(TASK_DEPENDENT_FILES_TO_LINK
     "../src/taskwarriorexecutor.cpp"
+    "../src/task.cpp"
 )
 
 #Find taskwarrior `task` binary.

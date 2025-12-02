@@ -10,12 +10,21 @@
 #include <algorithm>
 #include <memory>
 
+namespace
+{
+///  @brief How often at most we will read new data.
+constexpr int kDebounceTimerPeriodMs = 10000;
+} // namespace
+
 TaskWatcher::TaskWatcher(QObject *parent)
     : QObject(parent)
 {
-}
+    m_debounce_timer.setSingleShot(true);
+    m_debounce_timer.setInterval(kDebounceTimerPeriodMs);
 
-TaskWatcher::~TaskWatcher() = default;
+    connect(&m_debounce_timer, &QTimer::timeout, this,
+            [this]() { emit dataOnDiskWereChanged(); });
+}
 
 bool TaskWatcher::setup(const QString &task_data_path)
 {
@@ -38,6 +47,6 @@ bool TaskWatcher::setup(const QString &task_data_path)
 
     m_task_data_watcher.reset(new QFileSystemWatcher({ *it }));
     connect(m_task_data_watcher.get(), &QFileSystemWatcher::fileChanged, this,
-            &TaskWatcher::dataChanged);
+            [this](const auto &) { m_debounce_timer.start(); });
     return true;
 }

@@ -1,3 +1,4 @@
+#include "task.hpp"
 #include "taskwarriorexecutor.hpp"
 
 #include <QString>
@@ -26,6 +27,20 @@ TEST_F(TaskWarriorExecutorTest, WorksIfFound)
 {
     const TaskWarriorExecutor executor(kTaskCommand);
     EXPECT_FALSE(executor.getTaskVersion().isEmpty());
+}
+
+TEST_F(TaskWarriorExecutorTest, TaskWarriorDbStateUpdates)
+{
+    const TaskWarriorExecutor executor(kTaskCommand);
+    EXPECT_FALSE(executor.getTaskVersion().isEmpty());
+
+    const TaskWarriorDbState def;
+    const auto read = TaskWarriorDbState::readCurrent(executor);
+
+    ASSERT_TRUE(read);
+    EXPECT_TRUE(read->isDifferent(def)) // NOLINT
+        << "Note, this test may fail IF you have fresh installed TaskWarrior "
+           "in the system without tasks on it.";
 }
 
 } // namespace Test

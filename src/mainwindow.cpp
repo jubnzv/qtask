@@ -131,9 +131,8 @@ bool MainWindow::initTaskWatcher()
         m_task_watcher = nullptr;
         return false;
     }
-    connect(
-        m_task_watcher.get(), &TaskWatcher::dataChanged, this,
-        [&](const QString & /* filepath */) { updateTasks(/*force=*/true); });
+    connect(m_task_watcher.get(), &TaskWatcher::dataOnDiskWereChanged, this,
+            [&]() { updateTasks(/*force=*/true); });
     return true;
 }
 

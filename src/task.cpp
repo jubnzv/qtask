@@ -241,6 +241,81 @@ class InformationResponseSetters {
     }
 };
 
+class StatResponseSetters {
+  public:
+    explicit StatResponseSetters(TaskWarriorDbState::DataFields &fields)
+        : fields(fields)
+    {
+    }
+
+    void setField(const SplitString &split_string)
+    {
+        using handler_t = void (StatResponseSetters::*)(const SplitString &);
+        const std::unordered_map<QString, handler_t> kTagToHandler = {
+            { "Total", &StatResponseSetters::handleTotal },
+            { "Undo", &StatResponseSetters::handleUndo },
+            { "Sync", &StatResponseSetters::handleSync },
+        };
+
+        const auto it = kTagToHandler.find(split_string.key);
+        if (it != kTagToHandler.end()) {
+            const handler_t handler = it->second;
+            (this->*handler)(split_string);
+        }
+    }
+
+    bool areAllFieldsParsed() const { return 3 == fields_parsed; }
+
+  private:
+    int fields_parsed{ 0 };
+    TaskWarriorDbState::DataFields &fields;
+
+    void handleTotal(const SplitString &str)
+    {
+        // Total                      35
+        if (auto opt = getUint(str.value)) {
+            ++fields_parsed;
+            fields.fieldTotal = *opt;
+        }
+    }
+    void handleUndo(const SplitString &str)
+    {
+        // Undo transactions          166
+        if (auto opt = findFinalNumber(str.value)) {
+            ++fields_parsed;
+            fields.fieldUndo = *opt;
+        }
+    }
+    void handleSync(const SplitString &str)
+    {
+        // Sync backlog transactions  645
+        if (auto opt = findFinalNumber(str.value)) {
+            ++fields_parsed;
+            fields.fieldBacklog = *opt;
+        }
+    }
+
+    std::optional<uint> getUint(const QString &val)
+    {
+        bool ok = false;
+        uint res = val.toUInt(&ok);
+        if (ok) {
+            return res;
+        }
+        return std::nullopt;
+    }
+
+    std::optional<uint> findFinalNumber(const QString &value_part)
+    {
+        QRegularExpression re("\\s*(\\d+)$");
+        QRegularExpressionMatch match = re.match(value_part);
+
+        if (match.hasMatch()) {
+            return getUint(match.captured(1));
+        }
+    }
+};
+
 } // namespace
 
 #define TASK_PROPERTIES_LIST \
@@ -620,4 +695,37 @@ RecurringTaskTemplate::readAll(const TaskWarriorExecutor &executor)
     }
 
     return out_tasks;
+}
+
+std::optional<TaskWarriorDbState>
+TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
+{
+    static const QStringList cmd = { "stat" };
+    const auto exec_res = executor.execTaskProgramWithDefaults(cmd);
+    if (!exec_res) {
+        return std::nullopt;
+    }
+    QStringList stdOut = exec_res.getStdout();
+    // Ensure we do not have empty lines.
+    stdOut.removeAll("");
+    // Note, we do not have footer here.
+    if (stdOut.size() <= kHeadersSize) {
+        return std::nullopt;
+    }
+    DataFields fields;
+    StatResponseSetters setters(fields);
+    std::for_each(std::next(stdOut.cbegin(), kHeadersSize), stdOut.cend(),
+                  [&setters](const auto &whole_line) {
+                      const SplitString split_string(whole_line);
+                      if (!split_string.isValid()) {
+                          return;
+                      }
+                      setters.setField(split_string);
+                  });
+    if (!setters.areAllFieldsParsed()) {
+        return std::nullopt;
+    }
+    TaskWarriorDbState res;
+    res.fields = std::move(fields);
+    return res;
 }

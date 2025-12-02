@@ -168,4 +168,43 @@ struct RecurringTaskTemplate {
 };
 // Q_DECLARE_METATYPE(RecurringTaskTemplate);
 
+/// @brief Issues `task stat` and uses some fields of the response to understand
+/// if we must reload data from taskwarrior.
+class TaskWarriorDbState {
+  public:
+    struct DataFields {
+        ulong fieldTotal{ 0u };
+        ulong fieldUndo{ 0u };
+        ulong fieldBacklog{ 0u };
+        bool operator!=(const DataFields &other) const
+        {
+            return !(*this == other);
+        }
+
+        bool operator==(const DataFields &other) const
+        {
+            static const auto Tie = [](const DataFields &what) {
+                return std::tie(what.fieldBacklog, what.fieldTotal,
+                                what.fieldUndo);
+            };
+            return Tie(*this) == Tie(other);
+        }
+    };
+    bool isDifferent(const TaskWarriorDbState &other) const
+    {
+        return this->fields != other.fields;
+    }
+
+    /// @returns std::nullopt if it was error reading stats or current state of
+    /// TaskWarrior's data base as TaskWarriorDbState.
+    /// @note We select only fields we think can help us to detect modifications
+    /// when we should update our GUI.
+    [[nodiscard]]
+    static std::optional<TaskWarriorDbState>
+    readCurrent(const TaskWarriorExecutor &executor);
+
+  private:
+    DataFields fields;
+};
+
 #endif // TASK_HPP
