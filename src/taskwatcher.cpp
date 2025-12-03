@@ -85,8 +85,9 @@ void TaskWatcher::checkNow()
         [](const auto &pathToBinary) -> TaskWarriorDbState::Optional {
             try {
                 // This is non-GUI thread.
-                return TaskWarriorDbState::readCurrent(
-                    TaskWarriorExecutor(pathToBinary));
+                return TaskWarriorDbState::readCurrent(TaskWarriorExecutor(
+                    pathToBinary,
+                    TaskWarriorExecutor::TSkipBinaryValidation{}));
             } catch (...) { // NOLINT
             }
             return std::nullopt;

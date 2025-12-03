@@ -63,7 +63,9 @@ class AsyncTaskLoader : public QObject {
                 try {
                     // Note, use ONLY reading outside class Taskwarrior
                     // otherwise UNDO will be broken.
-                    const TaskWarriorExecutor executor(pathToBinary);
+                    const TaskWarriorExecutor executor(
+                        pathToBinary,
+                        TaskWarriorExecutor::TSkipBinaryValidation{});
                     DetailedTaskInfo task(sourceTask.task_id);
                     task.execReadExisting(executor);
                     return task;

@@ -8,6 +8,8 @@
 /// @brief This class provides generic interface to launch `task`command.
 class TaskWarriorExecutor {
   public:
+    struct TSkipBinaryValidation {};
+
     /// @brief Error code and error message of executing the program.
     struct TExecError {
         int code;
@@ -59,6 +61,13 @@ class TaskWarriorExecutor {
     /// @param full_path_to_binary should point to binary `task`.
     /// @throws if given path does not point to proper `task` command.
     explicit TaskWarriorExecutor(QString full_path_to_binary);
+
+    /// @brief Constructs object with given path.
+    /// @param full_path_to_binary should point to binary `task`.
+    /// @note this version avoids all checks, including version check. This
+    /// should be used for performance reasons.
+    explicit TaskWarriorExecutor(QString full_path_to_binary,
+                                 TSkipBinaryValidation);
 
     /// @brief Executes configured task with defaults required parameters and
     /// @returns TExecResult.
