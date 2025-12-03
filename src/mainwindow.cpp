@@ -661,6 +661,8 @@ void MainWindow::onApplyFilter()
 {
     if (!m_task_provider->applyFilter(m_task_filter->getTags())) {
         m_task_filter->popTag();
+    } else {
+        m_task_watcher->enforceUpdate();
     }
     // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
     //     m_task_filter->clearTags();

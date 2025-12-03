@@ -191,6 +191,8 @@ class TaskWarriorDbState {
             return Tie(*this) == Tie(other);
         }
     };
+
+    TaskWarriorDbState() = default;
     bool isDifferent(const TaskWarriorDbState &other) const
     {
         return this->fields != other.fields;
@@ -203,7 +205,14 @@ class TaskWarriorDbState {
     [[nodiscard]]
     static Optional readCurrent(const TaskWarriorExecutor &executor);
 
+    /// @returns state which cannot be valid.
+    static TaskWarriorDbState invalidState();
+
   private:
+    explicit TaskWarriorDbState(TaskWarriorDbState::DataFields fields)
+        : fields(fields)
+    {
+    }
     DataFields fields;
 };
 

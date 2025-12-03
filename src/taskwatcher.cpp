@@ -95,3 +95,8 @@ void TaskWatcher::checkNow()
         ConfigManager::config().getTaskBin());
     m_state_reader->setFuture(future);
 }
+
+void TaskWatcher::enforceUpdate()
+{
+    m_latestDbState = TaskWarriorDbState::invalidState();
+}
