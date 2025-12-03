@@ -55,13 +55,6 @@ endif()
 # Bind tools to the version if both found, list must be the same in 2 calls.
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
 
-message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(DEBUG_MODE 1)
-else()
-  set(DEBUG_MODE 0)
-endif()
-
 #List and add all files by mask to the project, no manual enlisting is required.
 file(GLOB qtask_SRCS
         src/*.h
@@ -73,6 +66,15 @@ file(GLOB qtask_SRCS
 set(qtask_MOC_HEADERS src/configmanager.hpp)
 set(qtask_RESOURCES res/qtask.qrc)
 add_executable(qtask ${qtask_SRCS} ${qtask_RESOURCES})
+
+# Debug / Release configuration is here
+message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(DEBUG_MODE 1)
+else()
+  set(DEBUG_MODE 0)
+  add_definitions(-DQT_NO_DEBUG_OUTPUT)
+endif()
 
 # Replacement of the QtSingleApplication for Qt5 and Qt6.
 set(QAPPLICATION_CLASS
