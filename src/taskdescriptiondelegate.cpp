@@ -11,7 +11,7 @@
 // but without markdown it will draw multiline string outside limits.
 
 TaskDescriptionDelegate::TaskDescriptionDelegate(QObject *parent)
-    : QStyledItemDelegate(parent)
+    : TaskHintProviderDelegate(parent)
 {
 }
 

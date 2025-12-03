@@ -60,6 +60,10 @@ class DetailedTaskInfo {
     /// @returns true if object was properly read.
     bool execReadExisting(const TaskWarriorExecutor &executor);
 
+    /// @returns true if this object has all possible data read from `task`.
+    [[nodiscard]]
+    bool isFullRead() const;
+
   public:
     /// @brief Constructs object with defaults, except given @p task_id set.
     explicit DetailedTaskInfo(QString task_id);
@@ -69,6 +73,13 @@ class DetailedTaskInfo {
     DetailedTaskInfo();
 
   private:
+    enum class ReadAs : std::uint8_t {
+        ParticularRead,
+        FullRead,
+    };
+
+    ReadAs dataState{ ReadAs::ParticularRead };
+
     [[nodiscard]]
     QStringList getAddModifyCmdArgsFieldsRepresentation() const;
 };
@@ -156,5 +167,44 @@ struct RecurringTaskTemplate {
     readAll(const TaskWarriorExecutor &executor);
 };
 // Q_DECLARE_METATYPE(RecurringTaskTemplate);
+
+/// @brief Issues `task stat` and uses some fields of the response to understand
+/// if we must reload data from taskwarrior.
+class TaskWarriorDbState {
+  public:
+    using Optional = std::optional<TaskWarriorDbState>;
+    struct DataFields {
+        ulong fieldTotal{ 0u };
+        ulong fieldUndo{ 0u };
+        ulong fieldBacklog{ 0u };
+        bool operator!=(const DataFields &other) const
+        {
+            return !(*this == other);
+        }
+
+        bool operator==(const DataFields &other) const
+        {
+            static const auto Tie = [](const DataFields &what) {
+                return std::tie(what.fieldBacklog, what.fieldTotal,
+                                what.fieldUndo);
+            };
+            return Tie(*this) == Tie(other);
+        }
+    };
+    bool isDifferent(const TaskWarriorDbState &other) const
+    {
+        return this->fields != other.fields;
+    }
+
+    /// @returns std::nullopt if it was error reading stats or current state of
+    /// TaskWarrior's data base as TaskWarriorDbState.
+    /// @note We select only fields we think can help us to detect modifications
+    /// when we should update our GUI.
+    [[nodiscard]]
+    static Optional readCurrent(const TaskWarriorExecutor &executor);
+
+  private:
+    DataFields fields;
+};
 
 #endif // TASK_HPP

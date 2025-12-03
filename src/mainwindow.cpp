@@ -80,7 +80,7 @@ MainWindow::MainWindow()
     , m_view_menu_actions(*menuBar()->addMenu(tr("&View")))
     , m_toolbar_actions(*m_task_toolbar)
     , m_task_provider(std::make_unique<Taskwarrior>())
-    , m_task_watcher(std::make_unique<TaskWatcher>(nullptr))
+    , m_task_watcher(new TaskWatcher(this))
 {
     if (!m_task_provider->init()) {
         QMessageBox::critical(
@@ -90,14 +90,7 @@ MainWindow::MainWindow()
                "path to the 'task' executable in the settings."));
     }
 
-    if (!initTaskWatcher()) {
-        QMessageBox::warning(
-            this, tr("Error"),
-            tr("Can't initialize file watcher service for %1. The task "
-               "list will not be updated after external changes.")
-                .arg(ConfigManager::config().getTaskDataPath()));
-    }
-
+    initTaskWatcher();
     initMainWindow();
     initTrayIcon();
     initFileMenu();
@@ -118,22 +111,20 @@ MainWindow::MainWindow()
     }
 }
 
-MainWindow::~MainWindow()
-{
-    m_task_watcher.reset();
-    m_task_provider.reset();
-}
+MainWindow::~MainWindow() { m_task_provider.reset(); }
 
 bool MainWindow::initTaskWatcher()
 {
-    Q_ASSERT(m_task_watcher);
-    if (!m_task_watcher->setup(ConfigManager::config().getTaskDataPath())) {
-        m_task_watcher = nullptr;
-        return false;
-    }
     connect(
-        m_task_watcher.get(), &TaskWatcher::dataChanged, this,
-        [&](const QString & /* filepath */) { updateTasks(/*force=*/true); });
+        m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this, [this]() {
+            if (m_task_provider) {
+                auto tasks = m_task_provider->getTasks();
+                auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
+                model->setTasks(tasks.value_or({}), getSelectedTaskIds());
+
+                updateTaskToolbar();
+            }
+        });
     return true;
 }
 
@@ -163,7 +154,7 @@ void MainWindow::initMainWindow()
     m_window->setLayout(m_layout);
     setCentralWidget(m_window);
 
-    updateTasks(/*force=*/true);
+    updateTasksListTable();
 }
 
 void MainWindow::initTasksTable()
@@ -176,8 +167,11 @@ void MainWindow::initTasksTable()
 
     auto *model = new TasksModel(this);
     m_tasks_view->setModel(model);
-    m_tasks_view->setItemDelegateForColumn(2 /* description */,
-                                           new TaskDescriptionDelegate(this));
+
+    // All show hint, description column has additional logic too.
+    m_tasks_view->setItemDelegate(new TaskHintProviderDelegate(m_tasks_view));
+    m_tasks_view->setItemDelegateForColumn(
+        2 /* description */, new TaskDescriptionDelegate(m_tasks_view));
 
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,
@@ -210,6 +204,21 @@ void MainWindow::initTasksTable()
                     addShortcutToToolTip(m_toolbar_actions.m_start_action);
                     m_toolbar_actions.m_start_action->setEnabled(true);
                     m_toolbar_actions.m_stop_action->setEnabled(false);
+                }
+            });
+
+    // Support for restoring selection after model reset.
+    connect(model, &TasksModel::selectIndices, this,
+            [this](const QModelIndexList &indices) {
+                m_tasks_view->selectionModel()->clearSelection();
+                for (const auto &index : indices) {
+                    m_tasks_view->selectionModel()->select(
+                        index, QItemSelectionModel::Select |
+                                   QItemSelectionModel::Rows);
+                }
+                // Scroll to the 1st selected (UX).
+                if (!indices.isEmpty()) {
+                    m_tasks_view->scrollTo(indices.first());
                 }
             });
 
@@ -340,24 +349,18 @@ void MainWindow::initShortcuts()
 
 void MainWindow::connectTaskToolbarActions()
 {
-    connect(m_toolbar_actions.m_add_action, &QAction::triggered, this, [&]() {
-        m_tasks_view->selectionModel()->clearSelection();
-        onAddTask();
-    });
+    connect(m_toolbar_actions.m_add_action, &QAction::triggered, this,
+            [&]() { onAddTask(); });
 
     connect(m_toolbar_actions.m_undo_action, &QAction::triggered, this, [&]() {
-        if (m_task_provider->undoTask()) {
-            m_tasks_view->selectionModel()->clearSelection();
-        }
+        m_task_provider->undoTask();
         m_toolbar_actions.m_undo_action->setEnabled(
             m_task_provider->getActionsCounter() > 0);
+        updateTasksListTable();
     });
 
     connect(m_toolbar_actions.m_update_action, &QAction::triggered, this,
-            [&]() {
-                m_tasks_view->selectionModel()->clearSelection();
-                updateTasks(/*force=*/true);
-            });
+            [&]() { updateTasksListTable(); });
 
     connect(m_toolbar_actions.m_done_action, &QAction::triggered, this,
             &MainWindow::onSetTasksDone);
@@ -372,7 +375,7 @@ void MainWindow::connectTaskToolbarActions()
         QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
             if (m_task_provider->waitTask(getSelectedTaskIds(),
                                           dlg->getDateTime())) {
-                updateTasks();
+                updateTasksListTable();
             }
         });
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
@@ -384,14 +387,14 @@ void MainWindow::connectTaskToolbarActions()
     connect(m_toolbar_actions.m_start_action, &QAction::triggered, this, [&]() {
         if (auto t_opt = getSelectedTaskId()) {
             m_task_provider->startTask(*t_opt);
-            updateTasks();
+            updateTasksListTable();
         }
     });
 
     connect(m_toolbar_actions.m_stop_action, &QAction::triggered, this, [&]() {
         if (auto t_opt = getSelectedTaskId()) {
             m_task_provider->stopTask(*t_opt);
-            updateTasks();
+            updateTasksListTable();
         }
     });
 }
@@ -606,15 +609,16 @@ void MainWindow::onAddTask()
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            updateTasks();
+            updateTasksListTable();
         }
     });
-    QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasks(); });
+    QObject::connect(dlg, &QDialog::rejected,
+                     [this]() { updateTasksListTable(); });
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            updateTasks();
+            updateTasksListTable();
             emit acceptContinueCreatingTasks();
         } else {
             dlg->close();
@@ -639,7 +643,7 @@ void MainWindow::onDeleteTasks()
         QMessageBox::Yes) {
         m_tasks_view->selectionModel()->clearSelection();
         m_task_provider->deleteTask(selectedTasks);
-        updateTasks();
+        updateTasksListTable();
     }
 }
 
@@ -650,7 +654,7 @@ void MainWindow::onSetTasksDone()
     }
     m_task_provider->setTaskDone(getSelectedTaskIds());
     m_tasks_view->selectionModel()->clearSelection();
-    updateTasks();
+    updateTasksListTable();
 }
 
 void MainWindow::onApplyFilter()
@@ -660,7 +664,7 @@ void MainWindow::onApplyFilter()
     }
     // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
     //     m_task_filter->clearTags();
-    updateTasks(/*force=*/true);
+    updateTasksListTable();
 }
 
 void MainWindow::onEnterTaskCommand()
@@ -671,7 +675,7 @@ void MainWindow::onEnterTaskCommand()
     }
     auto rc = m_task_provider->directCmd(cmd);
     if (rc == 0) {
-        updateTasks();
+        updateTasksListTable();
     }
     m_task_shell->setText("");
 }
@@ -681,13 +685,13 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
     const auto *model = m_tasks_view->selectionModel();
     const auto id_str = model->selectedRows()[0].data().toString();
     if (id_str.isEmpty()) {
-        updateTasks();
+        updateTasksListTable();
         return;
     }
 
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
-        updateTasks();
+        updateTasksListTable();
         return;
     }
 
@@ -696,7 +700,7 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                      [&](const QString &uuid) {
                          m_task_provider->deleteTask(uuid);
                          m_tasks_view->selectionModel()->clearSelection();
-                         updateTasks();
+                         updateTasksListTable();
                      });
     QObject::connect(
         dlg, &QDialog::accepted,
@@ -719,9 +723,10 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                 !m_task_provider->setPriority(t.task_id, t.priority)) {
                 return;
             }
-            updateTasks();
+            updateTasksListTable();
         });
-    QObject::connect(dlg, &QDialog::rejected, [this]() { updateTasks(); });
+    QObject::connect(dlg, &QDialog::rejected,
+                     [this]() { updateTasksListTable(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 
     dlg->open();
@@ -734,22 +739,7 @@ void MainWindow::onEditTaskAction()
     showEditTaskDialog(model->selectedRows()[0]);
 }
 
-void MainWindow::updateTasks(bool force)
-{
-    Q_ASSERT(m_task_provider);
-
-    // The commands from m_task_provider will modify the taskwarrior
-    // database files. This will trigger TaskWatcher to emit update event.
-    if (!force && m_task_watcher && m_task_watcher->isActive()) {
-        return;
-    }
-
-    auto tasks = m_task_provider->getTasks();
-    auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-    model->setTasks(tasks.value_or({}));
-
-    updateTaskToolbar();
-}
+void MainWindow::updateTasksListTable() { m_task_watcher->checkNow(); }
 
 void MainWindow::updateTaskToolbar()
 {

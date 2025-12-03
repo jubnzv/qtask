@@ -9,13 +9,13 @@
 #include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
+#include <QWidget>
 
 #include "configmanager.hpp"
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , m_task_bin_edit(new QLineEdit(this))
-    , m_task_data_path_edit(new QLineEdit(this))
     , m_hide_on_startup_cb(
           new QCheckBox(tr("Hide QTask window on startup"), this))
     , m_save_filter_on_exit(new QCheckBox(tr("Save task filter on exit"), this))
@@ -47,9 +47,6 @@ void SettingsDialog::initUI()
     auto *task_data_path_label = new QLabel(tr("Path to task data:"));
     main_layout->addWidget(task_data_path_label, 1, 0);
 
-    m_task_data_path_edit->setText(ConfigManager::config().getTaskDataPath());
-    main_layout->addWidget(m_task_data_path_edit, 1, 1);
-
     m_hide_on_startup_cb->setChecked(
         ConfigManager::config().getHideWindowOnStartup());
     main_layout->addWidget(m_hide_on_startup_cb, 2, 0, 1, 2);
@@ -67,11 +64,6 @@ void SettingsDialog::initUI()
 
 void SettingsDialog::applySettings()
 {
-    auto task_data_path = m_task_data_path_edit->text();
-    if (ConfigManager::config().getTaskDataPath() != task_data_path) {
-        ConfigManager::config().setTaskDataPath(task_data_path);
-    }
-
     auto task_bin = m_task_bin_edit->text();
     if (ConfigManager::config().getTaskBin() != task_bin) {
         ConfigManager::config().setTaskBin(task_bin);

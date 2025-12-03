@@ -76,6 +76,12 @@ TaskWarriorExecutor::TaskWarriorExecutor(QString full_path_to_binary)
     throw_if_true(!execTaskProgram({ "rc.gc=on" }));
 }
 
+TaskWarriorExecutor::TaskWarriorExecutor(QString full_path_to_binary,
+                                         TSkipBinaryValidation)
+    : m_full_path_to_binary(std::move(full_path_to_binary))
+{
+}
+
 const QString &TaskWarriorExecutor::getTaskVersion() const
 {
     return m_task_version;
