@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <unordered_map>
@@ -697,7 +698,8 @@ RecurringTaskTemplate::readAll(const TaskWarriorExecutor &executor)
     return out_tasks;
 }
 
-TaskWarriorDbState::Optional TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
+TaskWarriorDbState::Optional
+TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
 {
     static const QStringList cmd = { "stat" };
     const auto exec_res = executor.execTaskProgramWithDefaults(cmd);
@@ -724,7 +726,14 @@ TaskWarriorDbState::Optional TaskWarriorDbState::readCurrent(const TaskWarriorEx
     if (!setters.areAllFieldsParsed()) {
         return std::nullopt;
     }
-    TaskWarriorDbState res;
-    res.fields = fields;
-    return res;
+    return TaskWarriorDbState(fields);
+}
+
+TaskWarriorDbState TaskWarriorDbState::invalidState()
+{
+    static const TaskWarriorDbState::DataFields invalid_state{
+        std::numeric_limits<uint>::max(), std::numeric_limits<uint>::max(),
+        std::numeric_limits<uint>::max()
+    };
+    return TaskWarriorDbState(invalid_state);
 }

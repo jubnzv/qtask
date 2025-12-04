@@ -26,6 +26,9 @@ class TaskWatcher : public QObject {
   public slots:
     void checkNow();
 
+    /// @brief Next checkNow() will do update.
+    void enforceUpdate();
+
   private:
     QFutureWatcher<TaskWarriorDbState::Optional> *m_state_reader;
     QTimer m_check_for_changes_timer;
