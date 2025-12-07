@@ -154,7 +154,7 @@ void MainWindow::initMainWindow()
     m_window->setLayout(m_layout);
     setCentralWidget(m_window);
 
-    updateTasksListTable();
+    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::initTasksTable()
@@ -356,11 +356,11 @@ void MainWindow::connectTaskToolbarActions()
         m_task_provider->undoTask();
         m_toolbar_actions.m_undo_action->setEnabled(
             m_task_provider->getActionsCounter() > 0);
-        updateTasksListTable();
+        refreshTasksListTableIfNeeded();
     });
 
-    connect(m_toolbar_actions.m_update_action, &QAction::triggered, this,
-            [&]() { updateTasksListTable(); });
+    connect(m_toolbar_actions.m_refresh_action, &QAction::triggered, this,
+            [&]() { refreshTasksListTableEnforced(); });
 
     connect(m_toolbar_actions.m_done_action, &QAction::triggered, this,
             &MainWindow::onSetTasksDone);
@@ -375,7 +375,7 @@ void MainWindow::connectTaskToolbarActions()
         QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
             if (m_task_provider->waitTask(getSelectedTaskIds(),
                                           dlg->getDateTime())) {
-                updateTasksListTable();
+                refreshTasksListTableIfNeeded();
             }
         });
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
@@ -387,14 +387,14 @@ void MainWindow::connectTaskToolbarActions()
     connect(m_toolbar_actions.m_start_action, &QAction::triggered, this, [&]() {
         if (auto t_opt = getSelectedTaskId()) {
             m_task_provider->startTask(*t_opt);
-            updateTasksListTable();
+            refreshTasksListTableIfNeeded();
         }
     });
 
     connect(m_toolbar_actions.m_stop_action, &QAction::triggered, this, [&]() {
         if (auto t_opt = getSelectedTaskId()) {
             m_task_provider->stopTask(*t_opt);
-            updateTasksListTable();
+            refreshTasksListTableIfNeeded();
         }
     });
 }
@@ -609,16 +609,16 @@ void MainWindow::onAddTask()
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            updateTasksListTable();
+            refreshTasksListTableIfNeeded();
         }
     });
     QObject::connect(dlg, &QDialog::rejected,
-                     [this]() { updateTasksListTable(); });
+                     [this]() { refreshTasksListTableIfNeeded(); });
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            updateTasksListTable();
+            refreshTasksListTableIfNeeded();
             emit acceptContinueCreatingTasks();
         } else {
             dlg->close();
@@ -643,7 +643,7 @@ void MainWindow::onDeleteTasks()
         QMessageBox::Yes) {
         m_tasks_view->selectionModel()->clearSelection();
         m_task_provider->deleteTask(selectedTasks);
-        updateTasksListTable();
+        refreshTasksListTableIfNeeded();
     }
 }
 
@@ -654,19 +654,19 @@ void MainWindow::onSetTasksDone()
     }
     m_task_provider->setTaskDone(getSelectedTaskIds());
     m_tasks_view->selectionModel()->clearSelection();
-    updateTasksListTable();
+    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::onApplyFilter()
 {
     if (!m_task_provider->applyFilter(m_task_filter->getTags())) {
         m_task_filter->popTag();
+        refreshTasksListTableIfNeeded();
     } else {
-        m_task_watcher->enforceUpdate();
+        refreshTasksListTableEnforced();
     }
     // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
     //     m_task_filter->clearTags();
-    updateTasksListTable();
 }
 
 void MainWindow::onEnterTaskCommand()
@@ -677,7 +677,7 @@ void MainWindow::onEnterTaskCommand()
     }
     auto rc = m_task_provider->directCmd(cmd);
     if (rc == 0) {
-        updateTasksListTable();
+        refreshTasksListTableIfNeeded();
     }
     m_task_shell->setText("");
 }
@@ -687,13 +687,13 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
     const auto *model = m_tasks_view->selectionModel();
     const auto id_str = model->selectedRows()[0].data().toString();
     if (id_str.isEmpty()) {
-        updateTasksListTable();
+        refreshTasksListTableIfNeeded();
         return;
     }
 
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
-        updateTasksListTable();
+        refreshTasksListTableIfNeeded();
         return;
     }
 
@@ -702,7 +702,7 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                      [&](const QString &uuid) {
                          m_task_provider->deleteTask(uuid);
                          m_tasks_view->selectionModel()->clearSelection();
-                         updateTasksListTable();
+                         refreshTasksListTableIfNeeded();
                      });
     QObject::connect(
         dlg, &QDialog::accepted,
@@ -725,10 +725,10 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                 !m_task_provider->setPriority(t.task_id, t.priority)) {
                 return;
             }
-            updateTasksListTable();
+            refreshTasksListTableIfNeeded();
         });
     QObject::connect(dlg, &QDialog::rejected,
-                     [this]() { updateTasksListTable(); });
+                     [this]() { refreshTasksListTableIfNeeded(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 
     dlg->open();
@@ -741,7 +741,18 @@ void MainWindow::onEditTaskAction()
     showEditTaskDialog(model->selectedRows()[0]);
 }
 
-void MainWindow::updateTasksListTable() { m_task_watcher->checkNow(); }
+void MainWindow::refreshTasksListTableIfNeeded()
+{
+    // It may NOT refresh if not needed.
+    m_task_watcher->checkNow();
+}
+
+void ui::MainWindow::refreshTasksListTableEnforced()
+{
+    // It WILL refresh unconditionally (with current filters).
+    m_task_watcher->enforceUpdate();
+    refreshTasksListTableIfNeeded();
+}
 
 void MainWindow::updateTaskToolbar()
 {
@@ -791,8 +802,8 @@ MainWindow::TToolbarActionsDefined::TToolbarActionsDefined(QToolBar &parent)
                              QKeySequence::Undo);
     m_undo_action->setEnabled(false);
 
-    m_update_action = allocate(":/icons/refresh.png", tr("Update tasks"),
-                               QKeySequence::Refresh);
+    m_refresh_action = allocate(":/icons/refresh.png", tr("Refresh tasks"),
+                                QKeySequence::Refresh);
 
     parent.addSeparator();
 

@@ -84,7 +84,9 @@ class MainWindow : public QMainWindow {
     void onEditTaskAction();
     void showEditTaskDialog(const QModelIndex &);
 
-    void updateTasksListTable();
+    void refreshTasksListTableIfNeeded();
+    void refreshTasksListTableEnforced();
+
     void updateTaskToolbar();
 
   signals:
@@ -118,7 +120,7 @@ class MainWindow : public QMainWindow {
     struct TToolbarActionsDefined {
         QPointer<QAction> m_add_action;
         QPointer<QAction> m_undo_action;
-        QPointer<QAction> m_update_action;
+        QPointer<QAction> m_refresh_action;
         QPointer<QAction> m_done_action;
         QPointer<QAction> m_edit_action;
         QPointer<QAction> m_wait_action;

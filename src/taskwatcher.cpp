@@ -6,7 +6,7 @@
 #include "taskwarriorexecutor.hpp"
 
 #include <atomic>
-#include <utility>
+#include <optional>
 
 #include <QFuture>
 #include <QObject>
