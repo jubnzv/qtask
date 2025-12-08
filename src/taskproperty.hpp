@@ -20,29 +20,17 @@ struct is_arg_compatible<T, std::void_t<decltype(std::declval<QString>().arg(
                                 std::declval<const T &>()))>> : std::true_type {
 };
 
-/// @brief This is some property of the task.
-/// It binds together actual value and a way to write it to taskwarriror.
-/// Also it tracks if it was changed, so only modified fields could be updated.
-/// It can use provided format string or functional formatter.
-/// @note It is NOT thread safe.
+/// @brief Property which tracks modifications of the underlying object.
 template <typename taStoredType>
-class TaskProperty {
+class ModTrackingProperty {
   public:
-    using FormatterToSingleStr = std::function<QString(const taStoredType &)>;
-    using FormatterToManyStr = std::function<QStringList(const taStoredType &)>;
-
-    using Formatter =
-        std::variant<QString, FormatterToSingleStr, FormatterToManyStr>;
-
-    explicit TaskProperty(Formatter formatter,
-                          taStoredType value = taStoredType())
+    explicit ModTrackingProperty(taStoredType value = taStoredType())
         : m_value(std::move(value))
-        , m_formater{ std::move(formatter) }
     {
     }
 
     template <typename TValue>
-    TaskProperty &operator=(TValue &&value)
+    ModTrackingProperty &operator=(TValue &&value)
     {
         modify([&value](taStoredType &target) {
             target = std::forward<TValue>(value);
@@ -63,13 +51,6 @@ class TaskProperty {
     }
 
     [[nodiscard]]
-    // NOLINTNEXTLINE(google-explicit-constructor)
-    operator const taStoredType &() const
-    {
-        return get();
-    }
-
-    [[nodiscard]]
     const taStoredType &get() const
     {
         return m_value;
@@ -85,6 +66,47 @@ class TaskProperty {
     /// @brief Clears modification flag, so property is considered "not set".
     void setNotModified() { m_modified = false; }
 
+  private:
+    taStoredType m_value;
+    bool m_modified{ false };
+};
+
+/// @brief This is some property of the task.
+/// It binds together actual value and a way to write it to taskwarriror.
+/// Also it tracks if it was changed, so only modified fields could be updated.
+/// It can use provided format string or functional formatter.
+/// @note It is NOT thread safe.
+template <typename taStoredType>
+class TaskProperty {
+  public:
+    using FormatterToSingleStr = std::function<QString(const taStoredType &)>;
+    using FormatterToManyStr = std::function<QStringList(const taStoredType &)>;
+
+    using Formatter =
+        std::variant<QString, FormatterToSingleStr, FormatterToManyStr>;
+
+    explicit TaskProperty(Formatter formatter,
+                          taStoredType value = taStoredType())
+        : value(std::move(value))
+        , m_formater{ std::move(formatter) }
+    {
+    }
+
+    template <typename TValue>
+    TaskProperty &operator=(TValue &&value)
+    {
+        this->value.modify([&value](taStoredType &target) {
+            target = std::forward<TValue>(value);
+        });
+        return *this;
+    }
+
+    [[nodiscard]]
+    const taStoredType &get() const
+    {
+        return value.get();
+    }
+
     /// @brief Converts property for command line using formatters provided to
     /// ctor.
     /// @returns QStringList usable to direct appending to command line call.
@@ -94,7 +116,7 @@ class TaskProperty {
         const LambdaVisitor visitors = {
             [this](const QString &format) -> QStringList {
                 if constexpr (is_arg_compatible<taStoredType>::value) {
-                    return QStringList() << format.arg(m_value);
+                    return QStringList() << format.arg(value.get());
                 } else {
                     throw std::runtime_error(
                         "taStoredType is incompatible with QString::arg and "
@@ -106,22 +128,22 @@ class TaskProperty {
                 if (!format) {
                     return QStringList{};
                 }
-                return QStringList() << format(m_value);
+                return QStringList() << format(value.get());
             },
             [this](const FormatterToManyStr &format) {
                 assert(format);
                 if (!format) {
                     return QStringList{};
                 }
-                return format(m_value);
+                return format(value.get());
             },
         };
         return std::visit(visitors, m_formater);
     }
 
-  private:
-    taStoredType m_value;
-    Formatter m_formater;
+  public:
+    ModTrackingProperty<taStoredType> value;
 
-    bool m_modified{ false };
+  private:
+    Formatter m_formater;
 };

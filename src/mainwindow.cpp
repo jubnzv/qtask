@@ -707,22 +707,23 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
     QObject::connect(
         dlg, &QDialog::accepted,
         [this, dlg, id_str, saved_tags = task->tags.get(),
-         saved_pri = task->priority]() {
+         saved_pri = task->priority.get()]() {
             Q_ASSERT(dlg);
             auto t = dlg->getTask();
             const auto &new_tags = t.tags.get();
             t.removed_tags = QStringList{};
             for (auto const &st : saved_tags) {
                 if (!new_tags.contains(st)) {
-                    t.removed_tags.modify([&st](auto &lst) { lst << st; });
+                    t.removed_tags.value.modify(
+                        [&st](auto &lst) { lst << st; });
                 }
             }
             t.task_id = id_str;
             if (!m_task_provider->editTask(t)) {
                 return;
             }
-            if (saved_pri != t.priority &&
-                !m_task_provider->setPriority(t.task_id, t.priority)) {
+            if (saved_pri != t.priority.get() &&
+                !m_task_provider->setPriority(t.task_id, t.priority.get())) {
                 return;
             }
             refreshTasksListTableIfNeeded();

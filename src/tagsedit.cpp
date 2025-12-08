@@ -41,6 +41,8 @@
 #include <utility>
 #include <vector>
 
+#include "taskproperty.hpp"
+
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
 #define FONT_METRICS_WIDTH(fmt, ...) fmt.width(__VA_ARGS__)
 #else
@@ -102,8 +104,8 @@ struct EmptySkipIterator {
 
     EmptySkipIterator &operator++()
     {
-        while (++it != end && it->text.isEmpty())
-            ;
+        while (++it != end && it->text.isEmpty()) {
+        }
         return *this;
     }
 

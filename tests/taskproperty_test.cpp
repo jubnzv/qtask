@@ -65,23 +65,23 @@ TEST_F(TaskPropertyTest, WorksWithFormatterToQStringList)
 TEST_F(TaskPropertyTest, CallingModifySetsFlag)
 {
     TaskProperty<int> prop("value: %1", 2);
-    EXPECT_FALSE(prop.isModified());
-    prop.modify([](auto &) {});
-    EXPECT_TRUE(prop.isModified());
+    EXPECT_FALSE(prop.value.isModified());
+    prop.value.modify([](auto &) {});
+    EXPECT_TRUE(prop.value.isModified());
 }
 
 TEST_F(TaskPropertyTest, ValueCanBeSetAndModificationReset)
 {
     TaskProperty<int> prop("value: %1", 2);
-    EXPECT_FALSE(prop.isModified());
+    EXPECT_FALSE(prop.value.isModified());
     EXPECT_EQ(prop.get(), 2);
 
     prop = 3;
-    EXPECT_TRUE(prop.isModified());
+    EXPECT_TRUE(prop.value.isModified());
     EXPECT_EQ(prop.get(), 3);
 
-    prop.setNotModified();
-    EXPECT_FALSE(prop.isModified());
+    prop.value.setNotModified();
+    EXPECT_FALSE(prop.value.isModified());
     EXPECT_EQ(prop.get(), 3);
 }
 

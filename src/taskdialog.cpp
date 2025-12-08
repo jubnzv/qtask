@@ -119,7 +119,7 @@ DetailedTaskInfo TaskDialogBase::getTask()
         QString t(tag);
         t.remove(QChar('+'));
         if (!t.isEmpty()) {
-            task.tags.modify([&t](auto &lst) { lst.push_back(t); });
+            task.tags.value.modify([&t](auto &lst) { lst.push_back(t); });
         }
     }
 
@@ -159,15 +159,15 @@ void TaskDialogBase::keyPressEvent(QKeyEvent *event)
 
 void TaskDialogBase::setTask(const DetailedTaskInfo &task)
 {
-    m_task_description->setText(task.description);
-    m_task_project->setText(task.project);
-    m_task_tags->setTags(task.tags);
+    m_task_description->setText(task.description.get());
+    m_task_project->setText(task.project.get());
+    m_task_tags->setTags(task.tags.get());
 
-    m_task_sched->setDateTime(task.sched);
-    m_task_due->setDateTime(task.due);
-    m_task_wait->setDateTime(task.wait);
+    m_task_sched->setDateTime(task.sched.get());
+    m_task_due->setDateTime(task.due.get());
+    m_task_wait->setDateTime(task.wait.get());
 
-    switch (task.priority) {
+    switch (task.priority.get()) {
     case DetailedTaskInfo::Priority::Unset:
         m_task_priority->setCurrentIndex(0);
         break;

@@ -92,14 +92,16 @@ void AgendaDialog::onUpdateTasks()
         // Scheduled tasks
         if (t.sched.get().has_value() && t.sched.get()->date() == date) {
             auto *task_item = new QListWidgetItem(m_sched_tasks_list);
-            const auto text = QString{ "%1: %2" }.arg(t.task_id, t.description);
+            const auto text =
+                QString{ "%1: %2" }.arg(t.task_id, t.description.get());
             task_item->setText(text);
             m_sched_tasks_list->addItem(task_item);
         }
         // Due tasks
         if (t.due.get().has_value() && t.due.get()->date() == date) {
             auto *task_item = new QListWidgetItem(m_due_tasks_list);
-            const auto text = QString{ "%1: %2" }.arg(t.task_id, t.description);
+            const auto text =
+                QString{ "%1: %2" }.arg(t.task_id, t.description.get());
             task_item->setText(text);
             m_due_tasks_list->addItem(task_item);
         }

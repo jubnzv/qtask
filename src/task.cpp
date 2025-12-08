@@ -109,7 +109,7 @@ template <typename taLeft, typename... taMany>
 void AppendPropertiesToCmdList(QStringList &output, const taLeft &leftProperty,
                                taMany &&...manyProperties)
 {
-    if (leftProperty.isModified()) {
+    if (leftProperty.value.isModified()) {
         output << leftProperty.getStringsForCmd();
     }
     if constexpr (sizeof...(manyProperties) > 0) {
@@ -124,7 +124,7 @@ bool SetPropertiesNotChanged(const bool wasTaskCallOk, taLeft &leftProperty,
                              taMany &&...manyProperties)
 {
     if (wasTaskCallOk) {
-        leftProperty.setNotModified();
+        leftProperty.value.setNotModified();
         if constexpr (sizeof...(manyProperties) > 0) {
             SetPropertiesNotChanged(wasTaskCallOk,
                                     std::forward<taMany>(manyProperties)...);
@@ -420,7 +420,8 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
             if (!split_string.isValid()) {
                 if (description_status ==
                     MultilineDescriptionStatus::InProgress) {
-                    description = description + "\n" + whole_line.simplified();
+                    description =
+                        description.get() + "\n" + whole_line.simplified();
                 }
                 return;
             }
@@ -587,7 +588,7 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
             }
 
             tasks.back().description =
-                tasks.back().description + '\n' + desc_line;
+                tasks.back().description.get() + '\n' + desc_line;
             continue;
         }
 
