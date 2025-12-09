@@ -44,7 +44,7 @@ class TagsEdit : public QWidget {
     void mouseMoveEvent(QMouseEvent *event) override;
 
   private:
-    struct Impl;
+    class Impl;
     std::unique_ptr<Impl> impl;
 };
 

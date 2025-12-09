@@ -69,8 +69,7 @@ class TagsRectsCalculator {
                            VisualTag>,
             "It requires an iterator over VisualTag.");
 
-        const bool is_edited = currently_edited.tag_iter != end &&
-                               currently_edited.text_layout != nullptr;
+        const bool is_edited = currently_edited.tag_iter != end;
         auto const r = localContentRect();
         auto trackingOffset = r.topLeft();
 

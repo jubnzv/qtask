@@ -36,6 +36,7 @@
 #include <utility>
 #include <vector>
 
+#include "tags_drawer.hpp"
 #include "tags_rects_calculator.h"
 #include "visual_tag.hpp"
 
@@ -92,9 +93,11 @@ QSize globalStrut()
 
 } // namespace
 
-struct TagsEdit::Impl {
+class TagsEdit::Impl : public IDrawerState {
+  public:
     explicit Impl(TagsEdit *const &ifce)
-        : ifce(ifce)
+        : IDrawerState()
+        , ifce(ifce)
     {
     }
 
@@ -107,43 +110,6 @@ struct TagsEdit::Impl {
                    .translated(-hscroll, 0)
                    .contains(point) &&
                (!cursorVisible() || tag_index != editing_index);
-    }
-
-    template <typename ItA, typename ItB>
-    void drawTags(QPainter &p, std::pair<ItA, ItB> range) const
-    {
-        for (auto it = range.first; it != range.second; ++it) {
-            QRect const &i_r = it->rect().translated(-hscroll, 0);
-            auto const text_pos =
-                i_r.topLeft() +
-                QPointF(
-                    TagsRectsCalculator::tag_inner_left_padding,
-                    ifce->fontMetrics().ascent() +
-                        ((i_r.height() - ifce->fontMetrics().height()) / 2.0f));
-
-            // drag tag rect
-            QColor const blue(225, 236, 244);
-            QPainterPath path;
-            path.addRoundedRect(i_r, 4, 4);
-            p.fillPath(path, blue);
-
-            // draw text
-            p.drawText(text_pos, it->text());
-
-            // calc cross rect
-            auto const i_cross_r =
-                TagsRectsCalculator::localCloseTagCrossRect(i_r);
-
-            QPen pen = p.pen();
-            pen.setWidth(2);
-
-            p.save();
-            p.setPen(pen);
-            p.setRenderHint(QPainter::Antialiasing);
-            p.drawLine(QLineF(i_cross_r.topLeft(), i_cross_r.bottomRight()));
-            p.drawLine(QLineF(i_cross_r.bottomLeft(), i_cross_r.topRight()));
-            p.restore();
-        }
     }
 
     void setCursorVisible(bool visible)
@@ -244,22 +210,6 @@ struct TagsEdit::Impl {
                 [this](QString const &text) { currentTag(text); });
     }
 
-    QVector<QTextLayout::FormatRange> formatting() const
-    {
-        if (select_size == 0) {
-            return {};
-        }
-
-        QTextLayout::FormatRange selection;
-        selection.start = select_start;
-        selection.length = select_size;
-        selection.format.setBackground(
-            ifce->palette().brush(QPalette::Highlight));
-        selection.format.setForeground(
-            ifce->palette().brush(QPalette::HighlightedText));
-        return { selection };
-    }
-
     [[nodiscard]]
     bool hasSelection() const noexcept
     {
@@ -268,8 +218,8 @@ struct TagsEdit::Impl {
 
     void removeSelection()
     {
-        cursor = select_start;
-        currentTag().remove(cursor, select_size);
+        m_cursor = select_start;
+        currentTag().remove(m_cursor, select_size);
         deselectAll();
     }
 
@@ -278,7 +228,7 @@ struct TagsEdit::Impl {
         if (hasSelection()) {
             removeSelection();
         } else {
-            currentTag().remove(--cursor, 1);
+            currentTag().remove(--m_cursor, 1);
         }
     }
 
@@ -292,8 +242,8 @@ struct TagsEdit::Impl {
             setEditingIndex(editing_index - 1);
             moveCursor(currentTag().size(), false);
         }
-        cursor -= currentTag().size();
-        currentTag().remove(cursor, currentTag().size());
+        m_cursor -= currentTag().size();
+        currentTag().remove(m_cursor, currentTag().size());
     }
 
     void selectAll()
@@ -312,54 +262,16 @@ struct TagsEdit::Impl {
     {
         if (mark) {
             const auto e = select_start + select_size;
-            const int anchor = select_size > 0 && cursor == select_start ? e
-                               : select_size > 0 && cursor == e ? select_start
-                                                                : cursor;
+            const int anchor = select_size > 0 && m_cursor == select_start ? e
+                               : select_size > 0 && m_cursor == e ? select_start
+                                                                  : m_cursor;
             select_start = qMin(anchor, pos);
             select_size = qMax(anchor, pos) - select_start;
         } else {
             deselectAll();
         }
 
-        cursor = pos;
-    }
-
-    [[nodiscard]]
-    qreal natrualWidth() const
-    {
-        return tags.back().rect().right() - tags.front().rect().left();
-    }
-
-    [[nodiscard]]
-    qreal cursorToX() const
-    {
-        return text_layout.lineAt(0).cursorToX(cursor);
-    }
-
-    void calcHScroll(QRect const &r)
-    {
-        auto const rect = TagsRectsCalculator(*ifce).localContentRect();
-        auto const width_used = qRound(natrualWidth()) + 1;
-        int const cix = r.x() + qRound(cursorToX());
-        if (width_used <= rect.width()) {
-            // text fit
-            hscroll = 0;
-        } else if (cix - hscroll >= rect.width()) {
-            // text doesn't fit, cursor is to the right of lineRect (scroll
-            // right)
-            hscroll = cix - rect.width() + 1;
-        } else if (cix - hscroll < 0 && hscroll < width_used) {
-            // text doesn't fit, cursor is to the left of lineRect (scroll left)
-            hscroll = cix;
-        } else if (width_used - hscroll < rect.width()) {
-            // text doesn't fit, text document is to the left of lineRect; align
-            // right
-            hscroll = width_used - rect.width() + 1;
-        } else {
-            // in case the text is bigger than the lineedit, the hscroll can
-            // never be negative
-            hscroll = qMax(0, hscroll);
-        }
+        m_cursor = pos;
     }
 
     void editPreviousTag()
@@ -388,7 +300,7 @@ struct TagsEdit::Impl {
     TagsEdit *const ifce;
     std::vector<VisualTag> tags{ VisualTag() };
     size_t editing_index{ 0 };
-    int cursor{ 0 };
+    int m_cursor{ 0 };
     int blink_timer{ 0 };
     bool blink_status{ true };
     QTextLayout text_layout;
@@ -397,6 +309,14 @@ struct TagsEdit::Impl {
     QInputControl ctrl{ QInputControl::LineEdit };
     std::unique_ptr<QCompleter> completer{ std::make_unique<QCompleter>() };
     int hscroll{ 0 };
+
+    // IDrawerState interface
+  public:
+    int hScroll() const { return hscroll; }
+    void setHScroll(int value) { hscroll = value; }
+    int cursor() const { return m_cursor; }
+    int isDrawCursor() const { return blink_status; }
+    Selection selection() const { return { select_start, select_size }; }
 };
 
 TagsEdit::TagsEdit(QWidget *parent)
@@ -436,61 +356,15 @@ void TagsEdit::focusOutEvent(QFocusEvent *)
 
 void TagsEdit::paintEvent(QPaintEvent *)
 {
-    QPainter p(this);
-    const TagsRectsCalculator calc(*this);
-    // opt
-    auto const panel = [this, &calc] {
-        QStyleOptionFrame panel;
-        calc.initStyleOption(panel);
-        return panel;
-    }();
-
-    // draw frame
-    style()->drawPrimitive(QStyle::PE_PanelLineEdit, &panel, &p, this);
-
-    // clip
-    auto const rect = calc.localContentRect();
-    p.setClipRect(rect);
-
-    if (impl->cursorVisible()) {
-        // not terminated tag pos
-        auto const &r = impl->currentTag().rect();
-        auto const &txt_p =
-            r.topLeft() +
-            QPointF(TagsRectsCalculator::tag_inner_left_padding,
-                    ((r.height() - fontMetrics().height()) / 2.0f));
-
-        // scroll
-        impl->calcHScroll(r);
-
-        // tags
-        impl->drawTags(p, std::make_pair(impl->tags.cbegin(),
-                                         std::next(impl->tags.cbegin(),
-                                                   static_cast<std::ptrdiff_t>(
-                                                       impl->editing_index))));
-
-        // draw not terminated tag
-        auto const formatting = impl->formatting();
-        impl->text_layout.draw(&p, txt_p - QPointF(impl->hscroll, 0),
-                               formatting);
-
-        // draw cursor
-        if (impl->blink_status) {
-            impl->text_layout.drawCursor(&p, txt_p - QPointF(impl->hscroll, 0),
-                                         impl->cursor);
-        }
-
-        // tags
-        impl->drawTags(p,
-                       std::make_pair(std::next(impl->tags.cbegin(),
-                                                static_cast<std::ptrdiff_t>(
-                                                    impl->editing_index + 1)),
-                                      impl->tags.cend()));
-    } else {
-        const PredicateSkipIterator iter(impl->tags.begin(), impl->tags.end(),
-                                         TagsRectsCalculator::m_filter);
-        impl->drawTags(p, std::make_pair(iter, iter.make_end()));
+    const TagsDrawer drawer(*this);
+    if (impl->editing_index < 0 || impl->editing_index >= impl->tags.size()) {
+        drawer.drawTags(*impl, impl->tags.begin(), impl->tags.end());
+        return;
     }
+    drawer.drawTags(
+        *impl, impl->tags.begin(), impl->tags.end(),
+        EditingTagData{ std::next(impl->tags.begin(), impl->editing_index),
+                        &impl->text_layout });
 }
 
 void TagsEdit::timerEvent(QTimerEvent *event)
@@ -595,11 +469,11 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
         impl->selectAll();
         event->accept();
     } else if (event == QKeySequence::SelectPreviousChar) {
-        impl->moveCursor(impl->text_layout.previousCursorPosition(impl->cursor),
-                         true);
+        impl->moveCursor(
+            impl->text_layout.previousCursorPosition(impl->m_cursor), true);
         event->accept();
     } else if (event == QKeySequence::SelectNextChar) {
-        impl->moveCursor(impl->text_layout.nextCursorPosition(impl->cursor),
+        impl->moveCursor(impl->text_layout.nextCursorPosition(impl->m_cursor),
                          true);
         event->accept();
     } else if (event == QKeySequence::DeleteStartOfWord) {
@@ -609,26 +483,27 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
     } else {
         switch (event->key()) {
         case Qt::Key_Left:
-            if (impl->cursor == 0) {
+            if (impl->m_cursor == 0) {
                 impl->editPreviousTag();
             } else {
                 impl->moveCursor(
-                    impl->text_layout.previousCursorPosition(impl->cursor),
+                    impl->text_layout.previousCursorPosition(impl->m_cursor),
                     false);
             }
             event->accept();
             break;
         case Qt::Key_Right:
-            if (impl->cursor == impl->currentTag().size()) {
+            if (impl->m_cursor == impl->currentTag().size()) {
                 impl->editNextTag();
             } else {
                 impl->moveCursor(
-                    impl->text_layout.nextCursorPosition(impl->cursor), false);
+                    impl->text_layout.nextCursorPosition(impl->m_cursor),
+                    false);
             }
             event->accept();
             break;
         case Qt::Key_Home:
-            if (impl->cursor == 0) {
+            if (impl->m_cursor == 0) {
                 impl->editTag(0);
             } else {
                 impl->moveCursor(0, false);
@@ -636,7 +511,7 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
             event->accept();
             break;
         case Qt::Key_End:
-            if (impl->cursor == impl->currentTag().size()) {
+            if (impl->m_cursor == impl->currentTag().size()) {
                 impl->editTag(impl->tags.size() - 1);
             } else {
                 impl->moveCursor(impl->currentTag().size(), false);
@@ -674,8 +549,8 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
         if (impl->hasSelection()) {
             impl->removeSelection();
         }
-        impl->currentTag().insert(impl->cursor, event->text());
-        impl->cursor += event->text().length();
+        impl->currentTag().insert(impl->m_cursor, event->text());
+        impl->m_cursor += event->text().length();
         event->accept();
     }
 
