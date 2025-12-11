@@ -13,6 +13,8 @@
 #include <QOverload>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPoint>
+#include <QSize>
 #include <QSizePolicy>
 #include <QStringList>
 #include <QStyle>
@@ -102,14 +104,12 @@ class TagsEdit::Impl : public IDrawerState {
     }
 
     [[nodiscard]]
-    bool inCrossArea(size_t tag_index, QPoint const &point) const
+    bool inCrossArea(std::size_t tag_index, QPoint const &point) const
     {
-        return TagsRectsCalculator::localCloseTagCrossRect(
-                   tags[tag_index].rect())
-                   .adjusted(-2, 0, 0, 0)
-                   .translated(-hscroll, 0)
-                   .contains(point) &&
-               (!cursorVisible() || tag_index != editing_index);
+        return (!cursorVisible() || tag_index != editing_index) &&
+               tag_index <= tags.size() &&
+               TagsDrawer::isPointOnCloseButton(
+                   *this, std::next(tags.begin(), tag_index), point);
     }
 
     void setCursorVisible(bool visible)
@@ -433,13 +433,11 @@ QSize TagsEdit::sizeHint() const
     ensurePolished();
     const QFontMetrics fm(font());
     const int h = fm.height() + 2 * vertical_margin +
-                  TagsRectsCalculator::top_text_margin +
-                  TagsRectsCalculator::bottom_text_margin + topmargin +
+                  TagsRectsCalculator::verticalTextMargins() + topmargin +
                   bottommargin;
     const int w = fm.boundingRect(QLatin1Char('x')).width() * 17 +
                   2 * horizontal_margin + leftmargin + rightmargin; // "some"
-    QStyleOptionFrame opt;
-    TagsRectsCalculator(*this).initStyleOption(opt);
+    auto opt = TagsRectsCalculator::createStyleOption(*this);
     return (style()->sizeFromContents(QStyle::CT_LineEdit, &opt,
                                       QSize(w, h).expandedTo(globalStrut()),
                                       this));
@@ -450,12 +448,10 @@ QSize TagsEdit::minimumSizeHint() const
     ensurePolished();
     const QFontMetrics fm = fontMetrics();
     const int h = fm.height() + qMax(2 * vertical_margin, fm.leading()) +
-                  TagsRectsCalculator::top_text_margin +
-                  TagsRectsCalculator::bottom_text_margin + topmargin +
+                  TagsRectsCalculator::verticalTextMargins() + topmargin +
                   bottommargin;
     const int w = fm.maxWidth() + leftmargin + rightmargin;
-    QStyleOptionFrame opt;
-    TagsRectsCalculator(*this).initStyleOption(opt);
+    auto opt = TagsRectsCalculator::createStyleOption(*this);
     return (style()->sizeFromContents(QStyle::CT_LineEdit, &opt,
                                       QSize(w, h).expandedTo(globalStrut()),
                                       this));

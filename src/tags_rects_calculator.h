@@ -32,6 +32,9 @@ template <typename taIter>
 EditingTagData(taIter, QTextLayout *) -> EditingTagData<taIter>;
 
 /// @brief Computes bounding rectangles of the VisualTag.
+/// Objects are responsible to properly compute bounding box, "close button",
+/// editing mode, used Qt style etc. and update VisualTag object(s) with newly
+/// computer rectangle(s).
 class TagsRectsCalculator {
   public:
     TagsRectsCalculator() = delete;
@@ -88,35 +91,12 @@ class TagsRectsCalculator {
                                   m_filter));
     }
 
-    /// @returns QRectF of "close" button for the tag, in local coordinate
-    /// system (i.e. 0;0 matches it's corner).
+    /// @brief Creates QStyleOptionFrame based on properties of @p owner.
+    /// @returns newly created options we need based on style of the @p owner.
     [[nodiscard]]
-    static QRectF localCloseTagCrossRect(const QRectF &rect)
+    static QStyleOptionFrame createStyleOption(const QWidget &owner)
     {
-        QRectF cross(QPointF{ 0.0f, 0.0f },
-                     QSizeF{ tag_cross_width, tag_cross_width });
-        cross.moveCenter(
-            QPointF(rect.right() - tag_cross_width, rect.center().y()));
-        return cross;
-    }
-
-    /// @returns QRect where text should be drawn in local coordinates.
-    [[nodiscard]]
-    QRect localContentRect() const
-    {
-        QStyleOptionFrame panel;
-        initStyleOption(panel);
-        QRect r = owner.style()->subElementRect(QStyle::SE_LineEditContents,
-                                                &panel, &owner);
-        r.adjust(left_text_margin, top_text_margin, -right_text_margin,
-                 -bottom_text_margin);
-        return r;
-    }
-
-    /// @brief Initializes @p option with values from owner + some
-    /// additionals.
-    void initStyleOption(QStyleOptionFrame &option) const
-    {
+        QStyleOptionFrame option;
         option.initFrom(&owner);
         option.rect = owner.contentsRect();
         option.lineWidth = owner.style()->pixelMetric(
@@ -124,9 +104,20 @@ class TagsRectsCalculator {
         option.midLineWidth = 0;
         option.state |= QStyle::State_Sunken;
         option.features = QStyleOptionFrame::None;
+        return option;
     }
 
+    [[nodiscard]]
+    static constexpr auto verticalTextMargins()
+    {
+        return top_text_margin + bottom_text_margin;
+    }
+
+    static inline const auto m_filter = std::mem_fn(&VisualTag::isEmpty);
+
   protected:
+    friend class TagsDrawer;
+
     template <typename taIter, typename taPred>
     void updateBoxedTags(QPoint &trackingOffset, int height,
                          PredicateSkipIterator<taIter, taPred> range) const
@@ -157,11 +148,32 @@ class TagsRectsCalculator {
         trackingOffset += QPoint(w + tag_spacing, 0);
     }
 
+    /// @returns QRectF of "close" button for the tag, in local coordinate
+    /// system (i.e. 0;0 matches it's corner).
+    [[nodiscard]]
+    static QRectF localCloseTagCrossRect(const QRectF &rect)
+    {
+        QRectF cross(QPointF{ 0.0f, 0.0f },
+                     QSizeF{ tag_cross_width, tag_cross_width });
+        cross.moveCenter(
+            QPointF(rect.right() - tag_cross_width, rect.center().y()));
+        return cross;
+    }
+
+    /// @returns QRect where text should be drawn in local coordinates.
+    [[nodiscard]]
+    QRect localContentRect() const
+    {
+        auto opt = createStyleOption(owner);
+        QRect r = owner.style()->subElementRect(QStyle::SE_LineEditContents,
+                                                &opt, &owner);
+        r.adjust(left_text_margin, top_text_margin, -right_text_margin,
+                 -bottom_text_margin);
+        return r;
+    }
+
   private:
     const QWidget &owner;
-
-  public:
-    static inline const auto m_filter = std::mem_fn(&VisualTag::isEmpty);
 
     static constexpr int tag_spacing = 3;
     static constexpr int tag_inner_left_padding = 3;

@@ -39,7 +39,8 @@ class IDrawerState {
     virtual Selection selection() const = 0;
 };
 
-/// @brief Draws tags.
+/// @brief Draws VisualTags objects based on computed before rectangles.
+/// @note All tags at once must be drawn sequentally.
 class TagsDrawer {
   public:
     explicit TagsDrawer(QWidget &owner)
@@ -58,6 +59,7 @@ class TagsDrawer {
     }
 
     /// @brief Draws all tags with editing state.
+    /// @note Empty boxed tags (not edited) are skip.
     template <typename taIter>
     void drawTags(IDrawerState &state, taIter begin, taIter end,
                   const EditingTagData<taIter> &tag_data) const
@@ -100,6 +102,17 @@ class TagsDrawer {
                                           TagsRectsCalculator::m_filter });
     }
 
+    template <typename taIter>
+    [[nodiscard]]
+    static bool isPointOnCloseButton(const IDrawerState &state,
+                                     const taIter iter, const QPoint &point)
+    {
+        return TagsRectsCalculator::localCloseTagCrossRect(iter->rect())
+            .adjusted(-TagsRectsCalculator::tag_cross_spacing, 0, 0, 0)
+            .translated(-state.hScroll(), 0)
+            .contains(point);
+    }
+
   protected:
     struct DrawOutputParams {
         explicit DrawOutputParams(QWidget &owner)
@@ -116,10 +129,9 @@ class TagsDrawer {
     void setupDrawing() const
     {
         // opt
-        QStyleOptionFrame panel;
-        params.rects_calc.initStyleOption(panel);
+        auto opt = params.rects_calc.createStyleOption(params.owner);
         // draw frame
-        params.owner.style()->drawPrimitive(QStyle::PE_PanelLineEdit, &panel,
+        params.owner.style()->drawPrimitive(QStyle::PE_PanelLineEdit, &opt,
                                             &params.painter, &params.owner);
         // clip
         params.painter.setClipRect(params.rects_calc.localContentRect());
