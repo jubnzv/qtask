@@ -4,6 +4,7 @@
 
 #include <QApplication>
 #include <QChar>
+#include <QClipboard>
 #include <QColor>
 #include <QCompleter>
 #include <QDebug>
@@ -645,6 +646,12 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
 {
     event->setAccepted(true);
 
+    const auto pasteTag = [this]() {
+        const QString text = QGuiApplication::clipboard()->text();
+        if (!text.isEmpty()) {
+            impl->addSingleStringTag(text);
+        }
+    };
     if (!impl->isEditing()) {
         switch (event->key()) {
         case Qt::Key_Enter:
@@ -666,6 +673,10 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
     } else if (event == QKeySequence::SelectNextChar) {
         impl->moveCursor(impl->text_layout.nextCursorPosition(impl->m_cursor),
                          true);
+    } else if (event == QKeySequence::Paste) {
+        if (impl->currentEditedTag().isEmpty()) {
+            pasteTag();
+        }
     } else if (event == QKeySequence::DeleteStartOfWord) {
         impl->removePreviousTag();
     } else {
