@@ -30,6 +30,7 @@ inline bool test_and_flip(std::atomic<bool> &var, const bool expected)
 TaskWatcher::TaskWatcher(QObject *parent)
     : QObject(parent)
     , m_state_reader(new QFutureWatcher<TaskWarriorDbState::Optional>(this))
+    , last_check_at(std::chrono::system_clock::now())
 {
     /*
      * This reflects a crucial architectural trade-off.
@@ -57,9 +58,17 @@ TaskWatcher::TaskWatcher(QObject *parent)
         this,
         [this]() {
             // This is GUI thread.
+            using namespace std::chrono_literals;
+
+            const auto now = std::chrono::system_clock::now();
+            if (now - last_check_at > 60min) {
+                enforceUpdate();
+            }
+
             auto opt = m_state_reader->future().result();
             if (opt && opt->isDifferent(m_latestDbState)) {
                 m_latestDbState = *opt;
+                last_check_at = now;
                 emit dataOnDiskWereChanged();
             }
             m_check_for_changes_timer.start();

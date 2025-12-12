@@ -6,6 +6,7 @@
 #include <QTimer>
 
 #include <atomic>
+#include <chrono>
 
 #include "task.hpp"
 
@@ -34,6 +35,7 @@ class TaskWatcher : public QObject {
     QTimer m_check_for_changes_timer;
     TaskWarriorDbState m_latestDbState;
     std::atomic<bool> m_slot_once{ false };
+    std::chrono::system_clock::time_point last_check_at;
 };
 
 #endif // TASKWATCHER_HPP
