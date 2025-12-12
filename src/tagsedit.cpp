@@ -36,6 +36,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
+#include <set>
 #include <utility>
 
 #include "tags_drawer.hpp"
@@ -99,7 +100,7 @@ QSize globalStrut()
 // removed. Note, if we use .clear() or std::move(), than .end() iterator will
 // become invalid. This should be handled.
 using TagsCollection = std::list<VisualTag>;
-
+enum class NextPrevTagBehave { KeepCurrent, EraseCurrentIfEmpty };
 } // namespace
 
 /// @brief Helper to detect when tags were actually changed.
@@ -108,7 +109,7 @@ class TagsEdit::TagChangedDetector {
     /// @returns true if it was change since last call to update() (or it is 1st
     /// one).
     [[nodiscard]]
-    bool update(const TagsCollection &latest_tags)
+    bool update(TagsCollection &latest_tags)
     {
         std::size_t sz = 0u;
         bool hadModification = false;
@@ -116,6 +117,7 @@ class TagsEdit::TagChangedDetector {
         TagsDrawer::ForEachDrawnTagIter(latest_tags, [&](auto iter) {
             ++sz;
             hadModification = hadModification || iter->isModified();
+            iter->setNotModified();
             return true;
         });
 
@@ -376,24 +378,35 @@ class TagsEdit::Impl : public IDrawerState {
         m_cursor = pos;
     }
 
-    void editPreviousTag()
+    void editPreviousTag(const NextPrevTagBehave behave)
     {
         if (!isEditing()) {
             return;
         }
         if (editing_iter != tags.begin()) {
-            setEditingIndex(std::prev(editing_iter));
+            auto prev = std::prev(editing_iter);
+            if (behave == NextPrevTagBehave::EraseCurrentIfEmpty) {
+                if (TagsRectsCalculator::m_filter(currentEditedTag())) {
+                    eraseCurrentEditedTag();
+                }
+            }
+            setEditingIndex(prev);
             moveCursor(currentEditedTag().size(), false);
         }
     }
 
-    void editNextTag()
+    void editNextTag(const NextPrevTagBehave behave)
     {
         if (!isEditing()) {
             return;
         }
         auto nxt = std::next(editing_iter, 1);
         if (nxt != tags.end()) {
+            if (behave == NextPrevTagBehave::EraseCurrentIfEmpty) {
+                if (TagsRectsCalculator::m_filter(currentEditedTag())) {
+                    eraseCurrentEditedTag();
+                }
+            }
             setEditingIndex(nxt);
             moveCursor(0, false);
         }
@@ -442,16 +455,25 @@ class TagsEdit::Impl : public IDrawerState {
         tags.back().setText(tag); // triggerring "modified" flag.
     }
 
-    void sanitizeTags()
+    static void sanitizeTags(TagsCollection &tags)
     {
-        endEditing();
+        std::set<QString> seen;
+
         for (auto it = tags.begin(); it != tags.end();) {
-            if (TagsRectsCalculator::m_filter(*it)) {
+            const bool duplicate = seen.find(it->text()) != seen.end();
+            if (TagsRectsCalculator::m_filter(*it) || duplicate) {
                 it = tags.erase(it);
             } else {
+                seen.insert(it->text());
                 ++it;
             }
         }
+    }
+
+    void sanitizeTags()
+    {
+        endEditing();
+        sanitizeTags(tags);
     }
 
     TagsEdit *const ifce;
@@ -650,7 +672,7 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
         switch (event->key()) {
         case Qt::Key_Left:
             if (impl->m_cursor == 0) {
-                impl->editPreviousTag();
+                impl->editPreviousTag(NextPrevTagBehave::KeepCurrent);
             } else {
                 impl->moveCursor(
                     impl->text_layout.previousCursorPosition(impl->m_cursor),
@@ -659,7 +681,7 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
             break;
         case Qt::Key_Right:
             if (impl->m_cursor == impl->currentEditedTag().size()) {
-                impl->editNextTag();
+                impl->editNextTag(NextPrevTagBehave::KeepCurrent);
             } else {
                 impl->moveCursor(
                     impl->text_layout.nextCursorPosition(impl->m_cursor),
@@ -681,17 +703,18 @@ void TagsEdit::keyPressEvent(QKeyEvent *event)
             }
             break;
         case Qt::Key_Backspace:
-            if (!impl->currentEditedTag().isEmpty()) {
+            if (!impl->currentEditedTag().isEmpty() &&
+                (impl->cursor() > 0 || impl->hasSelection())) {
                 impl->removeBackwardOne();
             } else if (impl->editing_iter != impl->tags.begin()) {
-                impl->editPreviousTag();
+                impl->editPreviousTag(NextPrevTagBehave::EraseCurrentIfEmpty);
             }
             break;
         case Qt::Key_Delete:
             if (!impl->currentEditedTag().isEmpty()) {
                 impl->removeFrontOne();
-            } else if (impl->editing_iter != impl->tags.begin()) {
-                impl->editNextTag();
+            } else {
+                impl->editNextTag(NextPrevTagBehave::EraseCurrentIfEmpty);
             }
             break;
         case Qt::Key_Enter:
@@ -748,10 +771,11 @@ void TagsEdit::setTags(const QStringList &tags)
 
 QStringList TagsEdit::getTags() const
 {
+    auto tmp = impl->tags;
+    Impl::sanitizeTags(tmp);
+
     QStringList res;
-    const PredicateSkipIterator iter(impl->tags.begin(), impl->tags.end(),
-                                     TagsRectsCalculator::m_filter);
-    std::transform(iter, iter.make_end(), std::back_inserter(res),
+    std::transform(tmp.begin(), tmp.end(), std::back_inserter(res),
                    [](const VisualTag &tag) { return tag.text(); });
     return res;
 }

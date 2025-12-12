@@ -51,6 +51,8 @@ class VisualTag {
         return m_text.get().isEmpty();
     }
 
+    void setNotModified() { m_text.setNotModified(); }
+
   public:
     // FIXME: those are here to simulate QString and compile old code.
     void remove(qsizetype i, qsizetype len)

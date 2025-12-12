@@ -90,6 +90,16 @@ MainWindow::MainWindow()
                "path to the 'task' executable in the settings."));
     }
 
+    // Tags must be loaded before any events happened so it could setup
+    // "modified" tracker.
+    if (ConfigManager::config().getSaveFilterOnExit()) {
+        auto tags = ConfigManager::config().getTaskFilter();
+        tags.removeAll(QString(""));
+        if (!tags.isEmpty()) {
+            m_task_filter->setTags(tags);
+        }
+    }
+
     initTaskWatcher();
     initMainWindow();
     initTrayIcon();
@@ -101,14 +111,7 @@ MainWindow::MainWindow()
 
     (ConfigManager::config().getHideWindowOnStartup()) ? hide() : show();
 
-    if (ConfigManager::config().getSaveFilterOnExit()) {
-        auto tags = ConfigManager::config().getTaskFilter();
-        tags.removeAll(QString(""));
-        if (!tags.isEmpty()) {
-            m_task_filter->setTags(tags);
-            onApplyFilter();
-        }
-    }
+    QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }
