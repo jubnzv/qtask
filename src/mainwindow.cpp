@@ -659,14 +659,11 @@ void MainWindow::onSetTasksDone()
 
 void MainWindow::onApplyFilter()
 {
-    if (!m_task_provider->applyFilter(m_task_filter->getTags())) {
-        m_task_filter->popTag();
-        refreshTasksListTableIfNeeded();
-    } else {
+    if (m_task_provider->applyFilter(m_task_filter->getTags())) {
         refreshTasksListTableEnforced();
+        return;
     }
-    // if (!m_task_provider->applyFilter(m_task_filter->getTags()))
-    //     m_task_filter->clearTags();
+    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::onEnterTaskCommand()

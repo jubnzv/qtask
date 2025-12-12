@@ -127,10 +127,20 @@ class AllAtOnceKeywordsFinder {
     [[nodiscard]]
     bool readIds(const TaskWarriorExecutor &executor);
 
+    /// @returns std::nullopt if it was no filter applied, empty string if it
+    /// was no task found by keywords, or task ids list.
     [[nodiscard]]
     const auto &getIds() const
     {
         return m_ids;
+    }
+
+    /// @returns true if nothing was found, i.e. it should be displayed empty
+    /// results.
+    [[nodiscard]]
+    bool isNotFound() const
+    {
+        return getIds().has_value() && getIds()->isEmpty();
     }
 
   private:

@@ -30,6 +30,7 @@ class IDrawerState {
     virtual void setHScroll(int value) = 0;
     [[nodiscard]]
 
+    /// @returns Local cursor position inside currently edited tag.
     virtual int cursor() const = 0;
 
     [[nodiscard]]
@@ -111,6 +112,28 @@ class TagsDrawer {
             .adjusted(-TagsRectsCalculator::tag_cross_spacing, 0, 0, 0)
             .translated(-state.hScroll(), 0)
             .contains(point);
+    }
+
+    /// @brief Iterates container @p cont and calls @p callback for each element
+    /// which would be drawn (i.e. skipping empties) passing container's
+    /// iterator to it.
+    /// @tparam taContainer any iterable container.
+    /// @tparam taCallback function which accepts taContainer::iterator. It
+    /// should have bool result, if it returns false loop is break.
+    /// @returns false if loop was break by @p callable or true otherwise.
+    template <typename taContainer, typename taCallback>
+    static bool ForEachDrawnTagIter(taContainer &&cont,
+                                    const taCallback &callback)
+    {
+        auto &&c = std::forward<taContainer>(cont);
+        PredicateSkipIterator iter(std::begin(c), std::end(c),
+                                   TagsRectsCalculator::m_filter);
+        for (; iter.isValid(); ++iter) {
+            if (!callback(iter.base_iterator())) {
+                return false;
+            }
+        }
+        return true;
     }
 
   protected:

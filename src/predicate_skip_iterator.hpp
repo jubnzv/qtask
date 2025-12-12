@@ -41,6 +41,8 @@ class PredicateSkipIterator {
 
     pointer operator->() { return &(*m_current); }
 
+    taIter base_iterator() const { return m_current; }
+
     template <typename taPred>
     [[nodiscard]]
     bool operator!=(const PredicateSkipIterator<taIter, taPred> &rhs) const

@@ -521,6 +521,12 @@ FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
 bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 {
     constexpr qsizetype kExpectedColumnsCount = 6;
+
+    if (m_filter.isNotFound()) {
+        tasks.clear();
+        return true;
+    }
+
     auto cmd = QStringList{
         // clang-format off
                          "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,description",
@@ -627,6 +633,10 @@ AllAtOnceKeywordsFinder::AllAtOnceKeywordsFinder(QStringList keywords)
 
 bool AllAtOnceKeywordsFinder::readIds(const TaskWarriorExecutor &executor)
 {
+    if (m_user_keywords.empty()) {
+        m_ids = QString{};
+        return true;
+    }
     const auto resp = executor.execTaskProgramWithDefaults(QStringList("ids")
                                                            << m_user_keywords);
 
@@ -644,6 +654,10 @@ bool AllAtOnceKeywordsFinder::readIds(const TaskWarriorExecutor &executor)
 
         if (stdOut.size() == 1) {
             m_ids = stdOut.first();
+            return true;
+        }
+        if (stdOut.size() == 0) {
+            m_ids = QString{};
             return true;
         }
         std::cerr << "Unexpected result of ids command: "
