@@ -633,14 +633,13 @@ AllAtOnceKeywordsFinder::AllAtOnceKeywordsFinder(QStringList keywords)
 
 bool AllAtOnceKeywordsFinder::readIds(const TaskWarriorExecutor &executor)
 {
+    m_ids = std::nullopt; // Didn't search for
     if (m_user_keywords.empty()) {
-        m_ids = QString{};
         return true;
     }
     const auto resp = executor.execTaskProgramWithDefaults(QStringList("ids")
                                                            << m_user_keywords);
 
-    m_ids = std::nullopt;
     if (resp) {
         const auto &stdOut = resp.getStdout();
 
@@ -653,11 +652,11 @@ bool AllAtOnceKeywordsFinder::readIds(const TaskWarriorExecutor &executor)
         // 1-2 4-5
 
         if (stdOut.size() == 1) {
-            m_ids = stdOut.first();
+            m_ids = stdOut.first(); // Found something
             return true;
         }
         if (stdOut.size() == 0) {
-            m_ids = QString{};
+            m_ids = QString{}; // Not Found
             return true;
         }
         std::cerr << "Unexpected result of ids command: "
