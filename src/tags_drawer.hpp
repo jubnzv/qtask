@@ -38,6 +38,8 @@ class IDrawerState {
 
     [[nodiscard]]
     virtual Selection selection() const = 0;
+
+    virtual ~IDrawerState() = default;
 };
 
 /// @brief Draws VisualTags objects based on computed before rectangles.

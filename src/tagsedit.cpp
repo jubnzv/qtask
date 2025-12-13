@@ -102,7 +102,10 @@ QSize globalStrut()
 // removed. Note, if we use .clear() or std::move(), than .end() iterator will
 // become invalid. This should be handled.
 using TagsCollection = std::list<VisualTag>;
-enum class NextPrevTagBehave { KeepCurrent, EraseCurrentIfEmpty };
+enum class NextPrevTagBehave : std::uint8_t {
+    KeepCurrent,
+    EraseCurrentIfEmpty
+};
 } // namespace
 
 /// @brief Helper to detect when tags were actually changed.
@@ -141,6 +144,8 @@ class TagsEdit::Impl : public IDrawerState {
     {
         endEditing();
     }
+
+    ~Impl() override = default;
 
     [[nodiscard]]
     bool isPointOnCloseButton(TagsCollection::iterator iter,
