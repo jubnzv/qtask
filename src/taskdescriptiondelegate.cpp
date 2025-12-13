@@ -9,6 +9,7 @@
 #include <QStyledItemDelegate>
 #include <QTextDocument>
 #include <QtAssert>
+#include <QtMinMax>
 #include <QtVersionChecks>
 
 #include "taskhintproviderdelegate.hpp"
@@ -38,7 +39,8 @@ bool initDocument(QTextDocument &document, const QStyleOptionViewItem &option,
     // Note, here we assume 1 line rows. If ever it could be more than 1 line
     // per 1 row, it should be revised.
     const QFontMetrics fm(option.font);
-    const bool elide_needed = document.size().height() / fm.height() > 1.5f;
+    const bool elide_needed =
+        document.size().height() / qMax<qreal>(1.0, fm.height()) > 1.5f;
 
     document.setPageSize(option.rect.size());
 
