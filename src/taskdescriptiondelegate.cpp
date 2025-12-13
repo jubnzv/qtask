@@ -35,6 +35,8 @@ bool initDocument(QTextDocument &document, const QStyleOptionViewItem &option,
     initDocument(document, whole_text);
     document.setTextWidth(option.rect.width());
 
+    // Note, here we assume 1 line rows. If ever it could be more than 1 line
+    // per 1 row, it should be revised.
     const QFontMetrics fm(option.font);
     const bool elide_needed = document.size().height() / fm.height() > 1.5f;
 
