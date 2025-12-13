@@ -301,7 +301,7 @@ class StatResponseSetters {
     }
 
     [[nodiscard]]
-    std::optional<uint> getUint(const QString &val)
+    std::optional<uint> getUint(const QString &val) const
     {
         bool ok = false;
         uint res = val.toUInt(&ok);
@@ -312,7 +312,7 @@ class StatResponseSetters {
     }
 
     [[nodiscard]]
-    std::optional<uint> findFinalNumber(const QString &value_part)
+    std::optional<uint> findFinalNumber(const QString &value_part) const
     {
         const QRegularExpression re("\\s*(\\d+)$");
         const QRegularExpressionMatch match = re.match(value_part);
