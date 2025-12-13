@@ -38,7 +38,8 @@
 #include <list>
 #include <memory>
 #include <set>
-#include <utility>
+#include <stdexcept>
+#include <vector>
 
 #include "tags_drawer.hpp"
 #include "tags_rects_calculator.h"
@@ -492,11 +493,28 @@ class TagsEdit::Impl : public IDrawerState {
 
     // IDrawerState interface
   public:
-    int hScroll() const { return hscroll; }
-    void setHScroll(int value) { hscroll = value; }
-    int cursor() const { return m_cursor; }
-    int isDrawCursor() const { return blink_status; }
-    Selection selection() const { return { select_start, select_size }; }
+    [[nodiscard]]
+    int hScroll() const override
+    {
+        return hscroll;
+    }
+    void setHScroll(int value) override { hscroll = value; }
+
+    [[nodiscard]]
+    int cursor() const override
+    {
+        return m_cursor;
+    }
+    [[nodiscard]]
+    int isDrawCursor() const override
+    {
+        return blink_status;
+    }
+    [[nodiscard]]
+    Selection selection() const override
+    {
+        return { select_start, select_size };
+    }
 };
 
 TagsEdit::TagsEdit(QWidget *parent)
