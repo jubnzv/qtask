@@ -314,6 +314,7 @@ class StatResponseSetters {
         if (match.hasMatch()) {
             return getUint(match.captured(1));
         }
+        return std::nullopt;
     }
 };
 
