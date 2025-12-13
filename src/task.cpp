@@ -308,8 +308,8 @@ class StatResponseSetters {
 
     std::optional<uint> findFinalNumber(const QString &value_part)
     {
-        QRegularExpression re("\\s*(\\d+)$");
-        QRegularExpressionMatch match = re.match(value_part);
+        const QRegularExpression re("\\s*(\\d+)$");
+        const QRegularExpressionMatch match = re.match(value_part);
 
         if (match.hasMatch()) {
             return getUint(match.captured(1));
