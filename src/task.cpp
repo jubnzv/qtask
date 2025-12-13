@@ -265,7 +265,11 @@ class StatResponseSetters {
         }
     }
 
-    bool areAllFieldsParsed() const { return 3 == fields_parsed; }
+    [[nodiscard]]
+    bool areAllFieldsParsed() const
+    {
+        return 3 == fields_parsed;
+    }
 
   private:
     int fields_parsed{ 0 };
@@ -296,7 +300,8 @@ class StatResponseSetters {
         }
     }
 
-    std::optional<uint> getUint(const QString &val)
+    [[nodiscard]]
+    std::optional<uint> getUint(const QString &val) const
     {
         bool ok = false;
         uint res = val.toUInt(&ok);
@@ -306,14 +311,16 @@ class StatResponseSetters {
         return std::nullopt;
     }
 
-    std::optional<uint> findFinalNumber(const QString &value_part)
+    [[nodiscard]]
+    std::optional<uint> findFinalNumber(const QString &value_part) const
     {
-        QRegularExpression re("\\s*(\\d+)$");
-        QRegularExpressionMatch match = re.match(value_part);
+        const QRegularExpression re("\\s*(\\d+)$");
+        const QRegularExpressionMatch match = re.match(value_part);
 
         if (match.hasMatch()) {
             return getUint(match.captured(1));
         }
+        return std::nullopt;
     }
 };
 
