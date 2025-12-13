@@ -6,6 +6,7 @@
 #include <QString>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
+#include <QTextDocument>
 
 #include "taskhintproviderdelegate.hpp"
 
@@ -23,6 +24,9 @@ class TaskDescriptionDelegate : public TaskHintProviderDelegate {
     [[nodiscard]]
     QSize sizeHint(const QStyleOptionViewItem &option,
                    const QModelIndex &index) const override;
+
+  private:
+    QTextDocument *document;
 };
 
 #endif // TASKDESCRIPTIONDELEGATE_HPP
