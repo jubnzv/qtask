@@ -1,6 +1,7 @@
 #ifndef TAGSEDIT_HPP
 #define TAGSEDIT_HPP
 
+#include <QTimer>
 #include <QWidget>
 
 #include <memory>
@@ -27,7 +28,6 @@ class TagsEdit : public QWidget {
     void clearTags();
     QStringList getTags() const;
     void pushTag(const QString &);
-    void popTag();
 
   signals:
     void tagsChanged();
@@ -44,8 +44,13 @@ class TagsEdit : public QWidget {
     void mouseMoveEvent(QMouseEvent *event) override;
 
   private:
-    struct Impl;
+    class Impl;
+    class TagChangedDetector;
     std::unique_ptr<Impl> impl;
+    std::unique_ptr<TagChangedDetector> change_detector;
+
+    void updateAndCheckForChanges();
+    QTimer debouncedTagsChanged;
 };
 
 #endif // TAGSEDIT_HPP

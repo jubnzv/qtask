@@ -21,7 +21,7 @@ TasksView::TasksView(QWidget *parent)
 {
     // needed for the hover functionality
     setMouseTracking(true);
-    setWordWrap(true);
+    setWordWrap(false);
     setTextElideMode(Qt::TextElideMode::ElideRight);
 }
 

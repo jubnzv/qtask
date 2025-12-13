@@ -109,7 +109,7 @@ template <typename taLeft, typename... taMany>
 void AppendPropertiesToCmdList(QStringList &output, const taLeft &leftProperty,
                                taMany &&...manyProperties)
 {
-    if (leftProperty.isModified()) {
+    if (leftProperty.value.isModified()) {
         output << leftProperty.getStringsForCmd();
     }
     if constexpr (sizeof...(manyProperties) > 0) {
@@ -124,7 +124,7 @@ bool SetPropertiesNotChanged(const bool wasTaskCallOk, taLeft &leftProperty,
                              taMany &&...manyProperties)
 {
     if (wasTaskCallOk) {
-        leftProperty.setNotModified();
+        leftProperty.value.setNotModified();
         if constexpr (sizeof...(manyProperties) > 0) {
             SetPropertiesNotChanged(wasTaskCallOk,
                                     std::forward<taMany>(manyProperties)...);
@@ -420,7 +420,8 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
             if (!split_string.isValid()) {
                 if (description_status ==
                     MultilineDescriptionStatus::InProgress) {
-                    description = description + "\n" + whole_line.simplified();
+                    description =
+                        description.get() + "\n" + whole_line.simplified();
                 }
                 return;
             }
@@ -520,6 +521,12 @@ FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
 bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 {
     constexpr qsizetype kExpectedColumnsCount = 6;
+
+    if (m_filter.isNotFound()) {
+        tasks.clear();
+        return true;
+    }
+
     auto cmd = QStringList{
         // clang-format off
                          "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,description",
@@ -587,7 +594,7 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
             }
 
             tasks.back().description =
-                tasks.back().description + '\n' + desc_line;
+                tasks.back().description.get() + '\n' + desc_line;
             continue;
         }
 
@@ -626,10 +633,13 @@ AllAtOnceKeywordsFinder::AllAtOnceKeywordsFinder(QStringList keywords)
 
 bool AllAtOnceKeywordsFinder::readIds(const TaskWarriorExecutor &executor)
 {
+    m_ids = std::nullopt; // Didn't search for
+    if (m_user_keywords.empty()) {
+        return true;
+    }
     const auto resp = executor.execTaskProgramWithDefaults(QStringList("ids")
                                                            << m_user_keywords);
 
-    m_ids = std::nullopt;
     if (resp) {
         const auto &stdOut = resp.getStdout();
 
@@ -642,7 +652,11 @@ bool AllAtOnceKeywordsFinder::readIds(const TaskWarriorExecutor &executor)
         // 1-2 4-5
 
         if (stdOut.size() == 1) {
-            m_ids = stdOut.first();
+            m_ids = stdOut.first(); // Found something
+            return true;
+        }
+        if (stdOut.size() == 0) {
+            m_ids = QString{}; // Not Found
             return true;
         }
         std::cerr << "Unexpected result of ids command: "

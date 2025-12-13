@@ -175,7 +175,7 @@ QColor TasksModel::rowColor(int row) const
         return c;
     }
 
-    switch (m_tasks.at(row).priority) {
+    switch (m_tasks.at(row).priority.get()) {
     case DetailedTaskInfo::Priority::Unset:
         c.setRgb(0xffffff);
         break;
