@@ -5,6 +5,7 @@
 #include <QDate>
 #include <QDateTime>
 #include <QString>
+#include <QTextDocument>
 
 /// Adds possible shortcut information to the tooltip of the action.
 /// This provides consistent behavior both with default and custom tooltips
@@ -25,6 +26,15 @@ QDateTime startOfDay(const QDate &);
  * is 1st).
  */
 bool isOkCancelOrder();
+
+/// @returns true if @p what has string convertable to type int with decimal
+/// base.
 bool isInteger(const QString &what);
 
+/// @brief sets @p whole_text as content of @p document.
+/// @param whole_text is treated as markdown if supported by current Qt
+/// installed or plain text otherwise.
+/// @param document object to set text to.
+void setContentOfTextDocument(QTextDocument &document,
+                              const QString &whole_text);
 #endif // QTUTIL_HPP
