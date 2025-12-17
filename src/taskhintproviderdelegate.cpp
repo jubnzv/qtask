@@ -19,7 +19,6 @@
 #include <QWidget>
 #include <QtTypes>
 
-#include <iostream>
 #include <mutex>
 
 namespace
