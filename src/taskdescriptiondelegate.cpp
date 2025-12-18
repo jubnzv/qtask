@@ -10,30 +10,18 @@
 #include <QTextDocument>
 #include <QtAssert>
 #include <QtMinMax>
-#include <QtVersionChecks>
 
+#include "qtutil.hpp"
 #include "taskhintproviderdelegate.hpp"
 #include "tasksmodel.hpp"
 
-// FIXME: this is sort of broken, for example it will not show \\ as markdown
-// but without markdown it will draw multiline string outside limits.
 namespace
 {
-
-void initDocument(QTextDocument &document, const QString &whole_text)
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    document.setMarkdown(whole_text);
-#else
-    document.setPlainText(whole_text);
-#endif // QT_VERSION_CHECK
-}
-
 /// @returns true if elide is needed.
 bool initDocument(QTextDocument &document, const QStyleOptionViewItem &option,
                   const QString &whole_text)
 {
-    initDocument(document, whole_text);
+    setContentOfTextDocument(document, whole_text);
     document.setTextWidth(option.rect.width());
 
     // Note, here we assume 1 line rows. If ever it could be more than 1 line
@@ -46,8 +34,8 @@ bool initDocument(QTextDocument &document, const QStyleOptionViewItem &option,
 
     return elide_needed;
 }
-
 } // namespace
+
 TaskDescriptionDelegate::TaskDescriptionDelegate(QObject *parent)
     : TaskHintProviderDelegate(parent)
     , document(new QTextDocument(this))
@@ -57,7 +45,7 @@ TaskDescriptionDelegate::TaskDescriptionDelegate(QObject *parent)
 QString TaskDescriptionDelegate::anchorAt(const QString &markdown,
                                           const QPoint &point) const
 {
-    initDocument(*document, markdown);
+    setContentOfTextDocument(*document, markdown);
     auto textLayout = document->documentLayout();
     Q_ASSERT(textLayout != nullptr);
     return textLayout->anchorAt(point);

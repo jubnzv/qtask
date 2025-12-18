@@ -10,10 +10,11 @@
 #include <QPalette>
 #include <QString>
 #include <QStyle>
+#include <QTextDocument>
 #include <QTimeZone>
+#include <QtConfig>
+#include <QtVersionChecks>
 #include <qnamespace.h>
-#include <qtconfigmacros.h>
-#include <qtversionchecks.h>
 
 namespace
 {
@@ -160,4 +161,14 @@ bool isInteger(const QString &what)
     bool can_convert = false;
     std::ignore = what.toInt(&can_convert);
     return can_convert;
+}
+
+void setContentOfTextDocument(QTextDocument &document,
+                              const QString &whole_text)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    document.setMarkdown(whole_text);
+#else
+    document.setPlainText(whole_text);
+#endif // QT_VERSION_CHECK
 }

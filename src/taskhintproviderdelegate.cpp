@@ -1,5 +1,6 @@
 #include "taskhintproviderdelegate.hpp"
 #include "async_task_loader.hpp"
+#include "qtutil.hpp"
 #include "task.hpp"
 #include "tasksmodel.hpp"
 
@@ -10,10 +11,13 @@
 #include <QStringList>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
+#include <QTextDocument>
+#include <QTextDocumentFragment>
 #include <QTimer>
 #include <QToolTip>
 #include <QVariant>
 #include <QWidget>
+#include <QtTypes>
 
 #include <mutex>
 
@@ -27,6 +31,30 @@ QString getLoadingTooltip(const QString &footer)
         tooltip += footer;
     }
     return tooltip;
+}
+
+QString extractQtHtmlFragment(const QString &html)
+{
+    static const QString start = "<!--StartFragment-->";
+    static const QString end = "<!--EndFragment-->";
+
+    const auto s = html.indexOf(start);
+    const auto e = html.indexOf(end);
+
+    if (s == -1 || e == -1 || e <= s) {
+        return {};
+    }
+
+    return html.mid(s + start.size(), e - (s + start.size()));
+}
+
+QString getDescriptionHtml(const QString &descr)
+{
+    QTextDocument doc;
+    setContentOfTextDocument(doc, descr);
+
+    const QTextDocumentFragment frag(&doc);
+    return extractQtHtmlFragment(frag.toHtml());
 }
 
 QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
@@ -63,7 +91,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
     const QString &descriptionStr = task.description.get();
     if (!descriptionStr.isEmpty()) {
-        html += QString("<h3>%1</h3>").arg(descriptionStr.toHtmlEscaped());
+        html += QString("<h3>%1</h3>").arg(getDescriptionHtml(descriptionStr));
     } else {
         html += QString("<p style='color:#aaa;'>ID: %1</p>").arg(task.task_id);
     }
