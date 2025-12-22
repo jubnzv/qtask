@@ -12,6 +12,8 @@
 #include <string>
 #include <string_view>
 
+#include "qtutil.hpp"
+
 /// @brief The role of the date-time value.
 enum class ETaskDateTimeRole : std::uint8_t { Due, Sched, Wait };
 
@@ -122,6 +124,63 @@ class TaskDateTime {
         return DatesRelation::Future;
     }
 
+    /// @returns current template parameter as string for logging purposes.
+    static constexpr std::string_view role_name()
+    {
+        switch (taRole) {
+        case ETaskDateTimeRole::Due:
+            return "Due";
+        case ETaskDateTimeRole::Sched:
+            return "Sched";
+        case ETaskDateTimeRole::Wait:
+            return "Wait";
+        }
+        std::abort();
+    }
+
+    /// @returns date-time usable to create new UI element, it is now + offset
+    /// according to role.
+    [[nodiscard]]
+    static QDateTime suggest_default_date_time()
+    {
+        using namespace std::chrono_literals;
+
+        // kWorkDayBegins represents the start of the workday for Due & Wait
+        // tasks. Due & Wait use day precision offsets, while Sched uses minute
+        // precision.
+        // TODO: make it configurable too.
+        constexpr std::chrono::seconds kWorkDayBegins = 9h; // NOLINT
+        constexpr std::chrono::seconds kCongiguredOffset = new_interval();
+
+        if constexpr (taRole == ETaskDateTimeRole::Sched) {
+            return QDateTime::currentDateTime().addSecs(new_interval().count());
+        } else { // Due, Wait
+            const QDateTime base = startOfDay(QDate::currentDate());
+            return base.addSecs(kCongiguredOffset.count() +
+                                kWorkDayBegins.count());
+        }
+    }
+
+  private:
+    using OptionalDateTime = std::optional<QDateTime>;
+    OptionalDateTime m_value;
+
+    template <typename taSelf>
+    static decltype(auto) deref(taSelf &self)
+    {
+        if (!self.has_value()) {
+            throw std::logic_error(std::string("TaskDateTime<") +
+                                   std::string(role_name()) + "> is not set");
+        }
+        return *self.m_value;
+    }
+
+    template <typename Self>
+    static auto ptr(Self &self)
+    {
+        return std::addressof(deref(self));
+    }
+
     /// @returns warning interval which should be used for this role ( (now() +
     /// warning_interval())).
     static constexpr std::chrono::milliseconds warning_interval()
@@ -150,40 +209,6 @@ class TaskDateTime {
         } else {
             return 24h * 21; // NOLINT
         }
-    }
-
-    /// @returns current template parameter as string for logging purposes.
-    static constexpr std::string_view role_name()
-    {
-        switch (taRole) {
-        case ETaskDateTimeRole::Due:
-            return "Due";
-        case ETaskDateTimeRole::Sched:
-            return "Sched";
-        case ETaskDateTimeRole::Wait:
-            return "Wait";
-        }
-        std::abort();
-    }
-
-  private:
-    using OptionalDateTime = std::optional<QDateTime>;
-    OptionalDateTime m_value;
-
-    template <typename taSelf>
-    static decltype(auto) deref(taSelf &self)
-    {
-        if (!self.has_value()) {
-            throw std::logic_error(std::string("TaskDateTime<") +
-                                   std::string(role_name()) + "> is not set");
-        }
-        return *self.m_value;
-    }
-
-    template <typename Self>
-    static auto ptr(Self &self)
-    {
-        return std::addressof(deref(self));
     }
 };
 

@@ -8,8 +8,6 @@
 #include <QString>
 #include <QWidget>
 
-#include <chrono>
-
 #include "qtutil.hpp"
 #include "task_date_time.hpp"
 
@@ -47,13 +45,10 @@ class OptionalDateTimeEdit : public QWidget {
     template <ETaskDateTimeRole taRole>
     void setupDateTimeRole()
     {
-        constexpr std::chrono::seconds shift =
-            TaskDateTime<taRole>::new_interval();
-
         setChecked(false);
         setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
         setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
-        setDateTime(QDateTime::currentDateTime().addSecs(shift.count()));
+        setDateTime(TaskDateTime<taRole>::suggest_default_date_time());
     }
 
   private:
