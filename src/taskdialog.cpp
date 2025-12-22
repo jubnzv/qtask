@@ -25,7 +25,6 @@
 #include <qtmetamacros.h>
 
 #include "optionaldatetimeedit.hpp"
-#include "qtutil.hpp"
 #include "tagsedit.hpp"
 #include "task.hpp"
 
@@ -67,21 +66,10 @@ void TaskDialogBase::constructUi()
 
     auto *tags_label = new QLabel(tr("Tags:"), this);
 
-    m_task_sched->setChecked(false);
     // Taskwarrior's implementation feature
-    m_task_sched->setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
-    m_task_sched->setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
-    m_task_sched->setDateTime(startOfDay(QDate::currentDate()).addDays(1));
-
-    m_task_due->setChecked(false);
-    m_task_due->setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
-    m_task_due->setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
-    m_task_due->setDateTime(startOfDay(QDate::currentDate()).addDays(5));
-
-    m_task_wait->setChecked(false);
-    m_task_wait->setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
-    m_task_wait->setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
-    m_task_wait->setDateTime(startOfDay(QDate::currentDate()).addDays(5));
+    m_task_sched->setupDateTimeRole<ETaskDateTimeRole::Sched>();
+    m_task_due->setupDateTimeRole<ETaskDateTimeRole::Due>();
+    m_task_wait->setupDateTimeRole<ETaskDateTimeRole::Wait>();
 
     auto *grid_layout = new QGridLayout(this);
     grid_layout->addWidget(priority_label, 0, 0);
@@ -123,9 +111,9 @@ DetailedTaskInfo TaskDialogBase::getTask()
         }
     }
 
-    task.sched = m_task_sched->getDateTime();
-    task.due = m_task_due->getDateTime();
-    task.wait = m_task_wait->getDateTime();
+    task.sched = m_task_sched->getDateTime<ETaskDateTimeRole::Sched>();
+    task.due = m_task_due->getDateTime<ETaskDateTimeRole::Due>();
+    task.wait = m_task_wait->getDateTime<ETaskDateTimeRole::Wait>();
 
     return task;
 }

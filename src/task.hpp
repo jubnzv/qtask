@@ -9,8 +9,9 @@
 
 #include <cstdint>
 #include <optional>
+#include <tuple>
 
-#include "date_time_parser.hpp"
+#include "task_date_time.hpp"
 #include "taskproperty.hpp"
 #include "taskwarriorexecutor.hpp"
 
@@ -21,8 +22,6 @@
 ///@brief Represents single task.
 class DetailedTaskInfo {
   public:
-    using OptionalDateTime = DateTimeParser::OptionalDateTime;
-
     // TODO: revise if it should stay public.
     enum class Priority : std::uint8_t { Unset, L, M, H }; // TODO: properties
     static Priority priorityFromString(const QString &p);
@@ -35,9 +34,9 @@ class DetailedTaskInfo {
     TaskProperty<QString> project;
     TaskProperty<QStringList> tags;
     TaskProperty<QStringList> removed_tags;
-    TaskProperty<OptionalDateTime> sched;
-    TaskProperty<OptionalDateTime> due;
-    TaskProperty<OptionalDateTime> wait;
+    TaskProperty<TaskDateTime<ETaskDateTimeRole::Sched>> sched;
+    TaskProperty<TaskDateTime<ETaskDateTimeRole::Due>> due;
+    TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
 
     bool active{ false };
@@ -203,6 +202,7 @@ class TaskWarriorDbState {
     };
 
     TaskWarriorDbState() = default;
+    [[nodiscard]]
     bool isDifferent(const TaskWarriorDbState &other) const
     {
         return this->fields != other.fields;

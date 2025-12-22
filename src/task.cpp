@@ -68,18 +68,6 @@ QString escapeDescription(QString descr)
     return descr;
 }
 
-QString formatDateTimeOptional(const QString &format,
-                               const DetailedTaskInfo::OptionalDateTime &dt)
-{
-    static const QDateTime null_dt;
-    return format.arg(dt.value_or(null_dt).toString(Qt::ISODate));
-}
-
-QString formatWaitOptional(const DetailedTaskInfo::OptionalDateTime &dt)
-{
-    return formatDateTimeOptional("wait:%1", dt);
-}
-
 QChar priorityToChar(const DetailedTaskInfo::Priority &p)
 {
     switch (p) {
@@ -228,17 +216,20 @@ class InformationResponseSetters {
         // Waiting until 2025-11-04 00:00:00
         // so "until" word becomes 0th token of SplitString::value
         static const DateTimeParser parser{ 3, 1, 2 };
-        task.wait = parser.parseDateTimeString(line.value);
+        task.wait =
+            parser.parseDateTimeString<ETaskDateTimeRole::Wait>(line.value);
     }
     void handleScheduled(const SplitString &line)
     {
         static const DateTimeParser parser{ 2, 0, 1 };
-        task.sched = parser.parseDateTimeString(line.value);
+        task.sched =
+            parser.parseDateTimeString<ETaskDateTimeRole::Sched>(line.value);
     }
     void handleDue(const SplitString &line)
     {
         static const DateTimeParser parser{ 2, 0, 1 };
-        task.due = parser.parseDateTimeString(line.value);
+        task.due =
+            parser.parseDateTimeString<ETaskDateTimeRole::Due>(line.value);
     }
 };
 
@@ -335,10 +326,15 @@ DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     , project("project:'%1'")
     , tags(&escapeAddTags)
     , removed_tags(&escapeDelTags)
-    , sched(
-          [](const auto &dt) { return formatDateTimeOptional("sched:%1", dt); })
-    , due([](const auto &dt) { return formatDateTimeOptional("due:%1", dt); })
-    , wait([](const auto &dt) { return formatWaitOptional(dt); })
+    , sched([](const auto &dt) {
+        return task_date_time_format::formatForCmd(dt);
+    })
+    , due([](const auto &dt) {
+        return task_date_time_format::formatForCmd(dt);
+    })
+    , wait([](const auto &dt) {
+        return task_date_time_format::formatForCmd(dt);
+    })
     , priority(&formatPriority, Priority::Unset)
 {
 }
@@ -498,7 +494,9 @@ bool BatchTasksManager::execDoneTask(const TaskWarriorExecutor &executor) const
 bool BatchTasksManager::execWaitTask(const QDateTime &datetime,
                                      const TaskWarriorExecutor &executor) const
 {
-    return execVerb("modify", executor, formatWaitOptional(datetime));
+    const TaskDateTime<ETaskDateTimeRole::Wait> wait(datetime);
+    return execVerb("modify", executor,
+                    task_date_time_format::formatForCmd(wait));
 }
 
 bool BatchTasksManager::execVerb(const QString &verb,
