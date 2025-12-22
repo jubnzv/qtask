@@ -38,7 +38,6 @@ TaskDialogBase::TaskDialogBase(QWidget *parent)
     , m_task_sched(new OptionalDateTimeEdit(tr("Schedule:"), this))
     , m_task_due(new OptionalDateTimeEdit(tr("Due:"), this))
     , m_task_wait(new OptionalDateTimeEdit(tr("Wait:"), this))
-    , m_task_uuid("")
 {
     setWindowIcon(QIcon(":/icons/qtask.svg"));
     constructUi();
@@ -92,30 +91,33 @@ void TaskDialogBase::constructUi()
 
 DetailedTaskInfo TaskDialogBase::getTask()
 {
-    DetailedTaskInfo task("");
+    {
+        DetailedTaskInfo task("");
+        task.description = m_task_description->toPlainText();
+        task.priority = DetailedTaskInfo::priorityFromString(
+            m_task_priority->currentText());
 
-    task.description = m_task_description->toPlainText();
-    task.priority =
-        DetailedTaskInfo::priorityFromString(m_task_priority->currentText());
+        auto project = m_task_project->text();
+        project.replace("pro:", "");
+        project.replace("project:", "");
+        task.project = project;
 
-    auto project = m_task_project->text();
-    project.replace("pro:", "");
-    project.replace("project:", "");
-    task.project = project;
-
-    for (const auto &tag : m_task_tags->getTags()) {
-        QString t(tag);
-        t.remove(QChar('+'));
-        if (!t.isEmpty()) {
-            task.tags.value.modify([&t](auto &lst) { lst.push_back(t); });
+        for (const auto &tag : m_task_tags->getTags()) {
+            QString t(tag);
+            t.remove(QChar('+'));
+            t.remove(QChar('-'));
+            if (!t.isEmpty()) {
+                task.tags.value.modify([&t](auto &lst) { lst.push_back(t); });
+            }
         }
+
+        task.sched = m_task_sched->getDateTime<ETaskDateTimeRole::Sched>();
+        task.due = m_task_due->getDateTime<ETaskDateTimeRole::Due>();
+        task.wait = m_task_wait->getDateTime<ETaskDateTimeRole::Wait>();
+
+        m_source_task.updateFrom(task);
     }
-
-    task.sched = m_task_sched->getDateTime<ETaskDateTimeRole::Sched>();
-    task.due = m_task_due->getDateTime<ETaskDateTimeRole::Due>();
-    task.wait = m_task_wait->getDateTime<ETaskDateTimeRole::Wait>();
-
-    return task;
+    return m_source_task;
 }
 
 QHBoxLayout *TaskDialogBase::Create3ButtonsLayout(QPushButton *positive_button,
@@ -147,6 +149,7 @@ void TaskDialogBase::keyPressEvent(QKeyEvent *event)
 
 void TaskDialogBase::setTask(const DetailedTaskInfo &task)
 {
+    m_source_task = task;
     m_task_description->setText(task.description.get());
     m_task_project->setText(task.project.get());
     m_task_tags->setTags(task.tags.get());
@@ -169,8 +172,6 @@ void TaskDialogBase::setTask(const DetailedTaskInfo &task)
         m_task_priority->setCurrentIndex(3);
         break;
     }
-
-    m_task_uuid = task.task_id;
 }
 
 AddTaskDialog::AddTaskDialog(const QVariant &default_project, QWidget *parent)
@@ -281,11 +282,12 @@ void EditTaskDialog::constructUi()
 
 void EditTaskDialog::requestDeleteTask()
 {
-    auto reply = QMessageBox::question(this, tr("Conifrm action"),
-                                       tr("Delete task #%1?").arg(m_task_uuid),
-                                       QMessageBox::Yes | QMessageBox::No);
+    auto reply =
+        QMessageBox::question(this, tr("Conifrm action"),
+                              tr("Delete task #%1?").arg(m_source_task.task_id),
+                              QMessageBox::Yes | QMessageBox::No);
     if (reply == QMessageBox::Yes) {
-        emit deleteTask(m_task_uuid);
+        emit deleteTask(m_source_task.task_id);
         reject();
     }
 }

@@ -43,6 +43,24 @@ class TaskDateTime {
     TaskDateTime &operator=(TaskDateTime &&other) = default;
     ~TaskDateTime() = default;
 
+    [[nodiscard]]
+    bool operator==(const TaskDateTime &other) const noexcept
+    {
+        if (!has_value() && !other.has_value()) {
+            return true;
+        }
+        if (has_value() != other.has_value()) {
+            return false;
+        }
+        return value() == other.value();
+    }
+
+    [[nodiscard]]
+    bool operator!=(const TaskDateTime &other) const noexcept
+    {
+        return !(*this == other);
+    }
+
     TaskDateTime &operator=(const QDateTime &dt) noexcept
     {
         m_value = dt;
@@ -161,6 +179,20 @@ class TaskDateTime {
         }
     }
 
+    /// @returns cmd prefix for the role.
+    static constexpr const char *role_name_cmd()
+    {
+        switch (taRole) {
+        case ETaskDateTimeRole::Due:
+            return "due";
+        case ETaskDateTimeRole::Sched:
+            return "sched";
+        case ETaskDateTimeRole::Wait:
+            return "wait";
+        }
+        std::abort();
+    }
+
   private:
     using OptionalDateTime = std::optional<QDateTime>;
     OptionalDateTime m_value;
@@ -211,26 +243,3 @@ class TaskDateTime {
         }
     }
 };
-
-namespace task_date_time_format
-{
-template <ETaskDateTimeRole taRole>
-QString formatForCmd(const TaskDateTime<taRole> &dt)
-{
-    constexpr auto prefix = []() constexpr -> const char * {
-        if constexpr (taRole == ETaskDateTimeRole::Due) {
-            return "due:";
-        } else if constexpr (taRole == ETaskDateTimeRole::Sched) {
-            return "sched:";
-        } else if constexpr (taRole == ETaskDateTimeRole::Wait) {
-            return "wait:";
-        } else {
-            return "";
-        }
-    }();
-
-    return QString(prefix) +
-           (dt.has_value() ? dt->toString(Qt::ISODate) : QString());
-}
-
-} // namespace task_date_time_format

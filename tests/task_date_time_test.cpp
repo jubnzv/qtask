@@ -15,38 +15,61 @@ struct TaskDateTimeTestCase {
     QString prefix;
 };
 
-class TaskDateTimeParameterizedTest
-    : public ::testing::TestWithParam<TaskDateTimeTestCase> {};
+class TaskDateTimeTest : public ::testing::TestWithParam<TaskDateTimeTestCase> {
+};
 
 using namespace std::chrono_literals;
 
-TEST_P(TaskDateTimeParameterizedTest, EmptyValueFormat)
+TEST_F(TaskDateTimeTest, Equality)
+{
+    const TaskDateTime<ETaskDateTimeRole::Due> empty;
+    const TaskDateTime<ETaskDateTimeRole::Due> dt1{ QDateTime(
+        QDate(2025, 12, 22), QTime(12, 0)) };
+    const TaskDateTime<ETaskDateTimeRole::Due> dt2{ QDateTime(
+        QDate(2025, 12, 23), QTime(12, 0)) };
+
+    const TaskDateTime<ETaskDateTimeRole::Due> another_empty;
+    EXPECT_TRUE(empty == another_empty);
+
+    EXPECT_FALSE(empty == dt1);
+    EXPECT_TRUE(empty != dt1);
+
+    EXPECT_FALSE(dt1 == dt2);
+    EXPECT_TRUE(dt1 != dt2);
+
+    const TaskDateTime<ETaskDateTimeRole::Due> copy_dt1{ dt1 };
+    EXPECT_TRUE(dt1 == copy_dt1);
+    EXPECT_FALSE(dt1 != copy_dt1);
+}
+
+TEST_P(TaskDateTimeTest, EmptyValueFormat)
 {
     const auto [role, prefix] = GetParam();
 
     switch (role) {
     case ETaskDateTimeRole::Sched: {
         TaskDateTime<ETaskDateTimeRole::Sched> dt;
-        EXPECT_EQ(task_date_time_format::formatForCmd(dt), QString(prefix));
+        EXPECT_EQ(TaskDateTime<ETaskDateTimeRole::Sched>::role_name_cmd(),
+                  QString(prefix));
         EXPECT_EQ(dt.relationToNow(), DatesRelation::Future);
         EXPECT_FALSE(dt.has_value());
         EXPECT_THROW(dt.value(), std::logic_error);
         break;
     }
     case ETaskDateTimeRole::Due: {
-        const TaskDateTime<ETaskDateTimeRole::Due> dt;
-        EXPECT_EQ(task_date_time_format::formatForCmd(dt), QString(prefix));
+        EXPECT_EQ(TaskDateTime<ETaskDateTimeRole::Due>::role_name_cmd(),
+                  QString(prefix));
         break;
     }
     case ETaskDateTimeRole::Wait: {
-        const TaskDateTime<ETaskDateTimeRole::Wait> dt;
-        EXPECT_EQ(task_date_time_format::formatForCmd(dt), QString(prefix));
+        EXPECT_EQ(TaskDateTime<ETaskDateTimeRole::Wait>::role_name_cmd(),
+                  QString(prefix));
         break;
     }
     }
 }
 
-TEST_P(TaskDateTimeParameterizedTest, NonEmptyValueFormatAndRelation)
+TEST_P(TaskDateTimeTest, NonEmptyValueFormatAndRelation)
 {
     const auto [role, prefix] = GetParam();
     const QDateTime now = QDateTime::currentDateTime();
@@ -54,29 +77,23 @@ TEST_P(TaskDateTimeParameterizedTest, NonEmptyValueFormatAndRelation)
     switch (role) {
     case ETaskDateTimeRole::Sched: {
         const TaskDateTime<ETaskDateTimeRole::Sched> dt(now.addSecs(10 * 60));
-        EXPECT_EQ(task_date_time_format::formatForCmd(dt),
-                  prefix + dt->toString(Qt::ISODate));
         EXPECT_EQ(dt.relationToNow(now), DatesRelation::Approaching);
         break;
     }
     case ETaskDateTimeRole::Due: {
         const TaskDateTime<ETaskDateTimeRole::Due> dt(now.addDays(2));
-        EXPECT_EQ(task_date_time_format::formatForCmd(dt),
-                  prefix + dt->toString(Qt::ISODate));
         EXPECT_EQ(dt.relationToNow(now), DatesRelation::Future);
         break;
     }
     case ETaskDateTimeRole::Wait: {
         const TaskDateTime<ETaskDateTimeRole::Wait> dt(now.addSecs(0));
-        EXPECT_EQ(task_date_time_format::formatForCmd(dt),
-                  prefix + dt->toString(Qt::ISODate));
         EXPECT_EQ(dt.relationToNow(now), DatesRelation::Approaching);
         break;
     }
     }
 }
 
-TEST_P(TaskDateTimeParameterizedTest, AssignmentOperator)
+TEST_P(TaskDateTimeTest, AssignmentOperator)
 {
     const auto [role, prefix] = GetParam();
     const QDateTime now = QDateTime::currentDateTime();
@@ -117,10 +134,9 @@ TEST_P(TaskDateTimeParameterizedTest, AssignmentOperator)
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    TaskDateTimeTests, TaskDateTimeParameterizedTest,
-    ::testing::Values(
-        TaskDateTimeTestCase{ ETaskDateTimeRole::Sched, "sched:" },
-        TaskDateTimeTestCase{ ETaskDateTimeRole::Due, "due:" },
-        TaskDateTimeTestCase{ ETaskDateTimeRole::Wait, "wait:" }));
+    TaskDateTimeTests, TaskDateTimeTest,
+    ::testing::Values(TaskDateTimeTestCase{ ETaskDateTimeRole::Sched, "sched" },
+                      TaskDateTimeTestCase{ ETaskDateTimeRole::Due, "due" },
+                      TaskDateTimeTestCase{ ETaskDateTimeRole::Wait, "wait" }));
 
 } // namespace Test

@@ -32,14 +32,33 @@ class DetailedTaskInfo {
 
     TaskProperty<QString> description;
     TaskProperty<QString> project;
-    TaskProperty<QStringList> tags;
-    TaskProperty<QStringList> removed_tags;
+    TaskProperty<QStringList> tags; // current tags list
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Sched>> sched;
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Due>> due;
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
 
     bool active{ false };
+
+    void updateFrom(const DetailedTaskInfo &other)
+    {
+        const auto copy_or_no_mod = [&other](auto &my_property,
+                                             const auto &other_property) {
+            if (my_property.get() == other_property.get()) {
+                my_property.value.setNotModified();
+            } else {
+                my_property = other_property;
+            }
+        };
+        copy_or_no_mod(description, other.description);
+        copy_or_no_mod(project, other.project);
+        copy_or_no_mod(tags, other.tags);
+        copy_or_no_mod(sched, other.sched);
+        copy_or_no_mod(due, other.due);
+        copy_or_no_mod(wait, other.wait);
+        copy_or_no_mod(priority, other.priority);
+        active = other.active;
+    }
 
     /// Tags that will be removed at the next command.
 

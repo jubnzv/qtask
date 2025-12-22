@@ -29,43 +29,15 @@
 namespace
 {
 
-// Escapes tag field, it should follow some rules, like tag cannot start
-// by numeric digit.
-QString escapeTag(QString cleanedTag)
+QString makeParam(const QString &field, const QString &value)
 {
-    cleanedTag.replace(QRegularExpression(R"(\W)"), QString("_"));
-    cleanedTag.replace(QRegularExpression(R"(_+)"), QString("_"));
-    if (!cleanedTag.isEmpty() && cleanedTag.at(0).digitValue() != -1) {
-        // Tag cannot start with digit or everything is going bad...
-        cleanedTag = "T_" + cleanedTag;
-    }
-    return cleanedTag;
-}
-
-QStringList escapeTags(const QStringList &tags, QChar symbol)
-{
-    QStringList result;
-    for (auto const &t : tags) {
-        if (!t.isEmpty()) {
-            const QString t_escpaed = escapeTag(t);
-            if (!t_escpaed.isEmpty()) {
-                result << QString{ "%2%1" }.arg(t_escpaed).arg(symbol);
-            }
-        }
-    }
-
-    return result;
-}
-
-auto escapeAddTags(const QStringList &tags) { return escapeTags(tags, '+'); }
-
-auto escapeDelTags(const QStringList &tags) { return escapeTags(tags, '-'); }
-
-QString escapeDescription(QString descr)
-{
-    // Single \ sign is missing, need to double it.
-    descr.replace(QStringLiteral("\\"), QStringLiteral("\\\\"));
-    return descr;
+    // NOTE:
+    // QProcess does NOT use shell. Arguments must be passed verbatim.
+    // Do NOT add quotes or escaping here.
+    Q_ASSERT(!field.isEmpty());
+    Q_ASSERT(!field.contains(' '));
+    Q_ASSERT(!field.contains(':'));
+    return field + ":" + value;
 }
 
 QChar priorityToChar(const DetailedTaskInfo::Priority &p)
@@ -83,13 +55,35 @@ QChar priorityToChar(const DetailedTaskInfo::Priority &p)
     throw std::runtime_error("Unset priority cannot be converted.");
 }
 
+QStringList formatTags(const QStringList &tags)
+{
+    return { makeParam("tag", tags.join(" ")) };
+}
+
+QString formatDescription(const QString& descr)
+{
+    return { makeParam("description", descr) };
+}
+
 QString formatPriority(const DetailedTaskInfo::Priority pri)
 {
     if (pri != DetailedTaskInfo::Priority::Unset) {
-        return QString{ "pri:'%1'" }.arg(priorityToChar(pri));
+        return makeParam("pri", QString(priorityToChar(pri)));
     } else {
-        return QString{ "pri:''" };
+        return makeParam("pri", "");
     }
+}
+
+QString formatProject(const QString &proj)
+{
+    return makeParam("project", proj);
+}
+
+template <ETaskDateTimeRole taRole>
+QString formatDateTime(const TaskDateTime<taRole> &dt)
+{
+    return makeParam(TaskDateTime<taRole>::role_name_cmd(),
+                     dt.has_value() ? dt->toString(Qt::ISODate) : QString());
 }
 
 // Converts many properties into 1 command line.
@@ -318,23 +312,16 @@ class StatResponseSetters {
 } // namespace
 
 #define TASK_PROPERTIES_LIST \
-    priority, project, tags, removed_tags, sched, due, wait, description
+    priority, project, tags, sched, due, wait, description
 
 DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     : task_id(std::move(task_id))
-    , description(&escapeDescription)
-    , project("project:'%1'")
-    , tags(&escapeAddTags)
-    , removed_tags(&escapeDelTags)
-    , sched([](const auto &dt) {
-        return task_date_time_format::formatForCmd(dt);
-    })
-    , due([](const auto &dt) {
-        return task_date_time_format::formatForCmd(dt);
-    })
-    , wait([](const auto &dt) {
-        return task_date_time_format::formatForCmd(dt);
-    })
+    , description(&formatDescription)
+    , project(&formatProject)
+    , tags(&formatTags)
+    , sched(&formatDateTime<ETaskDateTimeRole::Sched>)
+    , due(&formatDateTime<ETaskDateTimeRole::Due>)
+    , wait(&formatDateTime<ETaskDateTimeRole::Wait>)
     , priority(&formatPriority, Priority::Unset)
 {
 }
@@ -495,8 +482,7 @@ bool BatchTasksManager::execWaitTask(const QDateTime &datetime,
                                      const TaskWarriorExecutor &executor) const
 {
     const TaskDateTime<ETaskDateTimeRole::Wait> wait(datetime);
-    return execVerb("modify", executor,
-                    task_date_time_format::formatForCmd(wait));
+    return execVerb("modify", executor, formatDateTime(wait));
 }
 
 bool BatchTasksManager::execVerb(const QString &verb,

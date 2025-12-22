@@ -704,30 +704,12 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                          m_tasks_view->selectionModel()->clearSelection();
                          refreshTasksListTableIfNeeded();
                      });
-    QObject::connect(
-        dlg, &QDialog::accepted,
-        [this, dlg, id_str, saved_tags = task->tags.get(),
-         saved_pri = task->priority.get()]() {
-            Q_ASSERT(dlg);
-            auto t = dlg->getTask();
-            const auto &new_tags = t.tags.get();
-            t.removed_tags = QStringList{};
-            for (auto const &st : saved_tags) {
-                if (!new_tags.contains(st)) {
-                    t.removed_tags.value.modify(
-                        [&st](auto &lst) { lst << st; });
-                }
-            }
-            t.task_id = id_str;
-            if (!m_task_provider->editTask(t)) {
-                return;
-            }
-            if (saved_pri != t.priority.get() &&
-                !m_task_provider->setPriority(t.task_id, t.priority.get())) {
-                return;
-            }
-            refreshTasksListTableIfNeeded();
-        });
+    QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str]() {
+        Q_ASSERT(dlg);
+        auto tmp = dlg->getTask();
+        m_task_provider->editTask(tmp);
+        refreshTasksListTableIfNeeded();
+    });
     QObject::connect(dlg, &QDialog::rejected,
                      [this]() { refreshTasksListTableIfNeeded(); });
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
