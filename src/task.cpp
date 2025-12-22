@@ -351,6 +351,23 @@ DetailedTaskInfo::priorityFromString(const QString &p)
     return Priority::Unset;
 }
 
+void DetailedTaskInfo::updateFrom(const DetailedTaskInfo &other)
+{
+    const auto copy_if_diff = [&other](auto &my_property, const auto &other_property) {
+        if (my_property.get() != other_property.get()) {
+            my_property = other_property;
+        }
+    };
+    copy_if_diff(description, other.description);
+    copy_if_diff(project, other.project);
+    copy_if_diff(tags, other.tags);
+    copy_if_diff(sched, other.sched);
+    copy_if_diff(due, other.due);
+    copy_if_diff(wait, other.wait);
+    copy_if_diff(priority, other.priority);
+    active = other.active;
+}
+
 bool DetailedTaskInfo::execAddNewTask(const TaskWarriorExecutor &executor)
 {
     const auto exec_res = executor.execTaskProgramWithDefaults(

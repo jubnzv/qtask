@@ -42,25 +42,7 @@ class DetailedTaskInfo {
 
     /// @brief Copies different fields from @p other object. If field was equal,
     /// keeps "modified" state as it was before.
-    void updateFrom(const DetailedTaskInfo &other)
-    {
-        const auto copy_if_diff = [&other](auto &my_property,
-                                           const auto &other_property) {
-            if (my_property.get() != other_property.get()) {
-                my_property = other_property;
-            }
-        };
-        copy_if_diff(description, other.description);
-        copy_if_diff(project, other.project);
-        copy_if_diff(tags, other.tags);
-        copy_if_diff(sched, other.sched);
-        copy_if_diff(due, other.due);
-        copy_if_diff(wait, other.wait);
-        copy_if_diff(priority, other.priority);
-        active = other.active;
-    }
-
-    /// Tags that will be removed at the next command.
+    void updateFrom(const DetailedTaskInfo &other);
 
     /// @brief tries to add this object as new task to taskwarrior.
     /// @returns true if task was added
