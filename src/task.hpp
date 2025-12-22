@@ -40,23 +40,23 @@ class DetailedTaskInfo {
 
     bool active{ false };
 
+    /// @brief Copies different fields from @p other object. If field was equal,
+    /// keeps "modified" state as it was before.
     void updateFrom(const DetailedTaskInfo &other)
     {
-        const auto copy_or_no_mod = [&other](auto &my_property,
-                                             const auto &other_property) {
-            if (my_property.get() == other_property.get()) {
-                my_property.value.setNotModified();
-            } else {
+        const auto copy_if_diff = [&other](auto &my_property,
+                                           const auto &other_property) {
+            if (my_property.get() != other_property.get()) {
                 my_property = other_property;
             }
         };
-        copy_or_no_mod(description, other.description);
-        copy_or_no_mod(project, other.project);
-        copy_or_no_mod(tags, other.tags);
-        copy_or_no_mod(sched, other.sched);
-        copy_or_no_mod(due, other.due);
-        copy_or_no_mod(wait, other.wait);
-        copy_or_no_mod(priority, other.priority);
+        copy_if_diff(description, other.description);
+        copy_if_diff(project, other.project);
+        copy_if_diff(tags, other.tags);
+        copy_if_diff(sched, other.sched);
+        copy_if_diff(due, other.due);
+        copy_if_diff(wait, other.wait);
+        copy_if_diff(priority, other.priority);
         active = other.active;
     }
 
