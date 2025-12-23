@@ -36,26 +36,9 @@ OptionalDateTimeEdit::OptionalDateTimeEdit(const QString &label,
 {
 }
 
-OptionalDateTimeEdit::~OptionalDateTimeEdit() = default;
-
-std::optional<QDateTime> OptionalDateTimeEdit::getDateTime() const
-{
-    return (m_enabled->isChecked())
-               ? std::make_optional(m_datetime_edit->dateTime())
-               : std::nullopt;
-}
-
 void OptionalDateTimeEdit::setDateTime(const QDateTime &dt)
 {
     m_datetime_edit->setDateTime(dt);
-}
-
-void OptionalDateTimeEdit::setDateTime(const std::optional<QDateTime> &dt_opt)
-{
-    setChecked(dt_opt.has_value());
-    if (dt_opt) {
-        m_datetime_edit->setDateTime(*dt_opt);
-    }
 }
 
 void OptionalDateTimeEdit::setChecked(bool state)

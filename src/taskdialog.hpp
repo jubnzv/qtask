@@ -50,7 +50,7 @@ class TaskDialogBase : public QDialog {
     OptionalDateTimeEdit *const m_task_sched;
     OptionalDateTimeEdit *const m_task_due;
     OptionalDateTimeEdit *const m_task_wait;
-    QString m_task_uuid;
+    DetailedTaskInfo m_source_task;
 
   private:
     void constructUi();
@@ -83,7 +83,8 @@ class AddTaskDialog final : public TaskDialogBase {
 class EditTaskDialog final : public TaskDialogBase {
     Q_OBJECT
   public:
-    explicit EditTaskDialog(const DetailedTaskInfo &, QWidget *parent = nullptr);
+    explicit EditTaskDialog(const DetailedTaskInfo &,
+                            QWidget *parent = nullptr);
     ~EditTaskDialog() final;
 
   signals:

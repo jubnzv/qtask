@@ -8,7 +8,8 @@
 #include <QString>
 #include <QWidget>
 
-#include <optional>
+#include "qtutil.hpp"
+#include "task_date_time.hpp"
 
 class OptionalDateTimeEdit : public QWidget {
     Q_OBJECT
@@ -16,16 +17,39 @@ class OptionalDateTimeEdit : public QWidget {
   public:
     OptionalDateTimeEdit(const QString &label, const QDateTime &date,
                          QWidget *parent = nullptr);
-    OptionalDateTimeEdit(const QString &label, QWidget *parent = nullptr);
-    ~OptionalDateTimeEdit() override;
+    explicit OptionalDateTimeEdit(const QString &label,
+                                  QWidget *parent = nullptr);
 
-    std::optional<QDateTime> getDateTime() const;
+    template <ETaskDateTimeRole taRole>
+    TaskDateTime<taRole> getDateTime() const
+    {
+        return (m_enabled->isChecked())
+                   ? TaskDateTime<taRole>(m_datetime_edit->dateTime())
+                   : TaskDateTime<taRole>();
+    }
     void setDateTime(const QDateTime &dt);
-    void setDateTime(const std::optional<QDateTime> &);
+
+    template <ETaskDateTimeRole taRole>
+    void setDateTime(const TaskDateTime<taRole> &dt_opt)
+    {
+        setChecked(dt_opt.has_value());
+        if (dt_opt.has_value()) {
+            m_datetime_edit->setDateTime(*dt_opt);
+        }
+    }
     void setChecked(bool);
 
     void setMinimumDateTime(const QDateTime &);
     void setMaximumDateTime(const QDateTime &);
+
+    template <ETaskDateTimeRole taRole>
+    void setupDateTimeRole()
+    {
+        setChecked(false);
+        setMinimumDateTime(startOfDay(QDate(1980, 1, 2)));
+        setMaximumDateTime(startOfDay(QDate(2038, 1, 1)));
+        setDateTime(TaskDateTime<taRole>::suggest_default_date_time());
+    }
 
   private:
     QDateTimeEdit *const m_datetime_edit;

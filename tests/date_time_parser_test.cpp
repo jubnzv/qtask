@@ -21,7 +21,7 @@ TEST_F(DateTimeParserTest, ParseWorks)
 {
     const QString lexems = "key 2025-11-29 11:58 some more.";
     const DateTimeParser parser{ 5, 1, 2 };
-    const auto dt = parser.parseDateTimeString(lexems);
+    const auto dt = parser.parseDateTimeString<ETaskDateTimeRole::Due>(lexems);
     ASSERT_TRUE(dt.has_value());
     ASSERT_TRUE(dt->isValid()); // NOLINT
 
@@ -39,26 +39,42 @@ TEST_F(DateTimeParserTest, InvalidLenDetected)
 {
     const QString lexems = "key 2025-11-29 11:58 some more.";
     EXPECT_FALSE(
-        (DateTimeParser{ 7, 1, 2 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 7, 1, 2 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
     EXPECT_FALSE(
-        (DateTimeParser{ 4, 1, 2 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 4, 1, 2 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
     EXPECT_FALSE(
-        (DateTimeParser{ 2, 1, 2 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 2, 1, 2 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
 }
 
 TEST_F(DateTimeParserTest, InvalidIndexesGiven)
 {
     const QString lexems = "key 2025-11-29 11:58 some more.";
     EXPECT_FALSE(
-        (DateTimeParser{ 5, 1, 3 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 5, 1, 3 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
     EXPECT_FALSE(
-        (DateTimeParser{ 5, 2, 1 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 5, 2, 1 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
     EXPECT_FALSE(
-        (DateTimeParser{ 5, 2, 2 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 5, 2, 2 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
     EXPECT_FALSE(
-        (DateTimeParser{ 5, 1, 4 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 5, 1, 4 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
     EXPECT_FALSE(
-        (DateTimeParser{ 5, 3, 4 }.parseDateTimeString(lexems)).has_value());
+        (DateTimeParser{ 5, 3, 4 }.parseDateTimeString<ETaskDateTimeRole::Due>(
+             lexems))
+            .has_value());
 }
 
 } // namespace Test

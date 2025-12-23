@@ -76,17 +76,17 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
                    ".date-normal { color: #555; }"
                    "</style>";
 
-    const QDateTime now = QDateTime::currentDateTime();
-    const qint64 oneDayMs = 24 * 60 * 60 * 1000;
-    auto getDateCssClass = [&](const QDateTime &dt) -> QString {
-        const qint64 diffMs = now.msecsTo(dt);
-
-        if (dt < now) {
+    static const auto getDateCssClass = [](const auto &dt) -> QString {
+        switch (dt.relationToNow()) {
+        case DatesRelation::Past:
             return "date-overdue";
-        } else if (diffMs < oneDayMs) {
+        case DatesRelation::Approaching:
             return "date-approaching";
+        case DatesRelation::Future:
+            return "date-normal";
         }
-        return "date-normal";
+        throw std::runtime_error(
+            "Not handled TaskDateTime::DateRelationToNow value.");
     };
 
     const QString &descriptionStr = task.description.get();
@@ -123,9 +123,8 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
         // DUE DATE
         if (optionalDue.has_value()) {
-            const QDateTime &dt = optionalDue.value();
-            const QString dateStr = dt.toString();
-            const QString cssClass = getDateCssClass(dt);
+            const QString dateStr = optionalDue.value().toString();
+            const QString cssClass = getDateCssClass(optionalDue);
 
             html +=
                 QString(
@@ -135,9 +134,8 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
         // SCHED DATE
         if (optionalSched.has_value()) {
-            const QDateTime &dt = optionalSched.value();
-            const QString dateStr = dt.toString();
-            const QString cssClass = getDateCssClass(dt);
+            const QString dateStr = optionalSched.value().toString();
+            const QString cssClass = getDateCssClass(optionalSched);
 
             html += QString("<p><span class='%1'>Scheduled: %2</span></p>")
                         .arg(cssClass, dateStr);
@@ -145,9 +143,8 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
         // WAIT DATE
         if (optionalWait.has_value()) {
-            const QDateTime &dt = optionalWait.value();
-            const QString dateStr = dt.toString();
-            const QString cssClass = getDateCssClass(dt);
+            const QString dateStr = optionalWait.value().toString();
+            const QString cssClass = getDateCssClass(optionalWait);
 
             html += QString("<p><span class='%1'>Wait until: %2</span></p>")
                         .arg(cssClass, dateStr);

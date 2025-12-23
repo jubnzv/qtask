@@ -8,15 +8,13 @@
 #include <qtversionchecks.h>
 #include <qtypes.h>
 
-#include <optional>
+#include "task_date_time.hpp"
 
 /// @brief Parser of date/time in "task" output.
 /// This should be initialized with expected "lexems" (which
 /// are space delimeted "words") count and indexes. If such lexems can be found
 /// it will compose QDateTime out of it.
 struct DateTimeParser {
-    using OptionalDateTime = std::optional<QDateTime>;
-
     /// @brief Expected amount of lexems (words) in string. It is used for
     /// validation purpose.
     qsizetype expected_lexems_count;
@@ -27,19 +25,22 @@ struct DateTimeParser {
 
     /// @returns QDateTime object if @p line_of_lexems matches this configured
     /// parameters and they produce valid ISODate, otherwise std::nullopt.
+
+    template <ETaskDateTimeRole taRole>
     [[nodiscard]]
-    OptionalDateTime parseDateTimeString(const QString &line_of_lexems) const
+    TaskDateTime<taRole>
+    parseDateTimeString(const QString &line_of_lexems) const
     {
         if (date_lexem_index >= expected_lexems_count ||
             time_lexem_index >= expected_lexems_count) {
-            return std::nullopt;
+            return TaskDateTime<taRole>{};
         }
         const auto lexems = splitSpaceSeparatedString(line_of_lexems);
         if (lexems.size() != expected_lexems_count) {
-            return std::nullopt;
+            return TaskDateTime<taRole>{};
         }
-        return composeDateTime(lexems.at(date_lexem_index),
-                               lexems.at(time_lexem_index));
+        return composeDateTime<taRole>(lexems.at(date_lexem_index),
+                                       lexems.at(time_lexem_index));
     }
 
     /// @brief Splits space separated string into QStringList.
@@ -61,15 +62,17 @@ struct DateTimeParser {
   private:
     /// @brief tries to compose 2 strings into QDateTime as ISODate.
     /// @returns QDateTime or std::nullopt if it couldn't make valid date.
+
+    template <ETaskDateTimeRole taRole>
     [[nodiscard]]
-    static OptionalDateTime composeDateTime(const QString &date,
-                                            const QString &time)
+    static TaskDateTime<taRole> composeDateTime(const QString &date,
+                                                const QString &time)
     {
         auto dt = QDateTime::fromString(QString{ "%1T%2" }.arg(date, time),
                                         Qt::ISODate);
         if (dt.isValid()) {
-            return dt;
+            return TaskDateTime<taRole>{ dt };
         }
-        return std::nullopt;
+        return TaskDateTime<taRole>{};
     }
 };

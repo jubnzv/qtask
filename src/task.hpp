@@ -9,8 +9,9 @@
 
 #include <cstdint>
 #include <optional>
+#include <tuple>
 
-#include "date_time_parser.hpp"
+#include "task_date_time.hpp"
 #include "taskproperty.hpp"
 #include "taskwarriorexecutor.hpp"
 
@@ -21,8 +22,6 @@
 ///@brief Represents single task.
 class DetailedTaskInfo {
   public:
-    using OptionalDateTime = DateTimeParser::OptionalDateTime;
-
     // TODO: revise if it should stay public.
     enum class Priority : std::uint8_t { Unset, L, M, H }; // TODO: properties
     static Priority priorityFromString(const QString &p);
@@ -33,16 +32,17 @@ class DetailedTaskInfo {
 
     TaskProperty<QString> description;
     TaskProperty<QString> project;
-    TaskProperty<QStringList> tags;
-    TaskProperty<QStringList> removed_tags;
-    TaskProperty<OptionalDateTime> sched;
-    TaskProperty<OptionalDateTime> due;
-    TaskProperty<OptionalDateTime> wait;
+    TaskProperty<QStringList> tags; // current tags list
+    TaskProperty<TaskDateTime<ETaskDateTimeRole::Sched>> sched;
+    TaskProperty<TaskDateTime<ETaskDateTimeRole::Due>> due;
+    TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
 
     bool active{ false };
 
-    /// Tags that will be removed at the next command.
+    /// @brief Copies different fields from @p other object. If field was equal,
+    /// keeps "modified" state as it was before.
+    void updateFrom(const DetailedTaskInfo &other);
 
     /// @brief tries to add this object as new task to taskwarrior.
     /// @returns true if task was added
@@ -203,6 +203,7 @@ class TaskWarriorDbState {
     };
 
     TaskWarriorDbState() = default;
+    [[nodiscard]]
     bool isDifferent(const TaskWarriorDbState &other) const
     {
         return this->fields != other.fields;
