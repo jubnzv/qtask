@@ -3,6 +3,7 @@
 #include "date_time_parser.hpp"
 #include "qtutil.hpp"
 #include "split_string.hpp"
+#include "task_date_time.hpp"
 #include "taskwarriorexecutor.hpp"
 
 #include <QDateTime>

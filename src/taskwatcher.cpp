@@ -6,6 +6,7 @@
 #include "taskwarriorexecutor.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <optional>
 
 #include <QFuture>

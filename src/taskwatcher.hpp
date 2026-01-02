@@ -8,6 +8,7 @@
 #include <atomic>
 #include <chrono>
 
+#include "pereodic_async_executor.hpp"
 #include "task.hpp"
 
 /// @brief This object polls TaskWarrior and fires signal when re-read data is
@@ -31,6 +32,7 @@ class TaskWatcher : public QObject {
     void enforceUpdate();
 
   private:
+    struct CheckTaskState {};
     QFutureWatcher<TaskWarriorDbState::Optional> *m_state_reader;
     QTimer m_check_for_changes_timer;
     TaskWarriorDbState m_latestDbState;
