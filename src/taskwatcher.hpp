@@ -1,12 +1,10 @@
 #ifndef TASKWATCHER_HPP
 #define TASKWATCHER_HPP
 
-#include <QFutureWatcher>
 #include <QObject>
-#include <QTimer>
 
-#include <atomic>
 #include <chrono>
+#include <memory>
 
 #include "pereodic_async_executor.hpp"
 #include "task.hpp"
@@ -32,12 +30,9 @@ class TaskWatcher : public QObject {
     void enforceUpdate();
 
   private:
-    struct CheckTaskState {};
-    QFutureWatcher<TaskWarriorDbState::Optional> *m_state_reader;
-    QTimer m_check_for_changes_timer;
     TaskWarriorDbState m_latestDbState;
-    std::atomic<bool> m_slot_once{ false };
     std::chrono::system_clock::time_point last_check_at;
+    std::unique_ptr<IPereodicExec> m_pereodic_worker;
 };
 
 #endif // TASKWATCHER_HPP

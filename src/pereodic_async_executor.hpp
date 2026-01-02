@@ -11,6 +11,12 @@
 #include <QtConcurrent> //NOLINT
 #include <qnamespace.h>
 
+class IPereodicExec { // NOLINT
+  public:
+    virtual ~IPereodicExec() = default;
+    virtual void execNow() = 0;
+};
+
 /// @tparam taPereodicCallable callable which executed in dedicated thread and
 /// returns some value.
 /// @tparam taPereodicParamsProvider callable which provides tuple of parameters
@@ -25,7 +31,7 @@
 /// @note All callables should be valid until `this` exists.
 template <typename taPereodicCallable, typename taPereodicParamsProvider,
           typename taResultReceiver>
-class PereodicAsynExec {
+class PereodicAsynExec : public IPereodicExec {
   public:
     using ParamsTuple = std::invoke_result_t<taPereodicParamsProvider>;
     using ReturnType = std::decay_t<decltype(std::apply(
@@ -84,7 +90,7 @@ class PereodicAsynExec {
     PereodicAsynExec(PereodicAsynExec &&) = delete;
     PereodicAsynExec &operator=(PereodicAsynExec &&) = delete;
 
-    ~PereodicAsynExec()
+    ~PereodicAsynExec() override
     {
         // Granting that all lambdas will always have valid [this].
         m_timer.stop();
@@ -97,7 +103,7 @@ class PereodicAsynExec {
     /// @brief Tries to execute check regardless of the current timer state.
     /// @note It is safe to call from any thread. taPereodicParamsProvider()
     /// will be called in the same thread as caller.
-    void execNow()
+    void execNow() override
     {
         if (!testAndFlip(m_avoid_overlapping_execs, false)) {
             return;
