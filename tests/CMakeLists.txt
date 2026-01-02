@@ -79,7 +79,9 @@ if (TESTS_LIST_FILES_COUNT GREATER 0)
     target_link_libraries(qtask_tests PRIVATE
                         gtest
                         gmock
+                        Qt${QT_VERSION_MAJOR}::Core
                         Qt${QT_VERSION_MAJOR}::Widgets
+                        Qt${QT_VERSION_MAJOR}::Concurrent
     )
     target_include_directories(qtask_tests PUBLIC
                         ${CMAKE_CURRENT_LIST_DIR}
