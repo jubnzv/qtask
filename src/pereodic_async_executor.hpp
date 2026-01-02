@@ -138,7 +138,7 @@ class PereodicAsynExec : public IPereodicExec {
     }
 };
 
-/// @brief Factory method for the PereodicAsynExec.
+/// @brief Factory function for the PereodicAsynExec.
 /// @returns std::unique_ptr<PereodicAsynExec<C, P, R>>
 template <typename C, typename P, typename R>
 auto createPereodicAsynExec(int ms, C c, P p, R r)
