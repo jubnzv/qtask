@@ -29,12 +29,6 @@ constexpr int kCheckPeriod = 10000;
 // re-read list.
 constexpr auto kEnforcedCheckEach = 60min; // NOLINT
 
-template <typename C, typename P, typename R>
-auto createPeriodicWorker(int ms, C c, P p, R r)
-{
-    return std::make_unique<PereodicAsynExec<C, P, R>>(
-        ms, std::move(c), std::move(p), std::move(r));
-}
 } // namespace
 
 TaskWatcher::TaskWatcher(QObject *parent)
@@ -68,7 +62,7 @@ TaskWatcher::TaskWatcher(QObject *parent)
         }
     };
 
-    m_pereodic_worker = createPeriodicWorker(
+    m_pereodic_worker = createPereodicAsynExec(
         kCheckPeriod, std::move(threadBody), std::move(paramsForThread),
         std::move(receiverFromThread));
 }

@@ -137,3 +137,11 @@ class PereodicAsynExec : public IPereodicExec {
         return var.compare_exchange_strong(exp, !expected);
     }
 };
+
+/// @returns std::unique_ptr<PereodicAsynExec<C, P,R>>
+template <typename C, typename P, typename R>
+auto createPereodicAsynExec(int ms, C c, P p, R r)
+{
+    return std::make_unique<PereodicAsynExec<C, P, R>>(
+        ms, std::move(c), std::move(p), std::move(r));
+}
