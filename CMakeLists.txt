@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 project(qtask CXX)
 
-set(QTASK_VERSION_MAJOR 1)
-set(QTASK_VERSION_MINOR 1)
-set(QTASK_VERSION_PATCH 9)
+set(QTASK_VERSION_MAJOR 1)  # something big added / changed
+set(QTASK_VERSION_MINOR 1)  # new small feature added
+set(QTASK_VERSION_PATCH 10) # refactor/bug fix inside current minor
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
