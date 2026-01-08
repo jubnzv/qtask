@@ -123,7 +123,8 @@ bool MainWindow::initTaskWatcher()
             if (m_task_provider) {
                 auto tasks = m_task_provider->getTasks();
                 auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-                model->setTasks(tasks.value_or({}), getSelectedTaskIds());
+                model->setTasks(tasks.value_or(QList<DetailedTaskInfo>{}),
+                                getSelectedTaskIds());
 
                 updateTaskToolbar();
             }
