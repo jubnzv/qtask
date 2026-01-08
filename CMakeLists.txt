@@ -55,11 +55,17 @@ endif()
 # Bind tools to the version if both found, list must be the same in 2 calls.
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
 
-#Typical search of system package
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS GuiPrivate QUIET)
+#Private package is different on distributions
+if(TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
+    # Debian just adds it silently.
+    message(STATUS "Qt${QT_VERSION_MAJOR}::GuiPrivate already defined by system")
+    set(Qt${QT_VERSION_MAJOR}GuiPrivate_FOUND TRUE)
+else()
+    #Arch linux, we need explicit search.
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS GuiPrivate QUIET)
+endif()
 
-#Debian has no GuiPrivate cmake file for find_package()..
-#Let's fix it.
+# Fallback if it was nor explicit, or silent added.
 if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
 
     set(QT_PRIVATE_INCLUDE_DIRS "")
