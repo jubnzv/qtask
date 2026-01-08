@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 project(qtask CXX)
 
@@ -44,7 +44,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
 endif()
 
 # List of Qt components we will need to find. Note, there is linking list below yet.
-set(QT_COMPONENTS_WE_NEED Core Widgets Concurrent GuiPrivate Svg)
+set(QT_COMPONENTS_WE_NEED Core Widgets Concurrent Svg)
 
 # Detect best qt version in the system.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
@@ -54,6 +54,62 @@ if(${QT_VERSION} VERSION_LESS 5.3.0)
 endif()
 # Bind tools to the version if both found, list must be the same in 2 calls.
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
+
+#Typical search of system package
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS GuiPrivate QUIET)
+
+#Debian has no GuiPrivate cmake file for find_package()..
+#Let's fix it.
+if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
+    set(_private_modules QtCore QtGui QtWidgets)
+    set(QT_PRIVATE_INCLUDE_DIRS "")
+
+    message(STATUS "Scanning for private modules...")
+
+    foreach(_mod ${_private_modules})
+        set(_target_name "Qt${QT_VERSION_MAJOR}::${_mod}")
+        if(NOT TARGET ${_target_name})
+            string(REPLACE "Qt" "" _mod_plain "${_mod}")
+            set(_target_name "Qt${QT_VERSION_MAJOR}::${_mod_plain}")
+        endif()
+
+        if(TARGET ${_target_name})
+            get_target_property(_mod_inc ${_target_name} INTERFACE_INCLUDE_DIRECTORIES)
+            foreach(_dir ${_mod_inc})
+                # _mod == 'QtCore', 'QtGui' etc
+                if(_dir MATCHES "${_mod}$")
+                    set(_base "${_dir}/${QT_VERSION}")
+
+                    # Adding pathes:
+                    # 1. /usr/include/qt6/QtGui/6.10.1 (for <QtGui/private/...>)
+                    # 2. /usr/include/qt6/QtGui/6.10.1/QtGui (for <private/...>)
+                    list(APPEND QT_PRIVATE_INCLUDE_DIRS "${_base}")
+                    list(APPEND QT_PRIVATE_INCLUDE_DIRS "${_base}/${_mod}")
+                endif()
+            endforeach()
+        endif()
+    endforeach()
+
+    if(QT_PRIVATE_INCLUDE_DIRS)
+        list(REMOVE_DUPLICATES QT_PRIVATE_INCLUDE_DIRS)
+        message(STATUS "Found Qt Private headers: ${QT_PRIVATE_INCLUDE_DIRS}")
+    else()
+        message(WARNING "Qt Private headers not found. Ensure qt6-base-private-dev is installed.")
+    endif()
+
+    # Compatibility to find_package()
+    if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
+        add_library(Qt${QT_VERSION_MAJOR}::GuiPrivate INTERFACE IMPORTED)
+        target_link_libraries(Qt${QT_VERSION_MAJOR}::GuiPrivate INTERFACE Qt${QT_VERSION_MAJOR}::Gui)
+        target_include_directories(Qt${QT_VERSION_MAJOR}::GuiPrivate SYSTEM INTERFACE ${QT_PRIVATE_INCLUDE_DIRS})
+        set(Qt${QT_VERSION_MAJOR}GuiPrivate_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT Qt${QT_VERSION_MAJOR}GuiPrivate_FOUND)
+message(FATAL_ERROR "Could not find Qt${QT_VERSION_MAJOR}GuiPrivate, check of package like qt${QT_VERSION_MAJOR}-base-private-dev is installed.")
+endif()
+
 
 #List and add all files by mask to the project, no manual enlisting is required.
 file(GLOB qtask_SRCS
@@ -65,7 +121,9 @@ file(GLOB qtask_SRCS
 
 set(qtask_MOC_HEADERS src/configmanager.hpp)
 set(qtask_RESOURCES res/qtask.qrc)
+
 add_executable(qtask ${qtask_SRCS} ${qtask_RESOURCES})
+
 
 # Debug / Release configuration is here
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
