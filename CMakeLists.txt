@@ -58,10 +58,11 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
 #Private package is different on distributions
 if(TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
     # Debian just adds it silently.
-    message(STATUS "Qt${QT_VERSION_MAJOR}::GuiPrivate already defined by system")
+    message(STATUS "Qt${QT_VERSION_MAJOR}::GuiPrivate is already defined by system.")
     set(Qt${QT_VERSION_MAJOR}GuiPrivate_FOUND TRUE)
 else()
     #Arch linux, we need explicit search.
+    message(STATUS "Checking for dedicated package Qt${QT_VERSION_MAJOR}::GuiPrivate.")
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS GuiPrivate QUIET)
 endif()
 
@@ -69,7 +70,7 @@ endif()
 if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
 
     set(QT_PRIVATE_INCLUDE_DIRS "")
-    message(STATUS "Searching for Qt ${QT_VERSION} private headers...")
+    message(STATUS "Searching for Qt ${QT_VERSION} private headers on disk...")
 
     # Option 1
     set(_check_targets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)
