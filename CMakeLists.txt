@@ -61,9 +61,11 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS GuiPrivate QUIET)
 #Debian has no GuiPrivate cmake file for find_package()..
 #Let's fix it.
 if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
+
     set(QT_PRIVATE_INCLUDE_DIRS "")
     message(STATUS "Searching for Qt ${QT_VERSION} private headers...")
 
+    # Option 1
     set(_check_targets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)
     set(_all_qt_dirs "")
 
@@ -76,18 +78,36 @@ if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
         endif()
     endforeach()
 
+    # Option 2
+    if(NOT QT_PRIVATE_INCLUDE_DIRS)
+        find_path(_core_private_root
+            NAMES private/qglobal_p.h
+            PATH_SUFFIXES "QtCore/${QT_VERSION}" "qt6/QtCore/${QT_VERSION}" "qt5/QtCore/${QT_VERSION}"
+            PATHS "/usr/include" "/usr/include/${CMAKE_LIBRARY_ARCHITECTURE}" "/usr/local/include"
+        )
 
-    list(APPEND _all_qt_dirs "/usr/include/qt6" "/usr/include/x86_64-linux-gnu/qt6" "/usr/include/qt5")
+        if(_core_private_root)
+            message(STATUS "  [HUNT] Found private root via disk search: ${_core_private_root}")
+            get_filename_component(_qt_inc_dir "${_core_private_root}" DIRECTORY)
+            get_filename_component(_qt_inc_dir "${_qt_inc_dir}" DIRECTORY)
 
-    if(_all_qt_dirs)
+            foreach(_mod QtCore QtGui QtWidgets)
+                string(REPLACE "Qt" "" _mod_plain "${_mod}")
+                set(_p "${_qt_inc_dir}/${_mod_plain}/${QT_VERSION}")
+                if(EXISTS "${_p}/${_mod_plain}/private")
+                    list(APPEND QT_PRIVATE_INCLUDE_DIRS "${_p}" "${_p}/${_mod_plain}")
+                endif()
+            endforeach()
+        endif()
+    endif()
+    # Option 3
+    if(NOT QT_PRIVATE_INCLUDE_DIRS AND _all_qt_dirs)
         list(REMOVE_DUPLICATES _all_qt_dirs)
         foreach(_dir ${_all_qt_dirs})
-            file(GLOB _subdirs RELATIVE "${_dir}" "${_dir}/*")
+            file(GLOB _subdirs RELATIVE "${_dir}" "${_dir}/Qt*")
             foreach(_subdir ${_subdirs})
                 set(_potential_base "${_dir}/${_subdir}/${QT_VERSION}")
-                # Если нашли путь типа /usr/include/qt6/QtCore/6.10.1/QtCore/private
                 if(EXISTS "${_potential_base}/${_subdir}/private")
-                    message(STATUS "  [FOUND] ${_subdir} private: ${_potential_base}")
                     list(APPEND QT_PRIVATE_INCLUDE_DIRS "${_potential_base}" "${_potential_base}/${_subdir}")
                 endif()
             endforeach()
@@ -102,11 +122,11 @@ if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
             target_include_directories(Qt${QT_VERSION_MAJOR}::GuiPrivate SYSTEM INTERFACE ${QT_PRIVATE_INCLUDE_DIRS})
         endif()
         set(Qt${QT_VERSION_MAJOR}GuiPrivate_FOUND TRUE)
-        message(STATUS "Private headers successfully injected.")
+        message(STATUS "Found private headers: ${QT_PRIVATE_INCLUDE_DIRS}")
     else()
         message(FATAL_ERROR "Could not find Qt ${QT_VERSION} private headers.
         Make sure qt6-base-private-dev is installed.
-        Searched in: ${_all_qt_dirs}")
+        Checked architecture: ${CMAKE_LIBRARY_ARCHITECTURE}")
     endif()
 endif()
 
