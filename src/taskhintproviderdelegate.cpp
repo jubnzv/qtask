@@ -73,11 +73,25 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
                    "5px; margin-top: 5px; }"
                    ".priority-high { color: red; font-weight: bold; }"
                    ".date-due { color: #8e44ad; font-weight: bold; }"
-                   ".tag-list { padding-left: 20px; margin: 0; }"
                    ".date-overdue { color: red; font-weight: bold; }"
                    ".date-approaching { color: orange; font-weight: bold; }"
                    ".date-normal { color: #555; }"
                    ".date-active {color: #005fb8;font-weight: bold;}"
+                   ".tag-list {"
+                   "  list-style-type: none;"
+                   "  padding: 0;"
+                   "  margin: 0;"
+                   "  display: flex;"
+                   "  flex-wrap: wrap;"
+                   "}"
+                   ".tag-list li {"
+                   "  background: #f0f0f0;"
+                   "  padding: 2px 6px;"
+                   "  margin: 2px;"
+                   "  display: inline-block;"
+                   "  color: #333;"
+                   "  font-size: 11px;"
+                   "}"
                    "</style>";
 
     static const auto getDateCssClass = [](const auto &dt) -> QString {
@@ -163,11 +177,9 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     // ------------------------------------------------
     const QStringList &tagsList = task.tags.get();
     if (!tagsList.isEmpty()) {
-        html += "<div class='info-block'><h3>Tags</h3><ul class='tag-list'>";
-        for (const QString &tag : tagsList) {
-            html += QString("<li>%1</li>").arg(tag.toHtmlEscaped());
-        }
-        html += "</ul></div>";
+        html += "<div class='info-block'><h3>Tags</h3><p>";
+        html += tagsList.join(", "); // Просто перечисление через запятую
+        html += "</p></div>";
     }
 
     // ------------------------------------------------
