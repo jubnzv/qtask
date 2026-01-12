@@ -55,7 +55,7 @@ class StatusEmoji {
     QString schedEmoji() const
     {
         if (isSpecialSched()) {
-            return QString::fromUtf8("🔵");
+            return hasEmoji() ? QString::fromUtf8("🔵") : "[W]";
         }
         if (task.sched.get().has_value()) {
             return relationToEmoji(task.sched.get(), now);
@@ -73,6 +73,16 @@ class StatusEmoji {
     const DetailedTaskInfo &task;
     QDateTime now;
 
+    static bool hasEmoji()
+    {
+        static const bool has_emoji = []() {
+            const QFont font = QGuiApplication::font();
+            const QFontMetrics metrics(font);
+            return metrics.inFontUcs4(0x1F525); // 🔥
+        }();
+        return has_emoji;
+    }
+
     /// @brief Computes DatesRelation between @p taskDate and @p now and
     /// converts to emoji if supported, to text string otherwise.
     /// @returns string oe emojies or text.
@@ -81,43 +91,38 @@ class StatusEmoji {
         const TaskDateTime<taRole> &taskDate,
         const QDateTime &now = QDateTime::currentDateTime())
     {
-        static const bool hasEmoji = []() {
-            const QFont font = QGuiApplication::font();
-            const QFontMetrics metrics(font);
-            return metrics.inFontUcs4(0x1F525); // 🔥
-        }();
         const auto rel = taskDate.relationToNow(now);
 
         if constexpr (taRole == ETaskDateTimeRole::Due) {
             switch (rel) {
             case DatesRelation::Past:
-                return hasEmoji ? QString::fromUtf8("🔥")
-                                : QStringLiteral("[!]");
+                return hasEmoji() ? QString::fromUtf8("🔥")
+                                  : QStringLiteral("[!]");
             case DatesRelation::Approaching:
-                return hasEmoji ? QString::fromUtf8("⚠️")
-                                : QStringLiteral("(>)");
+                return hasEmoji() ? QString::fromUtf8("⚠️")
+                                  : QStringLiteral("(>)");
             case DatesRelation::Future:
-                return hasEmoji ? QString::fromUtf8("🗓️")
-                                : QStringLiteral("[ ]");
+                return hasEmoji() ? QString::fromUtf8("🗓️")
+                                  : QStringLiteral("[ ]");
             }
         } else if constexpr (taRole == ETaskDateTimeRole::Sched) {
             switch (rel) {
             case DatesRelation::Past:
-                return hasEmoji ? QString::fromUtf8("🚀")
-                                : QStringLiteral("(+)");
+                return hasEmoji() ? QString::fromUtf8("🚀")
+                                  : QStringLiteral("(+)");
             case DatesRelation::Approaching:
-                return hasEmoji ? QString::fromUtf8("⏳")
-                                : QStringLiteral("(:)");
+                return hasEmoji() ? QString::fromUtf8("⏳")
+                                  : QStringLiteral("(:)");
             case DatesRelation::Future:
-                return hasEmoji ? QString::fromUtf8("💤")
-                                : QStringLiteral("...");
+                return hasEmoji() ? QString::fromUtf8("💤")
+                                  : QStringLiteral("...");
             }
         } else if constexpr (taRole == ETaskDateTimeRole::Wait) {
             if (rel == DatesRelation::Past) {
-                return hasEmoji ? QString::fromUtf8("👁️")
-                                : QStringLiteral(" * ");
+                return hasEmoji() ? QString::fromUtf8("👁️")
+                                  : QStringLiteral(" * ");
             }
-            return hasEmoji ? QString::fromUtf8("⏸️") : QStringLiteral(" z ");
+            return hasEmoji() ? QString::fromUtf8("⏸️") : QStringLiteral(" z ");
         }
 
         return {};
