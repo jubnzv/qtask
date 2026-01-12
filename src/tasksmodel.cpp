@@ -43,7 +43,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     case Qt::DisplayRole: {
         switch (index.column()) {
         case 0:
-            return taskToTimeEmojies(task) + task.task_id;
+            return task.task_id + taskToTimeEmojies(task);
         case 1:
             return task.project.get();
         case 2:
@@ -54,6 +54,8 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
         }
         break;
     }
+    case Qt::TextAlignmentRole:
+        return { Qt::AlignVCenter | Qt::AlignLeft };
     case Qt::DecorationRole:
         if (index.column() == 0) {
             return (m_tasks.at(index.row()).active)

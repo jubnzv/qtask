@@ -77,5 +77,5 @@ taskToTimeEmojies(const DetailedTaskInfo &task,
         icons << relationToEmoji(task.wait.get(), now);
     }
     icons.removeAll(QString());
-    return icons.join(" ");
+    return icons.join(QString::fromUtf8("\u2007"));
 }

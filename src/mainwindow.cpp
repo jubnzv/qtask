@@ -19,6 +19,7 @@
 #include <QStringList>
 #include <QSystemTrayIcon>
 #include <QTableView>
+#include <QTimer>
 #include <QToolBar>
 #include <QVariant>
 #include <QWindowStateChangeEvent>
@@ -528,40 +529,35 @@ void MainWindow::closeEvent(QCloseEvent *event)
 std::optional<QString> MainWindow::getSelectedTaskId() const
 {
     Q_ASSERT(m_tasks_view);
-
     auto *smodel = m_tasks_view->selectionModel();
-    if (smodel->selectedRows().size() != 1) {
-        return {};
+    auto selectedRows = smodel->selectedRows();
+    if (selectedRows.size() != 1) {
+        return std::nullopt;
     }
+    const QModelIndex idx = selectedRows.first();
+    QVariant var = idx.data(TasksModel::TaskReadRole);
 
-    auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
-    for (const QModelIndex idx : smodel->selectedRows()) {
-        auto item = dmodel->itemData(idx);
-        if (item[0].isNull()) {
-            continue;
-        }
-        return item[0].toString();
+    if (var.canConvert<DetailedTaskInfo>()) {
+        return var.value<DetailedTaskInfo>().task_id;
     }
-
-    return {};
+    return std::nullopt;
 }
 
 QStringList MainWindow::getSelectedTaskIds() const
 {
+    Q_ASSERT(m_tasks_view);
     auto *smodel = m_tasks_view->selectionModel();
+
     if (!smodel->hasSelection()) {
         return {};
     }
 
     QStringList ids;
-
-    auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
-    for (const QModelIndex idx : smodel->selectedRows()) {
-        auto item = dmodel->itemData(idx);
-        if (item[0].isNull()) {
-            continue;
+    for (const QModelIndex &idx : smodel->selectedRows()) {
+        QVariant var = idx.data(TasksModel::TaskReadRole);
+        if (var.canConvert<DetailedTaskInfo>()) {
+            ids << var.value<DetailedTaskInfo>().task_id;
         }
-        ids.push_back(item[0].toString());
     }
 
     return ids;
@@ -685,24 +681,12 @@ void MainWindow::onEnterTaskCommand()
 
 void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
 {
-    const auto selected = m_tasks_view->selectionModel()->selectedRows();
-    if (selected.isEmpty())
-        return;
-    const QVariant taskVar = selected[0].data(TasksModel::TaskReadRole);
-    if (!taskVar.canConvert<DetailedTaskInfo>()) {
+    const auto id_opt = getSelectedTaskId();
+    if (!id_opt) {
         refreshTasksListTableIfNeeded();
         return;
     }
-
-    const auto taskInModel = taskVar.value<DetailedTaskInfo>();
-    const auto &id_str = taskInModel.task_id;
-
-    if (id_str.isEmpty()) {
-        refreshTasksListTableIfNeeded();
-        return;
-    }
-
-    // Do we really want to read full task again?
+    const auto &id_str = *id_opt;
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
         refreshTasksListTableIfNeeded();
