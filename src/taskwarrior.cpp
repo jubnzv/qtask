@@ -46,17 +46,17 @@ bool Taskwarrior::addTask(DetailedTaskInfo &task)
         [this, &task]() { return task.execAddNewTask(*m_executor); });
 }
 
-bool Taskwarrior::startTask(const QString &id)
+bool Taskwarrior::startTasks(const QList<DetailedTaskInfo> &tasks)
 {
-    return execCommandAndAccountUndo([this, &id]() {
-        return BatchTasksManager({ id }).execStartTask(*m_executor);
+    return execCommandAndAccountUndo([this, &tasks]() {
+        return BatchTasksManager(tasks).execStartTask(*m_executor);
     });
 }
 
-bool Taskwarrior::stopTask(const QString &id)
+bool Taskwarrior::stopTasks(const QList<DetailedTaskInfo> &tasks)
 {
-    return execCommandAndAccountUndo([this, &id]() {
-        return BatchTasksManager({ id }).execStopTask(*m_executor);
+    return execCommandAndAccountUndo([this, &tasks]() {
+        return BatchTasksManager(tasks).execStopTask(*m_executor);
     });
 }
 

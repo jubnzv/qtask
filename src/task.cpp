@@ -13,17 +13,20 @@
 #include <QStringList>
 #include <QStringLiteral>
 #include <QVariant>
+#include <QtAssert>
 #include <qnamespace.h>
 #include <qtypes.h>
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -61,7 +64,7 @@ QStringList formatTags(const QStringList &tags)
     return { makeParam("tag", tags.join(" ")) };
 }
 
-QString formatDescription(const QString& descr)
+QString formatDescription(const QString &descr)
 {
     return { makeParam("description", descr) };
 }
@@ -312,9 +315,6 @@ class StatResponseSetters {
 
 } // namespace
 
-#define TASK_PROPERTIES_LIST \
-    priority, project, tags, sched, due, wait, description
-
 DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     : task_id(std::move(task_id))
     , description(&formatDescription)
@@ -324,6 +324,9 @@ DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     , due(&formatDateTime<ETaskDateTimeRole::Due>)
     , wait(&formatDateTime<ETaskDateTimeRole::Wait>)
     , priority(&formatPriority, Priority::Unset)
+    // active has dedicated start/stop commands, it should not be formatted for
+    // cmd
+    , active("", false)
 {
 }
 
@@ -354,19 +357,17 @@ DetailedTaskInfo::priorityFromString(const QString &p)
 
 void DetailedTaskInfo::updateFrom(const DetailedTaskInfo &other)
 {
-    const auto copy_if_diff = [&other](auto &my_property, const auto &other_property) {
-        if (my_property.get() != other_property.get()) {
-            my_property = other_property;
-        }
-    };
-    copy_if_diff(description, other.description);
-    copy_if_diff(project, other.project);
-    copy_if_diff(tags, other.tags);
-    copy_if_diff(sched, other.sched);
-    copy_if_diff(due, other.due);
-    copy_if_diff(wait, other.wait);
-    copy_if_diff(priority, other.priority);
-    active = other.active;
+    auto myProps = asTuple();
+    const auto otherProps = other.asTuple();
+
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        auto updater = [](auto &left, const auto &right) {
+            if (left.get() != right.get()) {
+                left = right;
+            }
+        };
+        (updater(std::get<Is>(myProps), std::get<Is>(otherProps)), ...);
+    }(std::make_index_sequence<std::tuple_size_v<decltype(myProps)>>{});
 }
 
 bool DetailedTaskInfo::execAddNewTask(const TaskWarriorExecutor &executor)
@@ -456,12 +457,7 @@ bool DetailedTaskInfo::isFullRead() const
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)
-    : BatchTasksManager([&tasks] {
-        QStringList ids;
-        std::transform(tasks.begin(), tasks.end(), std::back_inserter(ids),
-                       [](const auto &task) { return task.task_id; });
-        return ids;
-    }())
+    : BatchTasksManager(tasksListToIds(tasks))
 {
 }
 

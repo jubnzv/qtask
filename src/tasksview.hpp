@@ -18,7 +18,6 @@ class TasksView : public QTableView {
     void mouseReleaseEvent(QMouseEvent *event) override;
 
   signals:
-    void selectedTaskIsActive(bool is_active);
     void pushProjectFilter(const QString &);
     void linkActivated(const QString &link);
     void linkHovered(const QString &link);

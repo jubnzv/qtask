@@ -31,15 +31,6 @@ void TasksView::mousePressEvent(QMouseEvent *event)
 
     const auto idx = indexAt(event->pos());
 
-    // Enable "stop" button if the selected task is active
-    if (idx.isValid() && event->buttons() & Qt::LeftButton) {
-        const auto task_opt = qobject_cast<TasksModel *>(model())->getTask(idx);
-        if (task_opt.isValid()) {
-            const auto task = task_opt.value<DetailedTaskInfo>();
-            emit selectedTaskIsActive(task.active);
-        }
-    }
-
     // Right click to the "project" column will push it to taskwarrior filter
     if (idx.isValid() && idx.column() == project_column &&
         event->buttons() & Qt::RightButton) {

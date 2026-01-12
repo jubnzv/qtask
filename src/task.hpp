@@ -5,15 +5,23 @@
 #include <QList>
 #include <QString>
 #include <QStringList>
+#include <qtypes.h>
 #include <qvariant.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <optional>
 #include <tuple>
+#include <type_traits>
 
 #include "task_date_time.hpp"
 #include "taskproperty.hpp"
 #include "taskwarriorexecutor.hpp"
+
+// This should contain ALL TaskProperty<> fields in DetailedTaskInfo.
+#define TASK_PROPERTIES_LIST \
+    priority, project, tags, sched, due, wait, description, active
 
 /// @note Classes here are responsible to produce proper commands to the
 /// taskwarrior and parse it's results intact with own fields. Actual execution
@@ -30,6 +38,8 @@ class DetailedTaskInfo {
     // track modification.
     QString task_id;
 
+    // Note, update TASK_PROPERTIES_LIST macros if you add/remove some
+    // here.
     TaskProperty<QString> description;
     TaskProperty<QString> project;
     TaskProperty<QStringList> tags; // current tags list
@@ -37,8 +47,7 @@ class DetailedTaskInfo {
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Due>> due;
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
-
-    bool active{ false };
+    TaskProperty<bool> active;
 
     /// @brief Copies different fields from @p other object. If field was equal,
     /// keeps "modified" state as it was before.
@@ -82,9 +91,31 @@ class DetailedTaskInfo {
 
     [[nodiscard]]
     QStringList getAddModifyCmdArgsFieldsRepresentation() const;
+
+    [[nodiscard]]
+    auto asTuple()
+    {
+        return std::tie(TASK_PROPERTIES_LIST);
+    }
+    [[nodiscard]] auto asTuple() const
+    {
+        return std::tie(TASK_PROPERTIES_LIST);
+    }
 };
 
 Q_DECLARE_METATYPE(DetailedTaskInfo)
+
+template <typename taTasksContainer>
+QStringList tasksListToIds(const taTasksContainer &tasks)
+{
+    QStringList ids;
+    ids.reserve(static_cast<qsizetype>(
+        std::distance(std::begin(tasks), std::end(tasks))));
+    std::transform(
+        std::begin(tasks), std::end(tasks), std::back_inserter(ids),
+        [](const DetailedTaskInfo &task) -> QString { return task.task_id; });
+    return ids;
+}
 
 /// @brief This object allows Start/Stop/Done/Delete task(s) (1 or more at
 /// once).

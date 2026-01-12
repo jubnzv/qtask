@@ -58,7 +58,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
         return { Qt::AlignVCenter | Qt::AlignLeft };
     case Qt::DecorationRole:
         if (index.column() == 0) {
-            return (m_tasks.at(index.row()).active)
+            return (m_tasks.at(index.row()).active.get())
                        ? QIcon(":/icons/active.svg")
                        : QVariant{};
         }

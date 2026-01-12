@@ -45,8 +45,8 @@ class Taskwarrior {
     }
 
     bool addTask(DetailedTaskInfo &task);
-    bool startTask(const QString &id);
-    bool stopTask(const QString &id);
+    bool startTasks(const QList<DetailedTaskInfo> &tasks);
+    bool stopTasks(const QList<DetailedTaskInfo> &tasks);
     bool editTask(DetailedTaskInfo &task);
     bool setPriority(const QString &id, DetailedTaskInfo::Priority);
     [[nodiscard]] std::optional<DetailedTaskInfo> getTask(const QString &id);
