@@ -77,6 +77,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
                    ".date-overdue { color: red; font-weight: bold; }"
                    ".date-approaching { color: orange; font-weight: bold; }"
                    ".date-normal { color: #555; }"
+                   ".date-active {color: #005fb8;font-weight: bold;}"
                    "</style>";
 
     static const auto getDateCssClass = [](const auto &dt) -> QString {
@@ -118,6 +119,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     const auto &optionalDue = task.due.get();
     const auto &optionalSched = task.sched.get();
     const auto &optionalWait = task.wait.get();
+    const StatusEmoji status(task);
 
     const bool hasDates = optionalDue.has_value() ||
                           optionalSched.has_value() || optionalWait.has_value();
@@ -128,28 +130,29 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
         if (optionalDue.has_value()) {
             const QString dateStr = optionalDue.value().toString();
             const QString cssClass = getDateCssClass(optionalDue);
-            const QString icon = relationToEmoji(optionalDue);
-            html += QString("<p class='date-due'><span class='%1'>%3 Due: "
+            html += QString("<p class='date-due'><span class='%1'>%3&nbsp;Due: "
                             "%2</span></p>")
-                        .arg(cssClass, dateStr, icon);
+                        .arg(cssClass, dateStr, status.dueEmoji());
         }
 
         // SCHED DATE
         if (optionalSched.has_value()) {
             const QString dateStr = optionalSched.value().toString();
-            const QString cssClass = getDateCssClass(optionalSched);
-            const QString icon = relationToEmoji(optionalSched);
-            html += QString("<p><span class='%1'>%3 Scheduled: %2</span></p>")
-                        .arg(cssClass, dateStr, icon);
+            const QString cssClass = status.isSpecialSched()
+                                         ? "date-active"
+                                         : getDateCssClass(optionalSched);
+            html +=
+                QString("<p><span class='%1'>%3&nbsp;Scheduled: %2</span></p>")
+                    .arg(cssClass, dateStr, status.schedEmoji());
         }
 
         // WAIT DATE
         if (optionalWait.has_value()) {
             const QString dateStr = optionalWait.value().toString();
             const QString cssClass = getDateCssClass(optionalWait);
-            const QString icon = relationToEmoji(optionalWait);
-            html += QString("<p><span class='%1'>%3 Wait until: %2</span></p>")
-                        .arg(cssClass, dateStr, icon);
+            html +=
+                QString("<p><span class='%1'>%3&nbsp;Wait until: %2</span></p>")
+                    .arg(cssClass, dateStr, status.waitEmoji());
         }
 
         html += "</div>";

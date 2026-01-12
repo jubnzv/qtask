@@ -42,8 +42,14 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     switch (role) {
     case Qt::DisplayRole: {
         switch (index.column()) {
-        case 0:
-            return task.task_id + taskToTimeEmojies(task);
+        case 0: {
+            const StatusEmoji status(task);
+            const QString emojis = status.combinedEmoji();
+            if (emojis.isEmpty()) {
+                return task.task_id;
+            }
+            return " " + task.task_id + " " + emojis + " ";
+        }
         case 1:
             return task.project.get();
         case 2:
@@ -56,13 +62,6 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     }
     case Qt::TextAlignmentRole:
         return { Qt::AlignVCenter | Qt::AlignLeft };
-    case Qt::DecorationRole:
-        if (index.column() == 0) {
-            return (m_tasks.at(index.row()).active.get())
-                       ? QIcon(":/icons/active.svg")
-                       : QVariant{};
-        }
-        break;
     case Qt::BackgroundRole:
         return QVariant(QBrush(rowColor(index.row())));
     case TaskReadRole:

@@ -128,6 +128,11 @@ bool MainWindow::initTaskWatcher()
                                 getSelectedTaskIds());
 
                 updateTaskToolbar();
+                if (m_tasks_view) {
+                    QTimer::singleShot(50, m_tasks_view, [this]() {
+                        m_tasks_view->resizeColumnToContents(0);
+                    });
+                }
             }
         });
     return true;
@@ -169,7 +174,8 @@ void MainWindow::initTasksTable()
     m_tasks_view->verticalHeader()->setVisible(false);
     m_tasks_view->horizontalHeader()->setStretchLastSection(true);
     m_tasks_view->setSelectionBehavior(QAbstractItemView::SelectRows);
-
+    m_tasks_view->horizontalHeader()->setSectionResizeMode(
+        0, QHeaderView::ResizeToContents);
     auto *model = new TasksModel(this);
     m_tasks_view->setModel(model);
 

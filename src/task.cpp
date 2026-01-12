@@ -525,7 +525,7 @@ FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
 
 bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 {
-    constexpr qsizetype kExpectedColumnsCount = 6;
+    constexpr qsizetype kExpectedColumnsCount = 7;
 
     if (m_filter.isNotFound()) {
         tasks.clear();
@@ -534,9 +534,9 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 
     auto cmd = QStringList{
         // clang-format off
-                         "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,description",
+                         "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,wait,description",
         // clang-format on
-        "rc.report.minimal.labels=',|,|,|,|,|,|'",
+        "rc.report.minimal.labels=',|,|,|,|,|,|,|'",
         "rc.report.minimal.sort=urgency-",
         "rc.print.empty.columns=yes",
         "rc.dateformat=Y-M-DTH:N:S",
@@ -624,7 +624,13 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
         if (due.isValid()) {
             task.due = due;
         }
-        task.description = line.right(line.size() - positions[5]).simplified();
+        auto wait = QDateTime::fromString(
+            line.mid(positions[5], positions[6] - positions[5]).simplified(),
+            Qt::ISODate);
+        if (wait.isValid()) {
+            task.wait = wait;
+        }
+        task.description = line.right(line.size() - positions[6]).simplified();
         tasks.emplace_back(std::move(task));
     }
 
