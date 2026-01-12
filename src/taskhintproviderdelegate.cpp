@@ -126,15 +126,6 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     if (hasDates) {
         html += "<div class='info-block'><h3>Dates</h3>";
 
-        // DUE DATE
-        if (optionalDue.has_value()) {
-            const QString dateStr = optionalDue.value().toString();
-            const QString cssClass = getDateCssClass(optionalDue);
-            html += QString("<p class='date-due'><span class='%1'>%3&nbsp;Due: "
-                            "%2</span></p>")
-                        .arg(cssClass, dateStr, status.dueEmoji());
-        }
-
         // SCHED DATE
         if (optionalSched.has_value()) {
             const QString dateStr = optionalSched.value().toString();
@@ -144,6 +135,15 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
             html +=
                 QString("<p><span class='%1'>%3&nbsp;Scheduled: %2</span></p>")
                     .arg(cssClass, dateStr, status.schedEmoji());
+        }
+
+        // DUE DATE
+        if (optionalDue.has_value()) {
+            const QString dateStr = optionalDue.value().toString();
+            const QString cssClass = getDateCssClass(optionalDue);
+            html += QString("<p class='date-due'><span class='%1'>%3&nbsp;Due: "
+                            "%2</span></p>")
+                        .arg(cssClass, dateStr, status.dueEmoji());
         }
 
         // WAIT DATE
