@@ -1,4 +1,5 @@
 #include "tasksmodel.hpp"
+#include "task_emojies.hpp"
 
 #include <utility>
 
@@ -42,7 +43,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     case Qt::DisplayRole: {
         switch (index.column()) {
         case 0:
-            return task.task_id;
+            return taskToTimeEmojies(task) + task.task_id;
         case 1:
             return task.project.get();
         case 2:

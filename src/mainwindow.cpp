@@ -685,13 +685,24 @@ void MainWindow::onEnterTaskCommand()
 
 void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
 {
-    const auto *model = m_tasks_view->selectionModel();
-    const auto id_str = model->selectedRows()[0].data().toString();
+    const auto selected = m_tasks_view->selectionModel()->selectedRows();
+    if (selected.isEmpty())
+        return;
+    const QVariant taskVar = selected[0].data(TasksModel::TaskReadRole);
+    if (!taskVar.canConvert<DetailedTaskInfo>()) {
+        refreshTasksListTableIfNeeded();
+        return;
+    }
+
+    const auto taskInModel = taskVar.value<DetailedTaskInfo>();
+    const auto &id_str = taskInModel.task_id;
+
     if (id_str.isEmpty()) {
         refreshTasksListTableIfNeeded();
         return;
     }
 
+    // Do we really want to read full task again?
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
         refreshTasksListTableIfNeeded();

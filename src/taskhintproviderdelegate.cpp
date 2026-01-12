@@ -2,6 +2,8 @@
 #include "async_task_loader.hpp"
 #include "qtutil.hpp"
 #include "task.hpp"
+#include "task_date_time.hpp"
+#include "task_emojies.hpp"
 #include "tasksmodel.hpp"
 
 #include <QAbstractItemView>
@@ -20,6 +22,7 @@
 #include <QtTypes>
 
 #include <mutex>
+#include <stdexcept>
 
 namespace
 {
@@ -125,29 +128,28 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
         if (optionalDue.has_value()) {
             const QString dateStr = optionalDue.value().toString();
             const QString cssClass = getDateCssClass(optionalDue);
-
-            html +=
-                QString(
-                    "<p class='date-due'><span class='%1'>Due: %2</span></p>")
-                    .arg(cssClass, dateStr);
+            const QString icon = relationToEmoji(optionalDue);
+            html += QString("<p class='date-due'><span class='%1'>%3 Due: "
+                            "%2</span></p>")
+                        .arg(cssClass, dateStr, icon);
         }
 
         // SCHED DATE
         if (optionalSched.has_value()) {
             const QString dateStr = optionalSched.value().toString();
             const QString cssClass = getDateCssClass(optionalSched);
-
-            html += QString("<p><span class='%1'>Scheduled: %2</span></p>")
-                        .arg(cssClass, dateStr);
+            const QString icon = relationToEmoji(optionalSched);
+            html += QString("<p><span class='%1'>%3 Scheduled: %2</span></p>")
+                        .arg(cssClass, dateStr, icon);
         }
 
         // WAIT DATE
         if (optionalWait.has_value()) {
             const QString dateStr = optionalWait.value().toString();
             const QString cssClass = getDateCssClass(optionalWait);
-
-            html += QString("<p><span class='%1'>Wait until: %2</span></p>")
-                        .arg(cssClass, dateStr);
+            const QString icon = relationToEmoji(optionalWait);
+            html += QString("<p><span class='%1'>%3 Wait until: %2</span></p>")
+                        .arg(cssClass, dateStr, icon);
         }
 
         html += "</div>";
