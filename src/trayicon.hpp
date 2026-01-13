@@ -1,11 +1,10 @@
 #ifndef SYSTRAYICON_HPP
 #define SYSTRAYICON_HPP
 
-
-#include <QSystemTrayIcon>
-#include <QMenu>
 #include <QAction>
+#include <QMenu>
 #include <QObject>
+#include <QSystemTrayIcon>
 
 #include <memory>
 
@@ -16,15 +15,19 @@ class SystemTrayIcon : public QSystemTrayIcon {
     Q_OBJECT
 
   public:
-    explicit SystemTrayIcon(QObject *parent);
+    explicit SystemTrayIcon(bool isMuted, QObject *parent);
 
+    bool isMuted() const;
   signals:
     void muteNotificationsRequested(bool value);
     void addTaskRequested();
     void exitRequested();
 
   private:
+    // We must use unique_ptr, because QSystemTrayIcon is NOT QWidget, while
+    // menu would expect one.
     std::unique_ptr<QMenu> tray_icon_menu_;
+    QAction *mute_notifications_action_;
 };
 
 } // namespace ui

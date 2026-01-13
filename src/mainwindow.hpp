@@ -75,7 +75,7 @@ class MainWindow : public QMainWindow {
   private slots:
     void onToggleTaskShell();
     void onSettingsMenu();
-    void onMuteNotifications();
+    void onMuteNotifications(bool isMuted);
     void onAddTask();
     void onDeleteTasks();
     void onSetTasksDone();
