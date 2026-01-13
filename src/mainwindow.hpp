@@ -60,7 +60,7 @@ class MainWindow : public QMainWindow {
 
     [[nodiscard]] std::optional<QString> getSelectedTaskId() const;
     [[nodiscard]] QStringList getSelectedTaskIds() const;
-
+    [[nodiscard]] QList<DetailedTaskInfo> getSelectedTaskInModel() const;
   public slots:
     /// Add entry to tags filter
     void pushFilterTag(const QString &);

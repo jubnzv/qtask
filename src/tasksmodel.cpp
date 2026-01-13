@@ -1,4 +1,5 @@
 #include "tasksmodel.hpp"
+#include "task_emojies.hpp"
 
 #include <utility>
 
@@ -10,6 +11,7 @@
 #include <QList>
 #include <QModelIndex>
 #include <QObject>
+#include <QTimer>
 #include <QVariant>
 #include <QtCore/Qt>
 #include <qlogging.h>
@@ -21,7 +23,15 @@
 TasksModel::TasksModel(QObject *parent)
     : QAbstractTableModel(parent)
     , m_tasks({})
+    , m_refresh_emoji_timer(new QTimer(this))
 {
+    connect(m_refresh_emoji_timer, &QTimer::timeout, this, [this]() {
+        if (rowCount() > 0) {
+            emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
+                             { Qt::DisplayRole, Qt::ToolTipRole });
+        }
+    });
+    m_refresh_emoji_timer->start(30000);
 }
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const
@@ -41,8 +51,14 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
     switch (role) {
     case Qt::DisplayRole: {
         switch (index.column()) {
-        case 0:
-            return task.task_id;
+        case 0: {
+            const StatusEmoji status(task);
+            const QString emojis = status.combinedEmoji();
+            if (emojis.isEmpty()) {
+                return task.task_id;
+            }
+            return " " + task.task_id + " " + emojis + " ";
+        }
         case 1:
             return task.project.get();
         case 2:
@@ -53,13 +69,8 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
         }
         break;
     }
-    case Qt::DecorationRole:
-        if (index.column() == 0) {
-            return (m_tasks.at(index.row()).active)
-                       ? QIcon(":/icons/active.svg")
-                       : QVariant{};
-        }
-        break;
+    case Qt::TextAlignmentRole:
+        return { Qt::AlignVCenter | Qt::AlignLeft };
     case Qt::BackgroundRole:
         return QVariant(QBrush(rowColor(index.row())));
     case TaskReadRole:
@@ -137,7 +148,7 @@ void TasksModel::setTasks(QList<DetailedTaskInfo> tasks,
 
     QModelIndexList indicesToSelect;
 
-    for (int i = 0, sz = m_tasks.count(); i < sz; ++i) {
+    for (qsizetype i = 0, sz = m_tasks.count(); i < sz; ++i) {
         // Do not read m_tasks directly, use data(), because it ensures proper
         // mapping of the index.
         const QModelIndex newIndex = createIndex(i, 0);

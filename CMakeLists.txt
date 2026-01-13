@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(qtask CXX)
 
 set(QTASK_VERSION_MAJOR 1)  # something big added / changed
-set(QTASK_VERSION_MINOR 1)  # new small feature added
-set(QTASK_VERSION_PATCH 10) # refactor/bug fix inside current minor
+set(QTASK_VERSION_MINOR 2)  # new small feature added
+set(QTASK_VERSION_PATCH 0) # refactor/bug fix inside current minor
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -58,10 +58,11 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS ${QT_COMPONENTS_WE_NEED})
 #Private package is different on distributions
 if(TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
     # Debian just adds it silently.
-    message(STATUS "Qt${QT_VERSION_MAJOR}::GuiPrivate already defined by system")
+    message(STATUS "Qt${QT_VERSION_MAJOR}::GuiPrivate is already defined by system.")
     set(Qt${QT_VERSION_MAJOR}GuiPrivate_FOUND TRUE)
 else()
     #Arch linux, we need explicit search.
+    message(STATUS "Checking for dedicated package Qt${QT_VERSION_MAJOR}::GuiPrivate.")
     find_package(Qt${QT_VERSION_MAJOR} COMPONENTS GuiPrivate QUIET)
 endif()
 
@@ -69,7 +70,7 @@ endif()
 if(NOT TARGET Qt${QT_VERSION_MAJOR}::GuiPrivate)
 
     set(QT_PRIVATE_INCLUDE_DIRS "")
-    message(STATUS "Searching for Qt ${QT_VERSION} private headers...")
+    message(STATUS "Searching for Qt ${QT_VERSION} private headers on disk...")
 
     # Option 1
     set(_check_targets Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)

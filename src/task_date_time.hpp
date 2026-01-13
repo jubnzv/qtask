@@ -2,7 +2,6 @@
 
 #include <QDateTime>
 #include <QString>
-#include <qnamespace.h>
 
 #include <chrono>
 #include <cstdint>

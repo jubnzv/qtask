@@ -13,17 +13,20 @@
 #include <QStringList>
 #include <QStringLiteral>
 #include <QVariant>
+#include <QtAssert>
 #include <qnamespace.h>
 #include <qtypes.h>
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <iterator>
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -61,7 +64,7 @@ QStringList formatTags(const QStringList &tags)
     return { makeParam("tag", tags.join(" ")) };
 }
 
-QString formatDescription(const QString& descr)
+QString formatDescription(const QString &descr)
 {
     return { makeParam("description", descr) };
 }
@@ -310,10 +313,14 @@ class StatResponseSetters {
     }
 };
 
-} // namespace
+template <typename taProperty, typename taValue>
+void LoadTaskField(taProperty &field, taValue value)
+{
+    field = std::move(value);
+    field.value.setNotModified();
+}
 
-#define TASK_PROPERTIES_LIST \
-    priority, project, tags, sched, due, wait, description
+} // namespace
 
 DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     : task_id(std::move(task_id))
@@ -324,6 +331,9 @@ DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     , due(&formatDateTime<ETaskDateTimeRole::Due>)
     , wait(&formatDateTime<ETaskDateTimeRole::Wait>)
     , priority(&formatPriority, Priority::Unset)
+    // active has dedicated start/stop commands, it should not be formatted for
+    // cmd
+    , active("", false)
 {
 }
 
@@ -354,19 +364,17 @@ DetailedTaskInfo::priorityFromString(const QString &p)
 
 void DetailedTaskInfo::updateFrom(const DetailedTaskInfo &other)
 {
-    const auto copy_if_diff = [&other](auto &my_property, const auto &other_property) {
-        if (my_property.get() != other_property.get()) {
-            my_property = other_property;
-        }
-    };
-    copy_if_diff(description, other.description);
-    copy_if_diff(project, other.project);
-    copy_if_diff(tags, other.tags);
-    copy_if_diff(sched, other.sched);
-    copy_if_diff(due, other.due);
-    copy_if_diff(wait, other.wait);
-    copy_if_diff(priority, other.priority);
-    active = other.active;
+    auto myProps = asTuple();
+    const auto otherProps = other.asTuple();
+
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        auto updater = [](auto &left, const auto &right) {
+            if (left.get() != right.get()) {
+                left = right;
+            }
+        };
+        (updater(std::get<Is>(myProps), std::get<Is>(otherProps)), ...);
+    }(std::make_index_sequence<std::tuple_size_v<decltype(myProps)>>{});
 }
 
 bool DetailedTaskInfo::execAddNewTask(const TaskWarriorExecutor &executor)
@@ -446,7 +454,7 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
         });
     // After reading those are "not modified".
     SetPropertiesNotChanged(true, TASK_PROPERTIES_LIST);
-    dataState = ReadAs::FullRead;
+    markFullRead();
     return true;
 }
 
@@ -456,12 +464,7 @@ bool DetailedTaskInfo::isFullRead() const
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)
-    : BatchTasksManager([&tasks] {
-        QStringList ids;
-        std::transform(tasks.begin(), tasks.end(), std::back_inserter(ids),
-                       [](const auto &task) { return task.task_id; });
-        return ids;
-    }())
+    : BatchTasksManager(tasksListToIds(tasks))
 {
 }
 
@@ -529,7 +532,7 @@ FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
 
 bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 {
-    constexpr qsizetype kExpectedColumnsCount = 6;
+    constexpr qsizetype kExpectedColumnsCount = 7;
 
     if (m_filter.isNotFound()) {
         tasks.clear();
@@ -538,9 +541,9 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 
     auto cmd = QStringList{
         // clang-format off
-                         "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,description",
+                         "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,wait,description",
         // clang-format on
-        "rc.report.minimal.labels=',|,|,|,|,|,|'",
+        "rc.report.minimal.labels=',|,|,|,|,|,|,|'",
         "rc.report.minimal.sort=urgency-",
         "rc.print.empty.columns=yes",
         "rc.dateformat=Y-M-DTH:N:S",
@@ -611,24 +614,40 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 
         const QString start_mark =
             line.mid(positions[0], positions[1] - positions[0]).simplified();
-        task.active = start_mark.contains('*');
-        task.project =
-            line.mid(positions[1], positions[2] - positions[1]).simplified();
-        task.priority = DetailedTaskInfo::priorityFromString(
-            line.mid(positions[2], positions[3] - positions[2]).simplified());
+        LoadTaskField(task.active, start_mark.contains('*'));
+        LoadTaskField(
+            task.project,
+            line.mid(positions[1], positions[2] - positions[1]).simplified());
+        LoadTaskField(task.priority,
+                      DetailedTaskInfo::priorityFromString(
+                          line.mid(positions[2], positions[3] - positions[2])
+                              .simplified()));
         auto sched = QDateTime::fromString(
             line.mid(positions[3], positions[4] - positions[3]).simplified(),
             Qt::ISODate);
         if (sched.isValid()) {
-            task.sched = sched;
+            LoadTaskField(task.sched, sched);
         }
         auto due = QDateTime::fromString(
             line.mid(positions[4], positions[5] - positions[4]).simplified(),
             Qt::ISODate);
         if (due.isValid()) {
-            task.due = due;
+            LoadTaskField(task.due, due);
         }
-        task.description = line.right(line.size() - positions[5]).simplified();
+        auto wait = QDateTime::fromString(
+            line.mid(positions[5], positions[6] - positions[5]).simplified(),
+            Qt::ISODate);
+        if (wait.isValid()) {
+            LoadTaskField(task.wait, wait);
+        }
+        LoadTaskField(task.description,
+                      line.right(line.size() - positions[6]).simplified());
+
+        if constexpr (kExpectedColumnsCount ==
+                      DetailedTaskInfo::propertiesCount()) {
+            task.markFullRead();
+        }
+
         tasks.emplace_back(std::move(task));
     }
 

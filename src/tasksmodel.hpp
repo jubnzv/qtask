@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QList>
 #include <QModelIndex>
+#include <QTimer>
 #include <QVariant>
 #include <QtCore/Qt>
 
@@ -49,6 +50,7 @@ class TasksModel : public QAbstractTableModel {
 
   private:
     QList<DetailedTaskInfo> m_tasks;
+    QTimer *m_refresh_emoji_timer;
 };
 
 #endif // TASKSMODEL_HPP
