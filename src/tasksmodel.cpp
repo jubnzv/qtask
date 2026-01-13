@@ -11,6 +11,7 @@
 #include <QList>
 #include <QModelIndex>
 #include <QObject>
+#include <QTimer>
 #include <QVariant>
 #include <QtCore/Qt>
 #include <qlogging.h>
@@ -22,7 +23,15 @@
 TasksModel::TasksModel(QObject *parent)
     : QAbstractTableModel(parent)
     , m_tasks({})
+    , m_refresh_emoji_timer(new QTimer(this))
 {
+    connect(m_refresh_emoji_timer, &QTimer::timeout, this, [this]() {
+        if (rowCount() > 0) {
+            emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
+                             { Qt::DisplayRole, Qt::ToolTipRole });
+        }
+    });
+    m_refresh_emoji_timer->start(30000);
 }
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const
@@ -139,7 +148,7 @@ void TasksModel::setTasks(QList<DetailedTaskInfo> tasks,
 
     QModelIndexList indicesToSelect;
 
-    for (int i = 0, sz = m_tasks.count(); i < sz; ++i) {
+    for (qsizetype i = 0, sz = m_tasks.count(); i < sz; ++i) {
         // Do not read m_tasks directly, use data(), because it ensures proper
         // mapping of the index.
         const QModelIndex newIndex = createIndex(i, 0);
