@@ -313,6 +313,13 @@ class StatResponseSetters {
     }
 };
 
+template <typename taProperty, typename taValue>
+void LoadTaskField(taProperty &field, taValue value)
+{
+    field = std::move(value);
+    field.value.setNotModified();
+}
+
 } // namespace
 
 DetailedTaskInfo::DetailedTaskInfo(QString task_id)
@@ -447,7 +454,7 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
         });
     // After reading those are "not modified".
     SetPropertiesNotChanged(true, TASK_PROPERTIES_LIST);
-    dataState = ReadAs::FullRead;
+    markFullRead();
     return true;
 }
 
@@ -607,30 +614,40 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
 
         const QString start_mark =
             line.mid(positions[0], positions[1] - positions[0]).simplified();
-        task.active = start_mark.contains('*');
-        task.project =
-            line.mid(positions[1], positions[2] - positions[1]).simplified();
-        task.priority = DetailedTaskInfo::priorityFromString(
-            line.mid(positions[2], positions[3] - positions[2]).simplified());
+        LoadTaskField(task.active, start_mark.contains('*'));
+        LoadTaskField(
+            task.project,
+            line.mid(positions[1], positions[2] - positions[1]).simplified());
+        LoadTaskField(task.priority,
+                      DetailedTaskInfo::priorityFromString(
+                          line.mid(positions[2], positions[3] - positions[2])
+                              .simplified()));
         auto sched = QDateTime::fromString(
             line.mid(positions[3], positions[4] - positions[3]).simplified(),
             Qt::ISODate);
         if (sched.isValid()) {
-            task.sched = sched;
+            LoadTaskField(task.sched, sched);
         }
         auto due = QDateTime::fromString(
             line.mid(positions[4], positions[5] - positions[4]).simplified(),
             Qt::ISODate);
         if (due.isValid()) {
-            task.due = due;
+            LoadTaskField(task.due, due);
         }
         auto wait = QDateTime::fromString(
             line.mid(positions[5], positions[6] - positions[5]).simplified(),
             Qt::ISODate);
         if (wait.isValid()) {
-            task.wait = wait;
+            LoadTaskField(task.wait, wait);
         }
-        task.description = line.right(line.size() - positions[6]).simplified();
+        LoadTaskField(task.description,
+                      line.right(line.size() - positions[6]).simplified());
+
+        if constexpr (kExpectedColumnsCount ==
+                      DetailedTaskInfo::propertiesCount()) {
+            task.markFullRead();
+        }
+
         tasks.emplace_back(std::move(task));
     }
 

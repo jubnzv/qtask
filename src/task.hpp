@@ -9,6 +9,7 @@
 #include <qvariant.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <optional>
@@ -72,6 +73,14 @@ class DetailedTaskInfo {
     /// @returns true if this object has all possible data read from `task`.
     [[nodiscard]]
     bool isFullRead() const;
+
+    void markFullRead() { dataState = ReadAs::FullRead; }
+
+    [[nodiscard]]
+    static constexpr std::size_t propertiesCount()
+    {
+        return std::tuple_size_v<decltype(std::tie(TASK_PROPERTIES_LIST))>;
+    }
 
   public:
     /// @brief Constructs object with defaults, except given @p task_id set.
