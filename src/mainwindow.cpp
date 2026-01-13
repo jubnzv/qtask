@@ -122,7 +122,7 @@ bool MainWindow::initTaskWatcher()
     connect(
         m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this, [this]() {
             if (m_task_provider) {
-                auto tasks = m_task_provider->getTasks();
+                auto tasks = m_task_provider->getUrgencySortedTasks();
                 auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
                 model->setTasks(tasks.value_or(QList<DetailedTaskInfo>{}),
                                 getSelectedTaskIds());
@@ -267,7 +267,7 @@ void MainWindow::initToolsMenu()
     tools_menu->addAction(agenda_action);
     agenda_action->setShortcut(kAgendaViewShortcut);
     connect(agenda_action, &QAction::triggered, this, [&]() {
-        if (auto tasks = m_task_provider->getTasks()) {
+        if (auto tasks = m_task_provider->getUrgencySortedTasks()) {
             auto *dlg = new AgendaDialog(std::move(*tasks), this);
             dlg->open();
             QObject::connect(dlg, &QDialog::finished, dlg,

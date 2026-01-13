@@ -197,8 +197,10 @@ class FilteredTasksListReader {
   public:
     explicit FilteredTasksListReader(AllAtOnceKeywordsFinder filter);
 
+    /// @brief Queries taskwarrior for list of the tasks. Result is sorted by
+    /// internal urgency.
     [[nodiscard]]
-    bool readTaskList(const TaskWarriorExecutor &executor);
+    bool readUrgencySortedTaskList(const TaskWarriorExecutor &executor);
 
   private:
     AllAtOnceKeywordsFinder m_filter;
