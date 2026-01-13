@@ -60,6 +60,12 @@ QString getDescriptionHtml(const QString &descr)
     return extractQtHtmlFragment(frag.toHtml());
 }
 
+QString toString(const QDateTime &dt)
+{
+    // Avoiding seconds in output.
+    return QLocale::system().toString(dt, QLocale::ShortFormat);
+}
+
 QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 {
     if (!task.isFullRead()) {
@@ -142,7 +148,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
         // SCHED DATE
         if (optionalSched.has_value()) {
-            const QString dateStr = optionalSched.value().toString();
+            const QString dateStr = toString(optionalSched.value());
             const QString cssClass = status.isSpecialSched()
                                          ? "date-active"
                                          : getDateCssClass(optionalSched);
@@ -153,7 +159,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
         // DUE DATE
         if (optionalDue.has_value()) {
-            const QString dateStr = optionalDue.value().toString();
+            const QString dateStr = toString(optionalDue.value());
             const QString cssClass = getDateCssClass(optionalDue);
             html += QString("<p class='date-due'><span class='%1'>%3&nbsp;Due: "
                             "%2</span></p>")
@@ -162,7 +168,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
 
         // WAIT DATE
         if (optionalWait.has_value()) {
-            const QString dateStr = optionalWait.value().toString();
+            const QString dateStr = toString(optionalWait.value());
             const QString cssClass = getDateCssClass(optionalWait);
             html +=
                 QString("<p><span class='%1'>%3&nbsp;Wait until: %2</span></p>")

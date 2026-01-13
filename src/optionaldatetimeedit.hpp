@@ -23,9 +23,12 @@ class OptionalDateTimeEdit : public QWidget {
     template <ETaskDateTimeRole taRole>
     TaskDateTime<taRole> getDateTime() const
     {
-        return (m_enabled->isChecked())
-                   ? TaskDateTime<taRole>(m_datetime_edit->dateTime())
-                   : TaskDateTime<taRole>();
+        if (!m_enabled->isChecked()) {
+            return TaskDateTime<taRole>();
+        }
+        QDateTime dt = m_datetime_edit->dateTime();
+        dt.setTime(QTime(dt.time().hour(), dt.time().minute(), 0, 0));
+        return TaskDateTime<taRole>(dt);
     }
     void setDateTime(const QDateTime &dt);
 
