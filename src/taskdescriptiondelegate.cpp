@@ -56,7 +56,7 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
                                     const QModelIndex &index) const
 {
     auto *model = qobject_cast<const TasksModel *>(index.model());
-    QColor rowColor = model->rowColor(index.row());
+    const QColor rowColor = model->rowColor(index.row());
 
     const double fixedOffset = 20.0;
 
@@ -65,10 +65,12 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
         const double length = option.rect.width();
         const double stopPoint =
             (length > 0) ? std::min(fixedOffset / length, 0.4) : 0.0;
+
         QColor highlight = option.palette.highlight().color();
         if (qApp->palette().color(QPalette::Base).value() < 128) {
             highlight = highlight.lighter(130);
         }
+
         QLinearGradient gradient(option.rect.topLeft(), option.rect.topRight());
         gradient.setColorAt(0.0, highlight);
         gradient.setColorAt(stopPoint, rowColor);
