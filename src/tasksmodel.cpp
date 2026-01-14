@@ -1,11 +1,11 @@
 #include "tasksmodel.hpp"
-#include "task_emojies.hpp"
 
 #include <array>
 #include <chrono>
 #include <utility>
 
 #include <QAbstractTableModel>
+#include <QApplication>
 #include <QBrush>
 #include <QColor>
 #include <QDebug>
@@ -31,7 +31,7 @@ using namespace std::chrono_literals;
 constexpr auto kRefresheEmojiPeriod = 30s; // NOLINT
 
 const std::array<QString, 3> kColumnsHeaders = {
-    QObject::tr("Id / Status"),
+    QObject::tr("Status / Id"),
     QObject::tr("Project"),
     QObject::tr("Description"),
 };
@@ -100,8 +100,6 @@ QVariant TasksModel::data(const QModelIndex &index, const int role) const
     const auto &task = m_tasks.at(index.row());
 
     switch (role) {
-    case TaskEmoji:
-        return StatusEmoji(task).alignedCombinedEmoji();
     case Qt::DisplayRole: {
         switch (index.column()) {
         case 0: {

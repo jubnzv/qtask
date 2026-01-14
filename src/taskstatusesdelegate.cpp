@@ -1,4 +1,5 @@
 #include "taskstatusesdelegate.hpp"
+#include "task_emojies.hpp"
 #include "taskhintproviderdelegate.hpp"
 #include "tasksmodel.hpp"
 
@@ -17,11 +18,17 @@ void TaskStatusesDelegate::paint(QPainter *painter,
                                  const QStyleOptionViewItem &option,
                                  const QModelIndex &index) const
 {
+    const auto task_var = index.data(TasksModel::TaskReadRole);
+    if (!task_var.canConvert<DetailedTaskInfo>()) {
+        return;
+    }
+    const auto task = task_var.value<DetailedTaskInfo>();
+
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
 
     const QString idText = index.data(Qt::DisplayRole).toString();
-    const QString prefix = index.data(TasksModel::TaskEmoji).toString();
+    const QString prefix = StatusEmoji(task).alignedCombinedEmoji();
     const QFontMetrics fm(opt.font);
     const int emojiWidth = fm.horizontalAdvance(prefix);
 

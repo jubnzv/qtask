@@ -1,6 +1,9 @@
 #pragma once
 
+#include <QModelIndex>
 #include <QObject>
+#include <QPainter>
+#include <QStyleOptionViewItem>
 #include <QWidget>
 
 #include "taskhintproviderdelegate.hpp"
