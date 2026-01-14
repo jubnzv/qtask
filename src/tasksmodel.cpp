@@ -1,6 +1,7 @@
 #include "tasksmodel.hpp"
 #include "task_emojies.hpp"
 
+#include <chrono>
 #include <utility>
 
 #include <QAbstractTableModel>
@@ -20,6 +21,12 @@
 
 #include "task.hpp"
 
+namespace
+{
+using namespace std::chrono_literals;
+constexpr auto kRefresheEmojiPeriod = 30s; // NOLINT
+} // namespace
+
 TasksModel::TasksModel(QObject *parent)
     : QAbstractTableModel(parent)
     , m_tasks({})
@@ -31,7 +38,10 @@ TasksModel::TasksModel(QObject *parent)
                              { Qt::DisplayRole, Qt::ToolTipRole });
         }
     });
-    m_refresh_emoji_timer->start(30000);
+    m_refresh_emoji_timer->start(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            kRefresheEmojiPeriod)
+            .count());
 }
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const
