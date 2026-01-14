@@ -1,6 +1,7 @@
 #include "tasksmodel.hpp"
 #include "task_emojies.hpp"
 
+#include <array>
 #include <chrono>
 #include <utility>
 
@@ -12,12 +13,14 @@
 #include <QList>
 #include <QModelIndex>
 #include <QObject>
+#include <QStringList>
 #include <QTimer>
 #include <QVariant>
 #include <QtCore/Qt>
 #include <qlogging.h>
 #include <qnamespace.h>
 #include <qtmetamacros.h>
+#include <qtypes.h>
 
 #include "task.hpp"
 
@@ -25,6 +28,27 @@ namespace
 {
 using namespace std::chrono_literals;
 constexpr auto kRefresheEmojiPeriod = 30s; // NOLINT
+
+const std::array<QString, 3> kColumnsHeaders = {
+    QObject::tr("Id / Status"),
+    QObject::tr("Project"),
+    QObject::tr("Description"),
+};
+
+QColor getColorForPriority(DetailedTaskInfo::Priority priority)
+{
+    switch (priority) {
+    case DetailedTaskInfo::Priority::L:
+        return { 0xffe8f5e9 };
+    case DetailedTaskInfo::Priority::M:
+        return { 0xfffff9c4 };
+    case DetailedTaskInfo::Priority::H:
+        return { 0xffffcdd2 };
+    case DetailedTaskInfo::Priority::Unset:
+        break;
+    }
+    return { 0xffffffff };
+}
 } // namespace
 
 TasksModel::TasksModel(QObject *parent)
@@ -49,9 +73,12 @@ int TasksModel::rowCount(const QModelIndex & /*parent*/) const
     return static_cast<int>(m_tasks.size());
 }
 
-int TasksModel::columnCount(const QModelIndex & /*parent*/) const { return 3; }
+int TasksModel::columnCount(const QModelIndex & /*parent*/) const
+{
+    return kColumnsHeaders.size();
+}
 
-QVariant TasksModel::data(const QModelIndex &index, int role) const
+QVariant TasksModel::data(const QModelIndex &index, const int role) const
 {
     if (!index.isValid()) {
         return {};
@@ -93,7 +120,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const
 }
 
 bool TasksModel::setData(const QModelIndex &idx, const QVariant &value,
-                         int role)
+                         const int role)
 {
     if (!idx.isValid()) {
         return false;
@@ -124,24 +151,19 @@ bool TasksModel::setData(const QModelIndex &idx, const QVariant &value,
     return false;
 }
 
-QVariant TasksModel::headerData(int section, Qt::Orientation orientation,
-                                int role) const
+QVariant TasksModel::headerData(const int section,
+                                const Qt::Orientation orientation,
+                                const int role) const
 {
     switch (role) {
     case Qt::DisplayRole:
         if (orientation == Qt::Horizontal) {
-            switch (section) {
-            case 0:
-                return tr("id");
-            case 1:
-                return tr("Project");
-            case 2:
-                return tr("Description");
-            default:
-                qDebug() << "Unexpected case in TasksModel::headerData";
-                break;
+            if (section < kColumnsHeaders.size()) {
+                return kColumnsHeaders.at(section);
             }
+            qDebug() << "Unexpected case in TasksModel::headerData";
         }
+        break;
     default:
         break;
     }
@@ -161,7 +183,7 @@ void TasksModel::setTasks(QList<DetailedTaskInfo> tasks,
     for (qsizetype i = 0, sz = m_tasks.count(); i < sz; ++i) {
         // Do not read m_tasks directly, use data(), because it ensures proper
         // mapping of the index.
-        const QModelIndex newIndex = createIndex(i, 0);
+        const auto newIndex = createIndex(static_cast<int>(i), 0);
         const auto task = data(newIndex, TaskReadRole);
 
         if (!task.isValid() || !task.canConvert<DetailedTaskInfo>()) {
@@ -187,32 +209,10 @@ QVariant TasksModel::getTask(const QModelIndex &index) const
     return {};
 }
 
-QColor TasksModel::rowColor(int row) const
+QColor TasksModel::rowColor(const int row) const
 {
-    QColor c;
-
     if (row < 0 || row >= m_tasks.size()) {
-        c.setRgb(0xffffff);
-        return c;
+        return getColorForPriority(DetailedTaskInfo::Priority::Unset);
     }
-
-    switch (m_tasks.at(row).priority.get()) {
-    case DetailedTaskInfo::Priority::Unset:
-        c.setRgb(0xffffff);
-        break;
-    case DetailedTaskInfo::Priority::L:
-        c.setRgb(0xf7ffe4);
-        break;
-    case DetailedTaskInfo::Priority::M:
-        c.setRgb(0xfffae4);
-        break;
-    case DetailedTaskInfo::Priority::H:
-        c.setRgb(0xd5acbe);
-        break;
-    default:
-        c.setRgb(0xffffff);
-        break;
-    }
-
-    return c;
+    return getColorForPriority(m_tasks.at(row).priority.get());
 }
