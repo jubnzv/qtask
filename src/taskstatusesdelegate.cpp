@@ -51,7 +51,6 @@ void TaskStatusesDelegate::paint(QPainter *painter,
         const auto highlightColor = getHighlightColor(option);
         const int transitionWidth = 15;
         if (selRect.width() > transitionWidth) {
-            // Рисуем переход
             QLinearGradient grad(selRect.left(), 0,
                                  selRect.left() + transitionWidth, 0);
             grad.setColorAt(0.0, taskColor);
@@ -59,8 +58,6 @@ void TaskStatusesDelegate::paint(QPainter *painter,
             painter->fillRect(QRect(selRect.left(), selRect.top(),
                                     transitionWidth, selRect.height()),
                               grad);
-
-            // Оставшуюся часть под текстом заливаем плотным цветом
             const auto solidRect = selRect.adjusted(transitionWidth, 0, 0, 0);
             painter->fillRect(solidRect, highlightColor);
         } else {
