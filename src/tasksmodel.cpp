@@ -105,8 +105,7 @@ QVariant TasksModel::data(const QModelIndex &index, const int role) const
     case Qt::DisplayRole: {
         switch (index.column()) {
         case 0: {
-            return StatusEmoji(task).alignedCombinedEmoji() + " " +
-                   task.task_id;
+            return task.task_id;
         }
         case 1:
             return task.project.get();

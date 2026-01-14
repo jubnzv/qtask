@@ -20,7 +20,7 @@ void TaskStatusesDelegate::paint(QPainter *painter,
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
 
-    const QString fullText = index.data(Qt::DisplayRole).toString();
+    const QString idText = index.data(Qt::DisplayRole).toString();
     const QString prefix = index.data(TasksModel::TaskEmoji).toString();
     const QFontMetrics fm(opt.font);
     const int emojiWidth = fm.horizontalAdvance(prefix);
@@ -60,7 +60,7 @@ void TaskStatusesDelegate::paint(QPainter *painter,
 
     // Drawing text
     painter->setFont(opt.font);
-    painter->drawText(option.rect, opt.displayAlignment, fullText);
+    painter->drawText(option.rect, opt.displayAlignment, prefix + " " + idText);
 
     painter->restore();
 }
