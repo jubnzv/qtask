@@ -100,6 +100,8 @@ QVariant TasksModel::data(const QModelIndex &index, const int role) const
     const auto &task = m_tasks.at(index.row());
 
     switch (role) {
+    case TaskEmoji:
+        return StatusEmoji(task).alignedCombinedEmoji();
     case Qt::DisplayRole: {
         switch (index.column()) {
         case 0: {

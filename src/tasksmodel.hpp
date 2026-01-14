@@ -16,6 +16,7 @@ class TasksModel : public QAbstractTableModel {
   public:
     static constexpr auto TaskUpdateRole = Qt::UserRole + 1;
     static constexpr auto TaskReadRole = Qt::UserRole + 2;
+    static constexpr auto TaskEmoji = Qt::UserRole + 3;
 
     explicit TasksModel(QObject *parent = nullptr);
 

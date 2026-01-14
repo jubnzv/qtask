@@ -41,6 +41,7 @@
 #include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
 #include "tasksmodel.hpp"
+#include "taskstatusesdelegate.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
@@ -180,9 +181,12 @@ void MainWindow::initTasksTable()
     m_tasks_view->setModel(model);
 
     // All show hint, description column has additional logic too.
+    // Status column has no selection marker over emoji.
     m_tasks_view->setItemDelegate(new TaskHintProviderDelegate(m_tasks_view));
     m_tasks_view->setItemDelegateForColumn(
         2 /* description */, new TaskDescriptionDelegate(m_tasks_view));
+    m_tasks_view->setItemDelegateForColumn(
+        0 /* status/id */, new TaskStatusesDelegate(m_tasks_view));
 
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,
