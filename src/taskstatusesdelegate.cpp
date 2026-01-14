@@ -1,13 +1,17 @@
 #include "taskstatusesdelegate.hpp"
+#include "task.hpp"
 #include "task_emojies.hpp"
 #include "taskhintproviderdelegate.hpp"
 #include "tasksmodel.hpp"
 
+#include <QLinearGradient>
 #include <QModelIndex>
 #include <QObject>
 #include <QPainter>
+#include <QStyle>
 #include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
+#include <qnamespace.h>
 
 TaskStatusesDelegate::TaskStatusesDelegate(QObject *parent)
     : TaskHintProviderDelegate(parent)
@@ -27,15 +31,15 @@ void TaskStatusesDelegate::paint(QPainter *painter,
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
 
-    const QString idText = index.data(Qt::DisplayRole).toString();
-    const QString prefix = StatusEmoji(task).alignedCombinedEmoji();
+    const auto idText = index.data(Qt::DisplayRole).toString();
+    const auto prefix = StatusEmoji(task).alignedCombinedEmoji();
     const QFontMetrics fm(opt.font);
     const int emojiWidth = fm.horizontalAdvance(prefix);
 
     painter->save();
 
-    const QVariant bg = index.data(Qt::BackgroundRole);
-    const QColor taskColor =
+    const auto bg = index.data(Qt::BackgroundRole);
+    const auto taskColor =
         bg.isValid() ? bg.value<QColor>() : opt.palette.base().color();
     painter->fillRect(option.rect, taskColor);
 
@@ -57,7 +61,7 @@ void TaskStatusesDelegate::paint(QPainter *painter,
                               grad);
 
             // Оставшуюся часть под текстом заливаем плотным цветом
-            QRect solidRect = selRect.adjusted(transitionWidth, 0, 0, 0);
+            const auto solidRect = selRect.adjusted(transitionWidth, 0, 0, 0);
             painter->fillRect(solidRect, highlightColor);
         } else {
             painter->fillRect(selRect, highlightColor);

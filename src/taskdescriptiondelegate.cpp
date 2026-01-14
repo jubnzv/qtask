@@ -2,6 +2,7 @@
 
 #include <QAbstractTextDocumentLayout>
 #include <QApplication>
+#include <QLinearGradient>
 #include <QObject>
 #include <QSize>
 #include <QString>
