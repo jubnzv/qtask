@@ -13,6 +13,7 @@
 #include <QList>
 #include <QModelIndex>
 #include <QObject>
+#include <QPalette>
 #include <QStringList>
 #include <QTimer>
 #include <QVariant>
@@ -37,17 +38,30 @@ const std::array<QString, 3> kColumnsHeaders = {
 
 QColor getColorForPriority(DetailedTaskInfo::Priority priority)
 {
+    QColor base = qApp->palette().color(QPalette::Base);
+    QColor tint;
+
     switch (priority) {
     case DetailedTaskInfo::Priority::L:
-        return { 0xffe8f5e9 };
-    case DetailedTaskInfo::Priority::M:
-        return { 0xfffff9c4 };
-    case DetailedTaskInfo::Priority::H:
-        return { 0xffffcdd2 };
-    case DetailedTaskInfo::Priority::Unset:
+        tint = Qt::green;
         break;
+    case DetailedTaskInfo::Priority::M:
+        tint = Qt::yellow;
+        break;
+    case DetailedTaskInfo::Priority::H:
+        tint = Qt::red;
+        break;
+    default:
+        return base;
     }
-    return { 0xffffffff };
+
+    const bool isDark = base.value() < 128;
+    const qreal factor = isDark ? 0.15 : 0.25;
+
+    return QColor::fromRgbF(
+        base.redF() * (1.0 - factor) + tint.redF() * factor,
+        base.greenF() * (1.0 - factor) + tint.greenF() * factor,
+        base.blueF() * (1.0 - factor) + tint.blueF() * factor);
 }
 } // namespace
 

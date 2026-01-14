@@ -65,9 +65,12 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
         const double length = option.rect.width();
         const double stopPoint =
             (length > 0) ? std::min(fixedOffset / length, 0.4) : 0.0;
-
+        QColor highlight = option.palette.highlight().color();
+        if (qApp->palette().color(QPalette::Base).value() < 128) {
+            highlight = highlight.lighter(130);
+        }
         QLinearGradient gradient(option.rect.topLeft(), option.rect.topRight());
-        gradient.setColorAt(0.0, option.palette.highlight().color());
+        gradient.setColorAt(0.0, highlight);
         gradient.setColorAt(stopPoint, rowColor);
         gradient.setColorAt(1.0, rowColor);
         painter->fillRect(option.rect, gradient);
