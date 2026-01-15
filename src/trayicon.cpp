@@ -1,5 +1,8 @@
 #include "trayicon.hpp"
 
+#include "block_guard.hpp"
+#include "configmanager.hpp"
+
 #include <stdexcept>
 
 #include <QAction>
@@ -12,14 +15,15 @@
 
 using namespace ui;
 
-SystemTrayIcon::SystemTrayIcon(const bool isMuted, QObject *parent)
+SystemTrayIcon::SystemTrayIcon(QObject *parent)
     : QSystemTrayIcon(parent)
     , tray_icon_menu_(new QMenu(nullptr))
     , mute_notifications_action_(
           new QAction(tr("&Mute Notifications"), tray_icon_menu_.get()))
 {
     mute_notifications_action_->setCheckable(true);
-    mute_notifications_action_->setChecked(isMuted);
+    mute_notifications_action_->setChecked(
+        ConfigManager::config().get(ConfigManager::MuteNotifications));
 
     // tray_icon_menu_ takes ownership.
     const auto add_task_action_ =
@@ -32,7 +36,11 @@ SystemTrayIcon::SystemTrayIcon(const bool isMuted, QObject *parent)
     tray_icon_menu_->addAction(exit_action_);
 
     connect(mute_notifications_action_, &QAction::toggled, this,
-            &SystemTrayIcon::muteNotificationsRequested);
+            [this](bool checked) {
+                ConfigManager::config().set(ConfigManager::MuteNotifications,
+                                            checked);
+                emit muteNotificationsRequested(checked);
+            });
     connect(add_task_action_, &QAction::triggered, this,
             &SystemTrayIcon::addTaskRequested);
     connect(exit_action_, &QAction::triggered, this,
@@ -41,15 +49,10 @@ SystemTrayIcon::SystemTrayIcon(const bool isMuted, QObject *parent)
     setContextMenu(tray_icon_menu_.get());
     setIcon(QPixmap(":/icons/qtask.svg"));
     setToolTip(tr("QTask"));
-}
 
-bool SystemTrayIcon::isMuted() const
-{
-    auto *app = QApplication::instance();
-    if (app && app->thread() == QThread::currentThread()) {
-        return mute_notifications_action_->isChecked();
-    }
-    // FIXME/TODO: probably it is not issue below and it could be read from any
-    // thread.
-    throw std::runtime_error("Method should be called from GUI thread.");
+    connect(tray_icon_menu_.get(), &QMenu::aboutToShow, this, [this]() {
+        const auto noSignals = BlockGuard(mute_notifications_action_);
+        mute_notifications_action_->setChecked(
+            ConfigManager::config().get(ConfigManager::MuteNotifications));
+    });
 }

@@ -1,6 +1,8 @@
 #ifndef SETTINGSDIALOG_HPP
 #define SETTINGSDIALOG_HPP
 
+#include "configmanager.hpp"
+
 #include <QAbstractButton>
 #include <QCheckBox>
 #include <QDialog>
@@ -19,13 +21,23 @@ class SettingsDialog : public QDialog {
     void onButtonBoxClicked(QAbstractButton *);
 
   private:
+    struct SettingBinder {
+        using WidgetVariant = std::variant<QCheckBox *, QLineEdit *>;
+        ConfigManager::KeyVariant key;
+        WidgetVariant widget;
+    };
+
     void initUI();
     void applySettings();
+    void updateButtonsState();
 
     QLineEdit *const m_task_bin_edit;
     QCheckBox *const m_hide_on_startup_cb;
     QCheckBox *const m_save_filter_on_exit;
+    QCheckBox *const m_mute_notifications_cb;
     QDialogButtonBox *const m_buttons;
+
+    const QList<SettingBinder> binders;
 };
 
 #endif // SETTINGSDIALOG_HPP
