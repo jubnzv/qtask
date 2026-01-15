@@ -42,6 +42,8 @@ class TaskHintProviderDelegate : public QStyledItemDelegate {
     [[nodiscard]]
     virtual const QString &getToolTipFooter() const;
 
+    QColor getHighlightColor(const QStyleOptionViewItem &option) const;
+
   private:
     AsyncTaskLoader *m_task_loader;
     // This is used to cancel timer.

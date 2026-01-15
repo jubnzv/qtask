@@ -287,3 +287,13 @@ const QString &TaskHintProviderDelegate::getToolTipFooter() const
         tr("Right-click in project col to add to filters."));
     return hint;
 }
+
+QColor TaskHintProviderDelegate::getHighlightColor(
+    const QStyleOptionViewItem &option) const
+{
+    QColor highlight = option.palette.highlight().color();
+    if (qApp->palette().color(QPalette::Base).value() < 128) {
+        highlight = highlight.lighter(130);
+    }
+    return highlight;
+}

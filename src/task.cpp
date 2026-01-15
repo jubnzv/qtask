@@ -530,7 +530,8 @@ FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
 {
 }
 
-bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
+bool FilteredTasksListReader::readUrgencySortedTaskList(
+    const TaskWarriorExecutor &executor)
 {
     constexpr qsizetype kExpectedColumnsCount = 7;
 
@@ -538,7 +539,8 @@ bool FilteredTasksListReader::readTaskList(const TaskWarriorExecutor &executor)
         tasks.clear();
         return true;
     }
-
+    // Note, it is important that result will be sorted in this request by
+    // taskwarrior.
     auto cmd = QStringList{
         // clang-format off
                          "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,wait,description",

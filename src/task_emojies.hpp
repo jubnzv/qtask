@@ -24,13 +24,17 @@ class StatusEmoji {
         , now(std::move(now))
     {
     }
+
     [[nodiscard]]
-    QString combinedEmoji() const
+    QString alignedCombinedEmoji() const
     {
-        QStringList icons;
-        icons << schedEmoji() << dueEmoji() << waitEmoji();
-        icons.removeAll(QString());
-        return icons.join(QString::fromUtf8("\u2007"));
+        static const auto wrap = [](QString src) {
+            if (!src.isEmpty()) {
+                return src;
+            }
+            return QString::fromUtf8("\u2003");
+        };
+        return wrap(schedEmoji()) + wrap(dueEmoji()) + wrap(waitEmoji());
     }
 
     [[nodiscard]]

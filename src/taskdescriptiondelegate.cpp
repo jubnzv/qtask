@@ -2,6 +2,7 @@
 
 #include <QAbstractTextDocumentLayout>
 #include <QApplication>
+#include <QLinearGradient>
 #include <QObject>
 #include <QSize>
 #include <QString>
@@ -55,35 +56,48 @@ void TaskDescriptionDelegate::paint(QPainter *painter,
                                     const QStyleOptionViewItem &option,
                                     const QModelIndex &index) const
 {
-    if (option.state & QStyle::State_Selected) {
-        painter->fillRect(option.rect, option.palette.highlight());
-    } else {
-        auto *model = qobject_cast<const TasksModel *>(index.model());
-        Q_ASSERT(model);
-        painter->fillRect(option.rect, model->rowColor(index.row()));
-    }
+    auto *model = qobject_cast<const TasksModel *>(index.model());
+    const auto rowColor = model->rowColor(index.row());
+    const double fixedOffset = 20.0;
 
+    if (option.state & QStyle::State_Selected) {
+        const auto highlight = getHighlightColor(option);
+        const double length = option.rect.width();
+        const double stopPoint =
+            (length > 0) ? std::min(fixedOffset / length, 0.4) : 0.0;
+
+        QLinearGradient gradient(option.rect.topLeft(), option.rect.topRight());
+        gradient.setColorAt(0.0, highlight);
+        gradient.setColorAt(stopPoint, rowColor);
+        gradient.setColorAt(1.0, rowColor);
+        painter->fillRect(option.rect, gradient);
+    } else {
+        painter->fillRect(option.rect, rowColor);
+    }
     painter->save();
+
     const auto value = index.data(Qt::DisplayRole);
     if (value.isValid() && !value.isNull()) {
         const bool elideNeeded =
             initDocument(*document, option, value.toString());
-        painter->translate(option.rect.topLeft());
-        document->drawContents(
-            painter, { 0, 0, option.rect.width(), option.rect.height() });
 
+        const int textPadding = 2;
+        const auto deltaWidth = fixedOffset + textPadding;
+
+        painter->translate(option.rect.topLeft() + QPoint(deltaWidth, 0));
+        painter->setPen(option.palette.color(QPalette::Text));
+
+        const QString ellipsis = QStringLiteral("…");
+        const QFontMetrics fm(option.font);
+        const int ellipsisWidth = fm.horizontalAdvance(ellipsis);
+        const int ellipsisSpace = elideNeeded ? ellipsisWidth + 3 : 0;
+        document->drawContents(
+            painter, { 0, 0, option.rect.width() - deltaWidth - ellipsisSpace,
+                       option.rect.height() });
         // Need to add ...
         if (elideNeeded) {
-            const QString ellipsis = QStringLiteral("…");
-            const QFontMetrics fm(option.font);
-            const int ellipsisWidth = fm.horizontalAdvance(ellipsis);
-            const QPoint ellipsisPos(option.rect.width() - ellipsisWidth,
-                                     fm.ascent());
-            painter->setPen(
-                option.palette.color((option.state & QStyle::State_Selected)
-                                         ? QPalette::HighlightedText
-                                         : QPalette::Text));
-
+            const QPoint ellipsisPos(
+                option.rect.width() - deltaWidth - ellipsisWidth, fm.ascent());
             painter->drawText(ellipsisPos, ellipsis);
         }
     }

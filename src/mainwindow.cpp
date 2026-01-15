@@ -41,6 +41,7 @@
 #include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
 #include "tasksmodel.hpp"
+#include "taskstatusesdelegate.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
@@ -73,7 +74,7 @@ MainWindow::MainWindow()
     , m_is_quit(false)
     , m_window(new QWidget(this))
     , m_layout(new QGridLayout(m_window))
-    , m_tray_icon(new SystemTrayIcon(this))
+    , m_tray_icon(new SystemTrayIcon(false, this))
     , m_tasks_view(new TasksView(m_window))
     , m_task_toolbar(new QToolBar(tr("Task Toolbar"), m_window))
     , m_task_shell(new QLineEdit(m_window))
@@ -122,7 +123,7 @@ bool MainWindow::initTaskWatcher()
     connect(
         m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this, [this]() {
             if (m_task_provider) {
-                auto tasks = m_task_provider->getTasks();
+                auto tasks = m_task_provider->getUrgencySortedTasks();
                 auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
                 model->setTasks(tasks.value_or(QList<DetailedTaskInfo>{}),
                                 getSelectedTaskIds());
@@ -180,9 +181,12 @@ void MainWindow::initTasksTable()
     m_tasks_view->setModel(model);
 
     // All show hint, description column has additional logic too.
+    // Status column has no selection marker over emoji.
     m_tasks_view->setItemDelegate(new TaskHintProviderDelegate(m_tasks_view));
     m_tasks_view->setItemDelegateForColumn(
         2 /* description */, new TaskDescriptionDelegate(m_tasks_view));
+    m_tasks_view->setItemDelegateForColumn(
+        0 /* status/id */, new TaskStatusesDelegate(m_tasks_view));
 
     connect(m_tasks_view->selectionModel(),
             &QItemSelectionModel::selectionChanged, this,
@@ -267,7 +271,7 @@ void MainWindow::initToolsMenu()
     tools_menu->addAction(agenda_action);
     agenda_action->setShortcut(kAgendaViewShortcut);
     connect(agenda_action, &QAction::triggered, this, [&]() {
-        if (auto tasks = m_task_provider->getTasks()) {
+        if (auto tasks = m_task_provider->getUrgencySortedTasks()) {
             auto *dlg = new AgendaDialog(std::move(*tasks), this);
             dlg->open();
             QObject::connect(dlg, &QDialog::finished, dlg,
@@ -566,7 +570,7 @@ void MainWindow::onToggleTaskShell()
 
 void MainWindow::onSettingsMenu() {}
 
-void MainWindow::onMuteNotifications() {}
+void MainWindow::onMuteNotifications(bool isMuted) {}
 
 void MainWindow::onAddTask()
 {

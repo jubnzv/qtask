@@ -124,10 +124,10 @@ bool Taskwarrior::waitTask(const QStringList &ids, const QDateTime &datetime)
     });
 }
 
-std::optional<QList<DetailedTaskInfo>> Taskwarrior::getTasks()
+std::optional<QList<DetailedTaskInfo>> Taskwarrior::getUrgencySortedTasks()
 {
     FilteredTasksListReader retriever(m_filter);
-    if (m_executor && retriever.readTaskList(*m_executor)) {
+    if (m_executor && retriever.readUrgencySortedTaskList(*m_executor)) {
         return std::move(retriever.tasks);
     }
     return std::nullopt;
