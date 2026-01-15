@@ -1,65 +1,53 @@
 #ifndef CONFIGMANAGER_HPP
 #define CONFIGMANAGER_HPP
 
-#include <QDir>
-#include <QObject>
+#include <map>
+#include <variant>
+
 #include <QString>
+#include <QStringList>
 
-class ConfigManager : public QObject {
-  private:
-    Q_OBJECT
-    ConfigManager(QObject *parent = nullptr);
-
+class ConfigManager {
   public:
-    ~ConfigManager() = default;
+    template <typename taValueType>
+    struct Key {
+        QString name;
+    };
+    static inline const Key<QString> TaskBin{ "task_bin" };
+    static inline const Key<bool> ShowTaskShell{ "show_task_shell" };
+    static inline const Key<bool> HideWindowOnStartup{ "hide_on_startup" };
+    static inline const Key<bool> SaveFilterOnExit{ "save_filter_on_exit" };
+    static inline const Key<QStringList> TaskFilter{ "task_filter" };
+    static inline const Key<bool> MuteNotifications{ "mute_notifications" };
+
     static ConfigManager &config();
 
-    bool isNew() const { return m_is_new; }
+    template <typename taValueType>
+    [[nodiscard]] const taValueType &get(const Key<taValueType> &key) const
+    {
+        return std::get<taValueType>(m_named_fields_.at(key.name));
+    }
 
-    const QString &getTaskBin() const { return m_task_bin; }
-    void setTaskBin(const QString &v) { m_task_bin = v; }
+    template <typename taValueType>
+    void set(const Key<taValueType> &key, const taValueType &val)
+    {
+        m_named_fields_[key.name] = val;
+    }
 
-    bool getShowTaskShell() const { return m_show_task_shell; }
-    void setShowTaskShell(bool v) { m_show_task_shell = v; }
-
-    bool getHideWindowOnStartup() const { return m_hide_on_startup; }
-    void setHideWindowOnStartup(bool v) { m_hide_on_startup = v; }
-
-    bool getSaveFilterOnExit() const { return m_save_filter_on_exit; }
-    void setSaveFilterOnExit(bool v) { m_save_filter_on_exit = v; }
-
-    QStringList getTaskFilter() const { return m_task_filter; }
-    void setTaskFilter(const QStringList &v) { m_task_filter = v; }
-
+    [[nodiscard]]
     bool initializeFromFile();
-
-    void updateConfigFile();
+    bool updateConfigFile();
 
   private:
-    bool createNewConfigFile();
+    using TSettingType = std::variant<bool, QString, QStringList>;
+    ConfigManager();
     bool fillOptionsFromConfigFile();
-
-  private:
-    /// Configuration file was created during initialization
-    bool m_is_new;
 
     /// Path to configuration file
     QString m_config_path;
 
-    /// Path to task binary
-    QString m_task_bin;
-
-    /// Task shell will be shown in the main window
-    bool m_show_task_shell;
-
-    /// QTask window is hidden on startup
-    bool m_hide_on_startup;
-
-    /// QTask will save current task filter on exit and apply it after restart.
-    bool m_save_filter_on_exit;
-
-    /// task filter from the previous launch.
-    QStringList m_task_filter;
+    std::map<QString, TSettingType> m_named_fields_;
+    const std::map<QString, TSettingType> m_named_fields_defaults_;
 };
 
 #endif // CONFIGMANAGER_HPP

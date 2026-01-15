@@ -73,21 +73,21 @@ class MainWindow : public QMainWindow {
                                    const QByteArray &message);
 
   private slots:
-    void onToggleTaskShell();
-    void onSettingsMenu();
-    void onMuteNotifications(bool isMuted);
-    void onAddTask();
-    void onDeleteTasks();
-    void onSetTasksDone();
-    void onEnterTaskCommand();
-    void onApplyFilter();
-    void onEditTaskAction();
-    void showEditTaskDialog(const QModelIndex &);
+      void onToggleTaskShell(bool checked);
+      void onSettingsMenu();
+      void onMuteNotifications(bool isMuted);
+      void onAddTask();
+      void onDeleteTasks();
+      void onSetTasksDone();
+      void onEnterTaskCommand();
+      void onApplyFilter();
+      void onEditTaskAction();
+      void showEditTaskDialog(const QModelIndex &);
 
-    void refreshTasksListTableIfNeeded();
-    void refreshTasksListTableEnforced();
+      void refreshTasksListTableIfNeeded();
+      void refreshTasksListTableEnforced();
 
-    void updateTaskToolbar();
+      void updateTaskToolbar();
 
   signals:
     void acceptContinueCreatingTasks();

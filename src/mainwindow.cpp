@@ -94,8 +94,8 @@ MainWindow::MainWindow()
 
     // Tags must be loaded before any events happened so it could setup
     // "modified" tracker.
-    if (ConfigManager::config().getSaveFilterOnExit()) {
-        auto tags = ConfigManager::config().getTaskFilter();
+    if (ConfigManager::config().get(ConfigManager::SaveFilterOnExit)) {
+        auto tags = ConfigManager::config().get(ConfigManager::TaskFilter);
         tags.removeAll(QString(""));
         if (!tags.isEmpty()) {
             m_task_filter->setTags(tags);
@@ -111,7 +111,8 @@ MainWindow::MainWindow()
     initHelpMenu();
     initShortcuts();
 
-    (ConfigManager::config().getHideWindowOnStartup()) ? hide() : show();
+    ConfigManager::config().get(ConfigManager::HideWindowOnStartup) ? hide()
+                                                                    : show();
 
     QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
@@ -152,7 +153,8 @@ void MainWindow::initMainWindow()
                             QLineEdit::LeadingPosition);
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
-    m_task_shell->setVisible(ConfigManager::config().getShowTaskShell());
+    m_task_shell->setVisible(
+        ConfigManager::config().get(ConfigManager::ShowTaskShell));
 
     connect(m_task_filter, &TagsEdit::tagsChanged, this,
             &MainWindow::onApplyFilter);
@@ -258,7 +260,7 @@ void MainWindow::initFileMenu()
 
 void MainWindow::connectViewMenuActions()
 {
-    connect(m_view_menu_actions.m_toggle_task_shell_action, &QAction::triggered,
+    connect(m_view_menu_actions.m_toggle_task_shell_action, &QAction::toggled,
             this, &MainWindow::onToggleTaskShell);
 }
 
@@ -291,11 +293,12 @@ void MainWindow::initToolsMenu()
         }
     });
 
-    auto *history_stats_action = new QAction("&Statistics", this);
-    history_stats_action->setEnabled(false);
-    tools_menu->addAction(history_stats_action);
-    connect(history_stats_action, &QAction::triggered, this,
-            &MainWindow::onToggleTaskShell);
+    // FIXME:/TODO: not sure what is it, but connected slot is WRONG.
+    //  auto *history_stats_action = new QAction("&Statistics", this);
+    //  history_stats_action->setEnabled(false);
+    //  tools_menu->addAction(history_stats_action);
+    //  connect(history_stats_action, &QAction::toggled, this,
+    //          &MainWindow::onToggleTaskShell);
 
     tools_menu->setVisible(false);
 }
@@ -438,10 +441,12 @@ void MainWindow::receiveNewInstanceMessage(quint32, const QByteArray &message)
 
 void MainWindow::quitApp()
 {
-    if (ConfigManager::config().getSaveFilterOnExit()) {
-        ConfigManager::config().setTaskFilter(m_task_filter->getTags());
-    }
-
+    // If user unchecked "save" probably, he expects empty list later.
+    ConfigManager::config().set(
+        ConfigManager::TaskFilter,
+        ConfigManager::config().get(ConfigManager::SaveFilterOnExit)
+            ? m_task_filter->getTags()
+            : QStringList{});
     m_is_quit = true;
     close();
 }
@@ -557,15 +562,10 @@ void MainWindow::pushFilterTag(const QString &value)
     m_task_filter->pushTag(value);
 }
 
-void MainWindow::onToggleTaskShell()
+void MainWindow::onToggleTaskShell(bool checked)
 {
-    if (m_view_menu_actions.m_toggle_task_shell_action->isChecked()) {
-        m_task_shell->setVisible(true);
-        ConfigManager::config().setShowTaskShell(true);
-    } else {
-        m_task_shell->setVisible(false);
-        ConfigManager::config().setShowTaskShell(false);
-    }
+    m_task_shell->setVisible(checked);
+    ConfigManager::config().set(ConfigManager::ShowTaskShell, checked);
 }
 
 void MainWindow::onSettingsMenu() {}
@@ -821,6 +821,6 @@ MainWindow::TViewMenuActions::TViewMenuActions(QMenu &parent)
     m_toggle_task_shell_action = new QAction(tr("&Task shell"), &parent);
     m_toggle_task_shell_action->setCheckable(true);
     m_toggle_task_shell_action->setChecked(
-        ConfigManager::config().getShowTaskShell());
+        ConfigManager::config().get(ConfigManager::ShowTaskShell));
     parent.addAction(m_toggle_task_shell_action);
 }

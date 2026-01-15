@@ -74,7 +74,8 @@ class AsyncTaskLoader : public QObject {
                 return sourceTask;
             };
         const QFuture<DetailedTaskInfo> future = QtConcurrent::run(
-            fetchTaskInfo, ConfigManager::config().getTaskBin(), partialTask);
+            fetchTaskInfo, ConfigManager::config().get(ConfigManager::TaskBin),
+            partialTask);
         watcher->setFuture(future);
 
         return currentRequestId;

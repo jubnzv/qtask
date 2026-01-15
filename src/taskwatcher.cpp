@@ -46,7 +46,7 @@ TaskWatcher::TaskWatcher(QObject *parent)
         return std::nullopt;
     };
     auto paramsForThread = []() {
-        QString path = ConfigManager::config().getTaskBin();
+        QString path = ConfigManager::config().get(ConfigManager::TaskBin);
         return std::make_tuple(std::move(path));
     };
     auto receiverFromThread = [this](TaskWarriorDbState::Optional opt) {
