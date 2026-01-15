@@ -8,6 +8,7 @@
 #include <QEvent>
 #include <QGridLayout>
 #include <QLineEdit>
+#include <QList>
 #include <QMainWindow>
 #include <QObject>
 #include <QPointer>
@@ -15,6 +16,7 @@
 #include <QSystemTrayIcon>
 #include <QTableView>
 #include <QVariant>
+
 #include <qnamespace.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>

@@ -8,7 +8,6 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QVariant>
 
 class ConfigEvents : public QObject {
     Q_OBJECT
@@ -24,6 +23,7 @@ class ConfigManager {
         QString name;
     };
 
+    // It should list all used Key<Type>.
     using KeyVariant = std::variant<Key<bool>, Key<QString>, Key<QStringList>>;
 
     static inline const Key<QString> TaskBin{ "task_bin" };
@@ -42,13 +42,10 @@ class ConfigManager {
         return std::get<taValueType>(m_named_fields_.at(key.name));
     }
 
-    [[nodiscard]] QVariant get_as_qvariant(const KeyVariant &key) const
+    template <typename taValueType>
+    [[nodiscard]] const taValueType &get_as(const KeyVariant &key) const
     {
-        return std::visit(
-            [this](const auto &k) -> QVariant {
-                return QVariant::fromValue(this->get(k));
-            },
-            key);
+        return get(std::get<Key<taValueType>>(key));
     }
 
     template <typename taValueType>
@@ -61,14 +58,10 @@ class ConfigManager {
         }
     }
 
-    void set_qvariant(const KeyVariant &key, const QVariant &val)
+    template <typename taValueType>
+    void set_as(const KeyVariant &key, const taValueType &val)
     {
-        std::visit(
-            [this, &val](const auto &k) {
-                using T = typename std::decay_t<decltype(k)>::value_type;
-                this->set(k, val.value<T>());
-            },
-            key);
+        set(std::get<Key<taValueType>>(key), val);
     }
 
     [[nodiscard]]

@@ -3,11 +3,14 @@
 
 #include "configmanager.hpp"
 
+#include <variant>
+
 #include <QAbstractButton>
 #include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QLineEdit>
+#include <QList>
 #include <QWidget>
 
 class SettingsDialog : public QDialog {
@@ -37,6 +40,7 @@ class SettingsDialog : public QDialog {
     QCheckBox *const m_mute_notifications_cb;
     QDialogButtonBox *const m_buttons;
 
+    // Binds config keys with widgets.
     const QList<SettingBinder> binders;
 };
 

@@ -3,6 +3,8 @@
 #include "configmanager.hpp"
 #include "lambda_visitors.hpp"
 
+#include <variant>
+
 #include <QAbstractButton>
 #include <QCheckBox>
 #include <QCoreApplication>
@@ -78,13 +80,13 @@ void SettingsDialog::initUI()
         const LambdaVisitor visitor{
             [&b, this](QCheckBox *checkbox) {
                 checkbox->setChecked(
-                    ConfigManager::config().get_as_qvariant(b.key).toBool());
+                    ConfigManager::config().get_as<bool>(b.key));
                 connect(checkbox, &QCheckBox::toggled, this,
                         &SettingsDialog::updateButtonsState);
             },
             [&b, this](QLineEdit *edit) {
                 edit->setText(
-                    ConfigManager::config().get_as_qvariant(b.key).toString());
+                    ConfigManager::config().get_as<QString>(b.key));
                 connect(edit, &QLineEdit::textChanged, this,
                         &SettingsDialog::updateButtonsState);
             },
@@ -99,11 +101,9 @@ void SettingsDialog::applySettings()
     for (const auto &b : binders) {
         const LambdaVisitor visitor{
             [&b, &cfg](QCheckBox *checkbox) {
-                cfg.set_qvariant(b.key, checkbox->isChecked());
+                cfg.set_as(b.key, checkbox->isChecked());
             },
-            [&b, &cfg](QLineEdit *edit) {
-                cfg.set_qvariant(b.key, edit->text());
-            },
+            [&b, &cfg](QLineEdit *edit) { cfg.set_as(b.key, edit->text()); },
         };
         std::visit(visitor, b.widget);
     }
@@ -131,14 +131,16 @@ void SettingsDialog::updateButtonsState()
 {
     bool changed = false;
     for (const auto &b : binders) {
-        const auto currVal = ConfigManager::config().get_as_qvariant(b.key);
         changed |= std::visit(
-            LambdaVisitor{ [&](QCheckBox *cb) {
-                              return cb->isChecked() != currVal.toBool();
-                          },
-                           [&](QLineEdit *le) {
-                               return le->text() != currVal.toString();
-                           } },
+            LambdaVisitor{
+                [&](QCheckBox *cb) {
+                    return cb->isChecked() !=
+                           ConfigManager::config().get_as<bool>(b.key);
+                },
+                [&](QLineEdit *le) {
+                    return le->text() !=
+                           ConfigManager::config().get_as<QString>(b.key);
+                } },
             b.widget);
 
         if (changed) {
