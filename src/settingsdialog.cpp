@@ -28,10 +28,12 @@ SettingsDialog::SettingsDialog(QWidget *parent)
                                          QDialogButtonBox::Apply |
                                          QDialogButtonBox::Close,
                                      this))
-    , binders{ { ConfigManager::TaskBin, m_task_bin_edit },
-               { ConfigManager::HideWindowOnStartup, m_hide_on_startup_cb },
-               { ConfigManager::SaveFilterOnExit, m_save_filter_on_exit },
-               { ConfigManager::MuteNotifications, m_mute_notifications_cb } }
+    , m_conf_to_widget_binders_{
+        { ConfigManager::TaskBin, m_task_bin_edit },
+        { ConfigManager::HideWindowOnStartup, m_hide_on_startup_cb },
+        { ConfigManager::SaveFilterOnExit, m_save_filter_on_exit },
+        { ConfigManager::MuteNotifications, m_mute_notifications_cb }
+    }
 
 {
     setWindowTitle(tr("Settings"));
@@ -76,7 +78,7 @@ void SettingsDialog::initUI()
                 updateButtonsState();
             });
 
-    for (const auto &b : binders) {
+    for (const auto &b : m_conf_to_widget_binders_) {
         const LambdaVisitor visitor{
             [&b, this](QCheckBox *checkbox) {
                 checkbox->setChecked(
@@ -85,8 +87,7 @@ void SettingsDialog::initUI()
                         &SettingsDialog::updateButtonsState);
             },
             [&b, this](QLineEdit *edit) {
-                edit->setText(
-                    ConfigManager::config().get_as<QString>(b.key));
+                edit->setText(ConfigManager::config().get_as<QString>(b.key));
                 connect(edit, &QLineEdit::textChanged, this,
                         &SettingsDialog::updateButtonsState);
             },
@@ -98,7 +99,7 @@ void SettingsDialog::initUI()
 void SettingsDialog::applySettings()
 {
     auto &cfg = ConfigManager::config();
-    for (const auto &b : binders) {
+    for (const auto &b : m_conf_to_widget_binders_) {
         const LambdaVisitor visitor{
             [&b, &cfg](QCheckBox *checkbox) {
                 cfg.set_as(b.key, checkbox->isChecked());
@@ -130,7 +131,7 @@ void SettingsDialog::onButtonBoxClicked(QAbstractButton *button)
 void SettingsDialog::updateButtonsState()
 {
     bool changed = false;
-    for (const auto &b : binders) {
+    for (const auto &b : m_conf_to_widget_binders_) {
         changed |= std::visit(
             LambdaVisitor{
                 [&](QCheckBox *cb) {

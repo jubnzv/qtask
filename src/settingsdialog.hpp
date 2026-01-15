@@ -41,7 +41,7 @@ class SettingsDialog : public QDialog {
     QDialogButtonBox *const m_buttons;
 
     // Binds config keys with widgets.
-    const QList<SettingBinder> binders;
+    const QList<SettingBinder> m_conf_to_widget_binders_;
 };
 
 #endif // SETTINGSDIALOG_HPP
