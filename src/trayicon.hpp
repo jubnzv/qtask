@@ -17,7 +17,6 @@ class SystemTrayIcon : public QSystemTrayIcon {
   public:
     explicit SystemTrayIcon(QObject *parent);
   signals:
-    void muteNotificationsRequested(bool value);
     void addTaskRequested();
     void exitRequested();
 

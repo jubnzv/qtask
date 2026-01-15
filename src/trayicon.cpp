@@ -39,7 +39,6 @@ SystemTrayIcon::SystemTrayIcon(QObject *parent)
             [this](bool checked) {
                 ConfigManager::config().set(ConfigManager::MuteNotifications,
                                             checked);
-                emit muteNotificationsRequested(checked);
             });
     connect(add_task_action_, &QAction::triggered, this,
             &SystemTrayIcon::addTaskRequested);

@@ -225,8 +225,6 @@ void MainWindow::initTasksTable()
 
 void MainWindow::initTrayIcon()
 {
-    connect(m_tray_icon, &SystemTrayIcon::muteNotificationsRequested, this,
-            &MainWindow::onMuteNotifications);
     connect(m_tray_icon, &SystemTrayIcon::addTaskRequested, this,
             &MainWindow::onAddTask);
     connect(m_tray_icon, &SystemTrayIcon::exitRequested, this,
@@ -569,8 +567,6 @@ void MainWindow::onToggleTaskShell(bool checked)
 }
 
 void MainWindow::onSettingsMenu() {}
-
-void MainWindow::onMuteNotifications(bool isMuted) {}
 
 void MainWindow::onAddTask()
 {
