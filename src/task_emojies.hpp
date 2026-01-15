@@ -26,18 +26,6 @@ class StatusEmoji {
     }
 
     [[nodiscard]]
-    QString alignedCombinedEmoji() const
-    {
-        static const auto wrap = [](QString src) {
-            if (!src.isEmpty()) {
-                return src;
-            }
-            return QString::fromUtf8("\u2003");
-        };
-        return wrap(schedEmoji()) + wrap(dueEmoji()) + wrap(waitEmoji());
-    }
-
-    [[nodiscard]]
     QString dueEmoji() const
     {
         if (task.due.get().has_value()) {
