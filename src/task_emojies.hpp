@@ -140,11 +140,6 @@ class StatusEmoji {
             return {};
         }
     }
-
-  private:
-    DetailedTaskInfo task;
-    QDateTime now;
-
     static bool hasEmoji()
     {
         static const bool has_emoji = []() {
@@ -154,6 +149,10 @@ class StatusEmoji {
         }();
         return has_emoji;
     }
+
+  private:
+    DetailedTaskInfo task;
+    QDateTime now;
 
     /// @brief Computes DatesRelation between @p taskDate and @p now and
     /// converts to emoji if supported, to text string otherwise.

@@ -75,15 +75,14 @@ void SystemTrayIcon::updateStatusIcon(StatusEmoji::EmojiUrgency urgency)
         ConfigManager::config().get(ConfigManager::MuteNotifications);
     QPixmap pixmap(kRenderSize, kRenderSize);
     pixmap.fill(Qt::transparent);
-    setToolTip(muted ? tr("QTask - Notifications are muted.")
-                     : tr("There are no urgent tasks."));
+    setToolTip(tr("There are no urgent tasks."));
     {
         QPainter painter(&pixmap);
         QSvgRenderer renderer(QStringLiteral(":/icons/qtask.svg"));
         renderer.render(&painter);
 
         // We need to update icon by emoji.
-        if (urgency > StatusEmoji::EmojiUrgency::Future && !muted) {
+        if (urgency > StatusEmoji::EmojiUrgency::Future || muted) {
             painter.setRenderHint(QPainter::Antialiasing);
             painter.setRenderHint(QPainter::TextAntialiasing);
 
@@ -91,7 +90,9 @@ void SystemTrayIcon::updateStatusIcon(StatusEmoji::EmojiUrgency urgency)
             font.setPixelSize(kEmojiFontSize);
             painter.setFont(font);
 
-            const QString emoji = StatusEmoji::urgencyToEmoji(urgency);
+            const QString emoji =
+                muted ? (StatusEmoji::hasEmoji() ? "🔇" : QString())
+                      : StatusEmoji::urgencyToEmoji(urgency);
             if (!emoji.isEmpty()) { // Check if we got support for emoji
                 constexpr int badgeSize =
                     static_cast<int>(kEmojiFontSize * 1.2);
@@ -100,7 +101,9 @@ void SystemTrayIcon::updateStatusIcon(StatusEmoji::EmojiUrgency urgency)
                 const QRect badgeRect(offset, offset, badgeSize, badgeSize);
                 painter.drawText(badgeRect, Qt::AlignCenter, emoji);
             }
-            setToolTip(tr("There are tasks to deal with."));
+
+            setToolTip(muted ? tr("QTask - Notifications are muted.")
+                             : tr("There are task(s) to deal with."));
         }
     } // painter.end() is called as out of scope
 
