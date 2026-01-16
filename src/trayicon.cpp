@@ -2,8 +2,7 @@
 
 #include "block_guard.hpp"
 #include "configmanager.hpp"
-
-#include <stdexcept>
+#include "task_emojies.hpp"
 
 #include <QAction>
 #include <QApplication>
@@ -17,6 +16,7 @@
 #include <QSvgRenderer>
 #include <QSystemTrayIcon>
 #include <QThread>
+#include <qnamespace.h>
 
 namespace
 {
