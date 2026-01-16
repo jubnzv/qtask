@@ -115,24 +115,23 @@ MainWindow::MainWindow()
     ConfigManager::config().get(ConfigManager::HideWindowOnStartup) ? hide()
                                                                     : show();
 
-    connect(m_data_model, &TasksModel::modelReset, this,
-            &MainWindow::modelWasReset);
+    connect(m_data_model, &TasksModel::modelReset, this, [this]() {
+        if (m_tasks_view) {
+            QTimer::singleShot(50, m_tasks_view, [this]() {
+                m_tasks_view->resizeColumnToContents(0);
+            });
+        }
+    });
+
+    connect(m_data_model, &TasksModel::globalUrgencyChanged, m_tray_icon,
+            &SystemTrayIcon::updateStatusIcon);
+
     m_data_model->refreshModel();
 
     QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }
-
-void MainWindow::modelWasReset()
-{
-    updateTaskToolbar();
-    if (m_tasks_view) {
-        QTimer::singleShot(50, m_tasks_view, [this]() {
-            m_tasks_view->resizeColumnToContents(0);
-        });
-    }
-}
 
 void MainWindow::initMainWindow()
 {

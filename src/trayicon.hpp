@@ -1,6 +1,8 @@
 #ifndef SYSTRAYICON_HPP
 #define SYSTRAYICON_HPP
 
+#include "task_emojies.hpp"
+
 #include <QAction>
 #include <QMenu>
 #include <QObject>
@@ -16,6 +18,8 @@ class SystemTrayIcon : public QSystemTrayIcon {
 
   public:
     explicit SystemTrayIcon(QObject *parent);
+  public slots:
+    void updateStatusIcon(StatusEmoji::EmojiUrgency urgency);
   signals:
     void addTaskRequested();
     void exitRequested();

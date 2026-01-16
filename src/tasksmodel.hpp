@@ -10,6 +10,7 @@
 #include <QtCore/Qt>
 
 #include "task.hpp"
+#include "task_emojies.hpp"
 #include "tasksstatuseswatcher.hpp"
 #include "taskwarrior.hpp"
 #include "taskwatcher.hpp"
@@ -47,9 +48,6 @@ class TasksModel : public QAbstractTableModel {
     QVariant headerData(int section, Qt::Orientation,
                         int role = Qt::DisplayRole) const override;
 
-    [[nodiscard]]
-    QVariant getTask(const QModelIndex &) const;
-
     [[nodiscard]] QColor rowColor(int row) const;
 
   signals:
@@ -58,6 +56,7 @@ class TasksModel : public QAbstractTableModel {
     /// @note Indexes will be different than it was, as tasks list could be
     /// reordered/resized.
     void restoreSelected(const QModelIndexList &);
+    void globalUrgencyChanged(StatusEmoji::EmojiUrgency);
 
   public slots:
     /// @brief Queries taskwatcher for the fresh/current sorted list of the
@@ -67,6 +66,8 @@ class TasksModel : public QAbstractTableModel {
     /// @brief This is lazy refresh, if it was no changes on disk, it will do
     /// nothing. Which means it will NOT react for time-going changes.
     void refreshIfChangedOnDisk();
+  private slots:
+    void delayedRefreshModel();
 
   private:
     QList<DetailedTaskInfo> m_tasks;
@@ -75,6 +76,12 @@ class TasksModel : public QAbstractTableModel {
     TaskWatcher *m_task_watcher;
     TasksStatusesWatcher *m_statuses_watcher;
     SelectionProvider m_selected_provider;
+
+    QTimer m_urgency_signaler;
+    StatusEmoji::EmojiUrgency lastKnownUrgency{
+        StatusEmoji::EmojiUrgency::None
+    };
+    void dataUpdated();
 };
 
 #endif // TASKSMODEL_HPP
