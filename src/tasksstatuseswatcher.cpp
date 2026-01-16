@@ -74,23 +74,20 @@ TasksStatusesWatcher::TasksStatusesWatcher(
     periodic_statuses_check.setInterval(
         static_cast<int>(checkInterval.count()));
 
-    QTimer::connect(&periodic_statuses_check, &QTimer::timeout, this,
-                    &TasksStatusesWatcher::checkStatusesNow);
+    QTimer::connect(&periodic_statuses_check, &QTimer::timeout, this, [this]() {
+        auto currentStatuses = computeStatusesNow(tasks_provider());
+        if (currentStatuses != last_known_statuses) {
+            last_known_statuses = std::move(currentStatuses);
+            emit statusesWereChanged();
+            return;
+        }
+        periodic_statuses_check.start();
+    });
 }
 
 void TasksStatusesWatcher::startWatchingStatusesChange()
 {
+    periodic_statuses_check.stop();
     last_known_statuses = computeStatusesNow(tasks_provider());
-    periodic_statuses_check.start();
-}
-
-void TasksStatusesWatcher::checkStatusesNow()
-{
-    auto currentStatuses = computeStatusesNow(tasks_provider());
-    if (currentStatuses != last_known_statuses) {
-        last_known_statuses = std::move(currentStatuses);
-        emit statusesWereChanged();
-        return;
-    }
     periodic_statuses_check.start();
 }

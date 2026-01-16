@@ -4,17 +4,14 @@
 #include "task_date_time.hpp"
 
 #include <QDateTime>
-#include <QFontDatabase>
-#include <QFontMetrics>
-#include <QGuiApplication>
-#include <QString>
-
 #include <QFont>
 #include <QFontDatabase>
 #include <QFontMetrics>
 #include <QGuiApplication>
 #include <QString>
 #include <QStringLiteral>
+
+#include <utility>
 
 class StatusEmoji {
   public:
@@ -60,6 +57,8 @@ class StatusEmoji {
     {
         return task.active.get();
     }
+
+    [[nodiscard]] QString getMostUrgentEmoji() const {}
 
   private:
     const DetailedTaskInfo &task;

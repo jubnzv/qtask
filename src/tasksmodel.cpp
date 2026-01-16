@@ -1,4 +1,5 @@
 #include "tasksmodel.hpp"
+#include "block_guard.hpp"
 
 #include <array>
 #include <chrono>
@@ -28,7 +29,7 @@
 namespace
 {
 using namespace std::chrono_literals;
-constexpr auto kRefresheEmojiPeriod = 30s; // NOLINT
+constexpr auto kRefresheEmojiPeriod = 20s; // NOLINT
 
 const std::array<QString, 3> kColumnsHeaders = {
     QObject::tr("Status / Id"),
@@ -65,21 +66,21 @@ QColor getColorForPriority(DetailedTaskInfo::Priority priority)
 }
 } // namespace
 
-TasksModel::TasksModel(QObject *parent)
+TasksModel::TasksModel(std::shared_ptr<Taskwarrior> task_provider,
+                       SelectionProvider selected_provider, QObject *parent)
     : QAbstractTableModel(parent)
     , m_tasks({})
-    , m_refresh_emoji_timer(new QTimer(this))
+    , m_task_provider(std::move(task_provider))
+    , m_task_watcher(new TaskWatcher(this))
+    , m_statuses_watcher(new TasksStatusesWatcher(
+          [this]() -> const QList<DetailedTaskInfo> & { return m_tasks; }, this,
+          kRefresheEmojiPeriod))
+    , m_selected_provider(std::move(selected_provider))
 {
-    connect(m_refresh_emoji_timer, &QTimer::timeout, this, [this]() {
-        if (rowCount() > 0) {
-            emit dataChanged(index(0, 0), index(rowCount() - 1, 0),
-                             { Qt::DisplayRole, Qt::ToolTipRole });
-        }
-    });
-    m_refresh_emoji_timer->start(
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            kRefresheEmojiPeriod)
-            .count());
+    connect(m_statuses_watcher, &TasksStatusesWatcher::statusesWereChanged,
+            this, &TasksModel::refreshModel);
+    connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this,
+            &TasksModel::refreshModel);
 }
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const
@@ -180,13 +181,35 @@ QVariant TasksModel::headerData(const int section,
     return {};
 }
 
-void TasksModel::setTasks(QList<DetailedTaskInfo> tasks,
-                          const QStringList &currentlySelectedTaskIds)
+QVariant TasksModel::getTask(const QModelIndex &index) const
 {
-    beginResetModel();
-    m_tasks = std::move(tasks);
-    endResetModel();
+    if (index.isValid() && index.row() < m_tasks.size()) {
+        return QVariant::fromValue(m_tasks.at(index.row()));
+    }
+    return {};
+}
 
+QColor TasksModel::rowColor(const int row) const
+{
+    if (row < 0 || row >= m_tasks.size()) {
+        return getColorForPriority(DetailedTaskInfo::Priority::Unset);
+    }
+    return getColorForPriority(m_tasks.at(row).priority.get());
+}
+
+void TasksModel::refreshModel()
+{
+    const auto guard = BlockGuard(m_task_watcher, m_statuses_watcher);
+    const auto currentlySelectedTaskIds = m_selected_provider();
+
+    // Load whole tasks list from disk
+    auto tasks = m_task_provider->getUrgencySortedTasks();
+    if (!tasks.has_value()) {
+        return;
+    }
+    beginResetModel();
+    m_tasks = std::move(*tasks);
+    endResetModel();
     QModelIndexList indicesToSelect;
 
     for (qsizetype i = 0, sz = m_tasks.count(); i < sz; ++i) {
@@ -206,22 +229,9 @@ void TasksModel::setTasks(QList<DetailedTaskInfo> tasks,
         }
     }
     if (!indicesToSelect.isEmpty()) {
-        emit selectIndices(indicesToSelect);
+        emit restoreSelected(indicesToSelect);
     }
+    m_statuses_watcher->startWatchingStatusesChange();
 }
 
-QVariant TasksModel::getTask(const QModelIndex &index) const
-{
-    if (index.isValid() && index.row() < m_tasks.size()) {
-        return QVariant::fromValue(m_tasks.at(index.row()));
-    }
-    return {};
-}
-
-QColor TasksModel::rowColor(const int row) const
-{
-    if (row < 0 || row >= m_tasks.size()) {
-        return getColorForPriority(DetailedTaskInfo::Priority::Unset);
-    }
-    return getColorForPriority(m_tasks.at(row).priority.get());
-}
+void TasksModel::refreshIfChangedOnDisk() { m_task_watcher->checkNow(); }

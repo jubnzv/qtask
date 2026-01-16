@@ -22,9 +22,9 @@
 #include <qtypes.h>
 
 #include "tagsedit.hpp"
+#include "tasksmodel.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
-#include "taskwatcher.hpp"
 #include "trayicon.hpp"
 
 namespace ui
@@ -41,8 +41,6 @@ class MainWindow : public QMainWindow {
     MainWindow &operator=(MainWindow &&) = delete;
 
   private:
-    bool initTaskWatcher();
-
     void initMainWindow();
     void initTasksTable();
     void initTrayIcon();
@@ -85,11 +83,8 @@ class MainWindow : public QMainWindow {
     void onEditTaskAction();
     void showEditTaskDialog(const QModelIndex &);
 
-    void refreshTasksListTableIfNeeded();
-    void refreshTasksListTableEnforced();
-
     void updateTaskToolbar();
-
+    void modelWasReset();
   signals:
     void acceptContinueCreatingTasks();
 
@@ -131,8 +126,8 @@ class MainWindow : public QMainWindow {
         explicit TToolbarActionsDefined(QToolBar &parent);
     } const m_toolbar_actions;
 
-    std::unique_ptr<Taskwarrior> m_task_provider;
-    TaskWatcher *m_task_watcher;
+    std::shared_ptr<Taskwarrior> m_task_provider;
+    TasksModel *m_data_model;
 };
 
 } // namespace ui

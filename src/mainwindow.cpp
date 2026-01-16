@@ -81,8 +81,10 @@ MainWindow::MainWindow()
     , m_task_filter(new TagsEdit(m_window))
     , m_view_menu_actions(*menuBar()->addMenu(tr("&View")))
     , m_toolbar_actions(*m_task_toolbar)
-    , m_task_provider(std::make_unique<Taskwarrior>())
-    , m_task_watcher(new TaskWatcher(this))
+    , m_task_provider(std::make_shared<Taskwarrior>())
+    , m_data_model(new TasksModel(
+          m_task_provider, [this]() { return getSelectedTaskIds(); }, this))
+
 {
     if (!m_task_provider->init()) {
         QMessageBox::critical(
@@ -102,7 +104,6 @@ MainWindow::MainWindow()
         }
     }
 
-    initTaskWatcher();
     initMainWindow();
     initTrayIcon();
     initFileMenu();
@@ -114,30 +115,23 @@ MainWindow::MainWindow()
     ConfigManager::config().get(ConfigManager::HideWindowOnStartup) ? hide()
                                                                     : show();
 
+    connect(m_data_model, &TasksModel::modelReset, this,
+            &MainWindow::modelWasReset);
+    m_data_model->refreshModel();
+
     QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }
 
-bool MainWindow::initTaskWatcher()
+void MainWindow::modelWasReset()
 {
-    connect(
-        m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this, [this]() {
-            if (m_task_provider) {
-                auto tasks = m_task_provider->getUrgencySortedTasks();
-                auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-                model->setTasks(tasks.value_or(QList<DetailedTaskInfo>{}),
-                                getSelectedTaskIds());
-
-                updateTaskToolbar();
-                if (m_tasks_view) {
-                    QTimer::singleShot(50, m_tasks_view, [this]() {
-                        m_tasks_view->resizeColumnToContents(0);
-                    });
-                }
-            }
+    updateTaskToolbar();
+    if (m_tasks_view) {
+        QTimer::singleShot(50, m_tasks_view, [this]() {
+            m_tasks_view->resizeColumnToContents(0);
         });
-    return true;
+    }
 }
 
 void MainWindow::initMainWindow()
@@ -166,8 +160,6 @@ void MainWindow::initMainWindow()
 
     m_window->setLayout(m_layout);
     setCentralWidget(m_window);
-
-    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::initTasksTable()
@@ -179,8 +171,7 @@ void MainWindow::initTasksTable()
     m_tasks_view->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tasks_view->horizontalHeader()->setSectionResizeMode(
         0, QHeaderView::ResizeToContents);
-    auto *model = new TasksModel(this);
-    m_tasks_view->setModel(model);
+    m_tasks_view->setModel(m_data_model);
 
     // All show hint, description column has additional logic too.
     // Status column has no selection marker over emoji.
@@ -205,7 +196,7 @@ void MainWindow::initTasksTable()
             });
 
     // Support for restoring selection after model reset.
-    connect(model, &TasksModel::selectIndices, this,
+    connect(m_data_model, &TasksModel::restoreSelected, this,
             [this](const QModelIndexList &indices) {
                 m_tasks_view->selectionModel()->clearSelection();
                 if (indices.isEmpty()) {
@@ -353,11 +344,11 @@ void MainWindow::connectTaskToolbarActions()
         m_task_provider->undoTask();
         m_toolbar_actions.m_undo_action->setEnabled(
             m_task_provider->getActionsCounter() > 0);
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     });
 
-    connect(m_toolbar_actions.m_refresh_action, &QAction::triggered, this,
-            [&]() { refreshTasksListTableEnforced(); });
+    connect(m_toolbar_actions.m_refresh_action, &QAction::triggered,
+            m_data_model, &TasksModel::refreshModel);
 
     connect(m_toolbar_actions.m_done_action, &QAction::triggered, this,
             &MainWindow::onSetTasksDone);
@@ -372,7 +363,7 @@ void MainWindow::connectTaskToolbarActions()
         QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
             if (m_task_provider->waitTask(getSelectedTaskIds(),
                                           dlg->getDateTime())) {
-                refreshTasksListTableIfNeeded();
+                m_data_model->refreshIfChangedOnDisk();
             }
         });
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
@@ -384,13 +375,13 @@ void MainWindow::connectTaskToolbarActions()
     connect(m_toolbar_actions.m_start_action, &QAction::triggered, this,
             [this]() {
                 m_task_provider->startTasks(getSelectedTaskInModel());
-                refreshTasksListTableIfNeeded();
+                m_data_model->refreshIfChangedOnDisk();
             });
 
     connect(m_toolbar_actions.m_stop_action, &QAction::triggered, this,
             [this]() {
                 m_task_provider->stopTasks(getSelectedTaskInModel());
-                refreshTasksListTableIfNeeded();
+                m_data_model->refreshIfChangedOnDisk();
             });
 }
 
@@ -456,9 +447,8 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         if (!smodel->hasSelection()) {
             return;
         }
-        const auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
         for (const QModelIndex idx : smodel->selectedRows()) {
-            auto item = dmodel->itemData(idx);
+            auto item = m_data_model->itemData(idx);
             if (!item[0].isNull()) {
                 m_task_provider->setPriority(item[0].toString(), p);
                 break;
@@ -591,16 +581,16 @@ void MainWindow::onAddTask()
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            refreshTasksListTableIfNeeded();
+            m_data_model->refreshIfChangedOnDisk();
         }
     });
-    QObject::connect(dlg, &QDialog::rejected,
-                     [this]() { refreshTasksListTableIfNeeded(); });
+    QObject::connect(dlg, &QDialog::rejected, m_data_model,
+                     &TasksModel::refreshIfChangedOnDisk);
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            refreshTasksListTableIfNeeded();
+            m_data_model->refreshIfChangedOnDisk();
             emit acceptContinueCreatingTasks();
         } else {
             dlg->close();
@@ -625,7 +615,7 @@ void MainWindow::onDeleteTasks()
         QMessageBox::Yes) {
         m_tasks_view->selectionModel()->clearSelection();
         m_task_provider->deleteTask(selectedTasks);
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     }
 }
 
@@ -636,16 +626,16 @@ void MainWindow::onSetTasksDone()
     }
     m_task_provider->setTaskDone(getSelectedTaskIds());
     m_tasks_view->selectionModel()->clearSelection();
-    refreshTasksListTableIfNeeded();
+    m_data_model->refreshIfChangedOnDisk();
 }
 
 void MainWindow::onApplyFilter()
 {
     if (m_task_provider->applyFilter(m_task_filter->getTags())) {
-        refreshTasksListTableEnforced();
+        m_data_model->refreshIfChangedOnDisk();
         return;
     }
-    refreshTasksListTableIfNeeded();
+    m_data_model->refreshIfChangedOnDisk();
 }
 
 void MainWindow::onEnterTaskCommand()
@@ -656,7 +646,7 @@ void MainWindow::onEnterTaskCommand()
     }
     auto rc = m_task_provider->directCmd(cmd);
     if (rc == 0) {
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     }
     m_task_shell->setText("");
 }
@@ -665,13 +655,13 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
 {
     const auto id_opt = getSelectedTaskId();
     if (!id_opt) {
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
         return;
     }
     const auto &id_str = *id_opt;
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
         return;
     }
 
@@ -680,16 +670,16 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                      [&](const QString &uuid) {
                          m_task_provider->deleteTask(uuid);
                          m_tasks_view->selectionModel()->clearSelection();
-                         refreshTasksListTableIfNeeded();
+                         m_data_model->refreshIfChangedOnDisk();
                      });
     QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str]() {
         Q_ASSERT(dlg);
         auto tmp = dlg->getTask();
         m_task_provider->editTask(tmp);
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     });
-    QObject::connect(dlg, &QDialog::rejected,
-                     [this]() { refreshTasksListTableIfNeeded(); });
+    QObject::connect(dlg, &QDialog::rejected, m_data_model,
+                     &TasksModel::refreshIfChangedOnDisk);
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 
     dlg->open();
@@ -700,19 +690,6 @@ void MainWindow::onEditTaskAction()
     const auto *model = m_tasks_view->selectionModel();
     Q_ASSERT(model->selectedRows().size() == 1);
     showEditTaskDialog(model->selectedRows()[0]);
-}
-
-void MainWindow::refreshTasksListTableIfNeeded()
-{
-    // It may NOT refresh if not needed.
-    m_task_watcher->checkNow();
-}
-
-void ui::MainWindow::refreshTasksListTableEnforced()
-{
-    // It WILL refresh unconditionally (with current filters).
-    m_task_watcher->enforceUpdate();
-    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::updateTaskToolbar()

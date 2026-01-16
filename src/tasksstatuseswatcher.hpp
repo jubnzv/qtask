@@ -39,9 +39,6 @@ class TasksStatusesWatcher : public QObject {
     /// restart by call to startWatchingStatusesChange().
     void statusesWereChanged();
 
-  private slots:
-    void checkStatusesNow();
-
   private:
     TasksProvider tasks_provider;
     Statuses last_known_statuses;
