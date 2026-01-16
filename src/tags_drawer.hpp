@@ -13,7 +13,7 @@
 #include <QtNumeric>
 
 #include "predicate_skip_iterator.hpp"
-#include "tags_rects_calculator.h"
+#include "tags_rects_calculator.hpp"
 
 /// @brief Object used by TagsDrawer to track drawing state externaly.
 /// @note You may want to use existing DrawerState when creating new TagsDrawer.

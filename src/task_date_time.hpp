@@ -131,11 +131,11 @@ class TaskDateTime {
             return DatesRelation::Future;
         }
         constexpr std::chrono::milliseconds approachingMs = warning_interval();
-        const auto diffMs = now.msecsTo(value());
+        const auto diffMs = std::chrono::milliseconds(now.msecsTo(value()));
         if (value() < now) {
             return DatesRelation::Past;
         }
-        if (diffMs <= approachingMs.count()) {
+        if (diffMs <= approachingMs) {
             return DatesRelation::Approaching;
         }
         return DatesRelation::Future;

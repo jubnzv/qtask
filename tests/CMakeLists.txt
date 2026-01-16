@@ -27,6 +27,8 @@ set(TASK_DEPENDENT_FILES
 set(TASK_DEPENDENT_FILES_TO_LINK
     "../src/taskwarriorexecutor.cpp"
     "../src/task.cpp"
+    "../src/qtutil.cpp"
+    "../src/tasksstatuseswatcher.cpp"
 )
 
 #Find taskwarrior `task` binary.
@@ -49,20 +51,20 @@ if (TESTS_LIST_FILES_COUNT GREATER 0)
     find_package(GTest REQUIRED)
 
     #Detect best qt version in the system.
-    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets Test)
     if (${QT_VERSION} VERSION_LESS 5.15.0)
-      find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
+      find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Test)
     else()
       #Not sure, if should search/link GuiPrivate Svg with old versions.
-      find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets GuiPrivate Svg)
+      find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Test GuiPrivate Svg)
     endif()
 
     message(STATUS "Found Qt version for tests: ${QT_VERSION}.")
 
+    # Those are visual dependcy for IDE.
     source_group("tests" FILES ${TESTS_LIST})
     add_executable(qtask_tests
                    ${TESTS_LIST}
-                   ../src/qtutil.cpp
     )
 
     if (TASK_EXECUTABLE)
@@ -82,6 +84,7 @@ if (TESTS_LIST_FILES_COUNT GREATER 0)
                         Qt${QT_VERSION_MAJOR}::Core
                         Qt${QT_VERSION_MAJOR}::Widgets
                         Qt${QT_VERSION_MAJOR}::Concurrent
+                        Qt${QT_VERSION_MAJOR}::Test
     )
     target_include_directories(qtask_tests PUBLIC
                         ${CMAKE_CURRENT_LIST_DIR}

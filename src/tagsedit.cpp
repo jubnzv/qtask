@@ -42,7 +42,7 @@
 #include <vector>
 
 #include "tags_drawer.hpp"
-#include "tags_rects_calculator.h"
+#include "tags_rects_calculator.hpp"
 #include "visual_tag.hpp"
 
 namespace

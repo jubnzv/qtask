@@ -1,10 +1,9 @@
 #include "pereodic_async_executor.hpp"
+#include "qt_base_test.hpp"
 
-#include <array>
 #include <atomic>
 #include <tuple>
 
-#include <QCoreApplication>
 #include <QEventLoop>
 #include <QThread>
 
@@ -12,16 +11,7 @@
 
 using namespace ::testing;
 
-class PereodicAsynExecTest : public ::testing::Test {
-  protected:
-    static void SetUpTestSuite()
-    {
-        static std::array<char, 5u> param = { 't', 'e', 's', 't', 0 };
-        static std::array<char *, 2u> cmd = { param.data(), nullptr };
-        static int count = static_cast<int>(cmd.size()) - 1;
-        static const QCoreApplication app(count, cmd.data());
-    }
-};
+class PereodicAsynExecTest : public QtBaseTest {};
 
 TEST_F(PereodicAsynExecTest, SimpleExecutionFlow)
 {
