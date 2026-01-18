@@ -25,10 +25,7 @@ QString makeAlignedCombinedEmoji(const StatusEmoji &status)
         return QString::fromUtf8("\u2003");
     };
 
-    // Order is important for UI/UX reason, it should match tooltip & fields in
-    // editor.
-    return wrap(status.schedEmoji()) + wrap(status.dueEmoji()) +
-           wrap(status.waitEmoji());
+    return wrap(StatusEmoji::urgencyToEmoji(status.getMostUrgentLevel()));
 }
 } // namespace
 

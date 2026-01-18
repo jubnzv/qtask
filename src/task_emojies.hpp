@@ -22,11 +22,12 @@ class StatusEmoji {
         None = 0,
         Future,
         WaitPast,
-        DueApproaching,
-        SchedApproaching,
-        SchedPast, // 🚀
-        Active,    // 🔵
-        Overdue    // 🔥
+        DueApproaching,   // We assume Due is something strategical (long time).
+        Active,           // 🔵
+        SchedApproaching, // We assume Sched is something "tactical" (short
+                          // time)
+        SchedPast,        // 🚀
+        Overdue           // 🔥
     };
 
     explicit StatusEmoji(DetailedTaskInfo task,
@@ -57,9 +58,6 @@ class StatusEmoji {
     [[nodiscard]]
     QString schedEmoji() const
     {
-        if (isSpecialSched()) {
-            return hasEmoji() ? QString::fromUtf8("🔵") : "[W]";
-        }
         if (task.sched.get().has_value()) {
             return relationToEmoji(task.sched.get(), now);
         }
@@ -74,15 +72,15 @@ class StatusEmoji {
 
     [[nodiscard]] EmojiUrgency getMostUrgentLevel() const
     {
+        // Working on something...
+        if (isSpecialSched()) {
+            return EmojiUrgency::Active;
+        }
+
         // Highest priority - missing deadline.
         if (task.due.get().has_value() &&
             task.due.get().relationToNow(now) == DatesRelation::Past) {
             return EmojiUrgency::Overdue;
-        }
-
-        // Working on something...
-        if (isSpecialSched()) {
-            return EmojiUrgency::Active;
         }
 
         // Something was scheduled and it is in the past now.
