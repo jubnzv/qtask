@@ -74,15 +74,17 @@ MainWindow::MainWindow()
     , m_is_quit(false)
     , m_window(new QWidget(this))
     , m_layout(new QGridLayout(m_window))
-    , m_tray_icon(new SystemTrayIcon(false, this))
+    , m_tray_icon(new SystemTrayIcon(this))
     , m_tasks_view(new TasksView(m_window))
     , m_task_toolbar(new QToolBar(tr("Task Toolbar"), m_window))
     , m_task_shell(new QLineEdit(m_window))
     , m_task_filter(new TagsEdit(m_window))
     , m_view_menu_actions(*menuBar()->addMenu(tr("&View")))
     , m_toolbar_actions(*m_task_toolbar)
-    , m_task_provider(std::make_unique<Taskwarrior>())
-    , m_task_watcher(new TaskWatcher(this))
+    , m_task_provider(std::make_shared<Taskwarrior>())
+    , m_data_model(new TasksModel(
+          m_task_provider, [this]() { return getSelectedTaskIds(); }, this))
+
 {
     if (!m_task_provider->init()) {
         QMessageBox::critical(
@@ -94,15 +96,14 @@ MainWindow::MainWindow()
 
     // Tags must be loaded before any events happened so it could setup
     // "modified" tracker.
-    if (ConfigManager::config().getSaveFilterOnExit()) {
-        auto tags = ConfigManager::config().getTaskFilter();
+    if (ConfigManager::config().get(ConfigManager::SaveFilterOnExit)) {
+        auto tags = ConfigManager::config().get(ConfigManager::TaskFilter);
         tags.removeAll(QString(""));
         if (!tags.isEmpty()) {
             m_task_filter->setTags(tags);
         }
     }
 
-    initTaskWatcher();
     initMainWindow();
     initTrayIcon();
     initFileMenu();
@@ -111,33 +112,26 @@ MainWindow::MainWindow()
     initHelpMenu();
     initShortcuts();
 
-    (ConfigManager::config().getHideWindowOnStartup()) ? hide() : show();
+    ConfigManager::config().get(ConfigManager::HideWindowOnStartup) ? hide()
+                                                                    : show();
+
+    connect(m_data_model, &TasksModel::modelReset, this, [this]() {
+        if (m_tasks_view) {
+            QTimer::singleShot(50, m_tasks_view, [this]() {
+                m_tasks_view->resizeColumnToContents(0);
+            });
+        }
+    });
+
+    connect(m_data_model, &TasksModel::globalUrgencyChanged, m_tray_icon,
+            &SystemTrayIcon::updateStatusIcon);
+
+    m_data_model->refreshModel();
 
     QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }
-
-bool MainWindow::initTaskWatcher()
-{
-    connect(
-        m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this, [this]() {
-            if (m_task_provider) {
-                auto tasks = m_task_provider->getUrgencySortedTasks();
-                auto *model = qobject_cast<TasksModel *>(m_tasks_view->model());
-                model->setTasks(tasks.value_or(QList<DetailedTaskInfo>{}),
-                                getSelectedTaskIds());
-
-                updateTaskToolbar();
-                if (m_tasks_view) {
-                    QTimer::singleShot(50, m_tasks_view, [this]() {
-                        m_tasks_view->resizeColumnToContents(0);
-                    });
-                }
-            }
-        });
-    return true;
-}
 
 void MainWindow::initMainWindow()
 {
@@ -152,7 +146,8 @@ void MainWindow::initMainWindow()
                             QLineEdit::LeadingPosition);
     connect(m_task_shell, &QLineEdit::returnPressed, this,
             &MainWindow::onEnterTaskCommand);
-    m_task_shell->setVisible(ConfigManager::config().getShowTaskShell());
+    m_task_shell->setVisible(
+        ConfigManager::config().get(ConfigManager::ShowTaskShell));
 
     connect(m_task_filter, &TagsEdit::tagsChanged, this,
             &MainWindow::onApplyFilter);
@@ -164,8 +159,6 @@ void MainWindow::initMainWindow()
 
     m_window->setLayout(m_layout);
     setCentralWidget(m_window);
-
-    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::initTasksTable()
@@ -177,8 +170,7 @@ void MainWindow::initTasksTable()
     m_tasks_view->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tasks_view->horizontalHeader()->setSectionResizeMode(
         0, QHeaderView::ResizeToContents);
-    auto *model = new TasksModel(this);
-    m_tasks_view->setModel(model);
+    m_tasks_view->setModel(m_data_model);
 
     // All show hint, description column has additional logic too.
     // Status column has no selection marker over emoji.
@@ -203,7 +195,7 @@ void MainWindow::initTasksTable()
             });
 
     // Support for restoring selection after model reset.
-    connect(model, &TasksModel::selectIndices, this,
+    connect(m_data_model, &TasksModel::restoreSelected, this,
             [this](const QModelIndexList &indices) {
                 m_tasks_view->selectionModel()->clearSelection();
                 if (indices.isEmpty()) {
@@ -223,8 +215,6 @@ void MainWindow::initTasksTable()
 
 void MainWindow::initTrayIcon()
 {
-    connect(m_tray_icon, &SystemTrayIcon::muteNotificationsRequested, this,
-            &MainWindow::onMuteNotifications);
     connect(m_tray_icon, &SystemTrayIcon::addTaskRequested, this,
             &MainWindow::onAddTask);
     connect(m_tray_icon, &SystemTrayIcon::exitRequested, this,
@@ -258,7 +248,7 @@ void MainWindow::initFileMenu()
 
 void MainWindow::connectViewMenuActions()
 {
-    connect(m_view_menu_actions.m_toggle_task_shell_action, &QAction::triggered,
+    connect(m_view_menu_actions.m_toggle_task_shell_action, &QAction::toggled,
             this, &MainWindow::onToggleTaskShell);
 }
 
@@ -291,11 +281,12 @@ void MainWindow::initToolsMenu()
         }
     });
 
-    auto *history_stats_action = new QAction("&Statistics", this);
-    history_stats_action->setEnabled(false);
-    tools_menu->addAction(history_stats_action);
-    connect(history_stats_action, &QAction::triggered, this,
-            &MainWindow::onToggleTaskShell);
+    // FIXME:/TODO: not sure what is it, but connected slot is WRONG.
+    //  auto *history_stats_action = new QAction("&Statistics", this);
+    //  history_stats_action->setEnabled(false);
+    //  tools_menu->addAction(history_stats_action);
+    //  connect(history_stats_action, &QAction::toggled, this,
+    //          &MainWindow::onToggleTaskShell);
 
     tools_menu->setVisible(false);
 }
@@ -352,11 +343,11 @@ void MainWindow::connectTaskToolbarActions()
         m_task_provider->undoTask();
         m_toolbar_actions.m_undo_action->setEnabled(
             m_task_provider->getActionsCounter() > 0);
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     });
 
-    connect(m_toolbar_actions.m_refresh_action, &QAction::triggered, this,
-            [&]() { refreshTasksListTableEnforced(); });
+    connect(m_toolbar_actions.m_refresh_action, &QAction::triggered,
+            m_data_model, &TasksModel::refreshModel);
 
     connect(m_toolbar_actions.m_done_action, &QAction::triggered, this,
             &MainWindow::onSetTasksDone);
@@ -371,7 +362,7 @@ void MainWindow::connectTaskToolbarActions()
         QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
             if (m_task_provider->waitTask(getSelectedTaskIds(),
                                           dlg->getDateTime())) {
-                refreshTasksListTableIfNeeded();
+                m_data_model->refreshIfChangedOnDisk();
             }
         });
         QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
@@ -383,13 +374,13 @@ void MainWindow::connectTaskToolbarActions()
     connect(m_toolbar_actions.m_start_action, &QAction::triggered, this,
             [this]() {
                 m_task_provider->startTasks(getSelectedTaskInModel());
-                refreshTasksListTableIfNeeded();
+                m_data_model->refreshIfChangedOnDisk();
             });
 
     connect(m_toolbar_actions.m_stop_action, &QAction::triggered, this,
             [this]() {
                 m_task_provider->stopTasks(getSelectedTaskInModel());
-                refreshTasksListTableIfNeeded();
+                m_data_model->refreshIfChangedOnDisk();
             });
 }
 
@@ -438,10 +429,12 @@ void MainWindow::receiveNewInstanceMessage(quint32, const QByteArray &message)
 
 void MainWindow::quitApp()
 {
-    if (ConfigManager::config().getSaveFilterOnExit()) {
-        ConfigManager::config().setTaskFilter(m_task_filter->getTags());
-    }
-
+    // If user unchecked "save" probably, he expects empty list later.
+    ConfigManager::config().set(
+        ConfigManager::TaskFilter,
+        ConfigManager::config().get(ConfigManager::SaveFilterOnExit)
+            ? m_task_filter->getTags()
+            : QStringList{});
     m_is_quit = true;
     close();
 }
@@ -453,9 +446,8 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
         if (!smodel->hasSelection()) {
             return;
         }
-        const auto *dmodel = qobject_cast<TasksModel *>(m_tasks_view->model());
         for (const QModelIndex idx : smodel->selectedRows()) {
-            auto item = dmodel->itemData(idx);
+            auto item = m_data_model->itemData(idx);
             if (!item[0].isNull()) {
                 m_task_provider->setPriority(item[0].toString(), p);
                 break;
@@ -557,20 +549,13 @@ void MainWindow::pushFilterTag(const QString &value)
     m_task_filter->pushTag(value);
 }
 
-void MainWindow::onToggleTaskShell()
+void MainWindow::onToggleTaskShell(bool checked)
 {
-    if (m_view_menu_actions.m_toggle_task_shell_action->isChecked()) {
-        m_task_shell->setVisible(true);
-        ConfigManager::config().setShowTaskShell(true);
-    } else {
-        m_task_shell->setVisible(false);
-        ConfigManager::config().setShowTaskShell(false);
-    }
+    m_task_shell->setVisible(checked);
+    ConfigManager::config().set(ConfigManager::ShowTaskShell, checked);
 }
 
 void MainWindow::onSettingsMenu() {}
-
-void MainWindow::onMuteNotifications(bool isMuted) {}
 
 void MainWindow::onAddTask()
 {
@@ -595,16 +580,16 @@ void MainWindow::onAddTask()
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            refreshTasksListTableIfNeeded();
+            m_data_model->refreshIfChangedOnDisk();
         }
     });
-    QObject::connect(dlg, &QDialog::rejected,
-                     [this]() { refreshTasksListTableIfNeeded(); });
+    QObject::connect(dlg, &QDialog::rejected, m_data_model,
+                     &TasksModel::refreshIfChangedOnDisk);
     QObject::connect(dlg, &AddTaskDialog::createTaskAndContinue, [this, dlg]() {
         Q_ASSERT(dlg);
         auto t = dlg->getTask();
         if (m_task_provider->addTask(t)) {
-            refreshTasksListTableIfNeeded();
+            m_data_model->refreshIfChangedOnDisk();
             emit acceptContinueCreatingTasks();
         } else {
             dlg->close();
@@ -629,7 +614,7 @@ void MainWindow::onDeleteTasks()
         QMessageBox::Yes) {
         m_tasks_view->selectionModel()->clearSelection();
         m_task_provider->deleteTask(selectedTasks);
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     }
 }
 
@@ -640,16 +625,16 @@ void MainWindow::onSetTasksDone()
     }
     m_task_provider->setTaskDone(getSelectedTaskIds());
     m_tasks_view->selectionModel()->clearSelection();
-    refreshTasksListTableIfNeeded();
+    m_data_model->refreshIfChangedOnDisk();
 }
 
 void MainWindow::onApplyFilter()
 {
     if (m_task_provider->applyFilter(m_task_filter->getTags())) {
-        refreshTasksListTableEnforced();
+        m_data_model->refreshIfChangedOnDisk();
         return;
     }
-    refreshTasksListTableIfNeeded();
+    m_data_model->refreshIfChangedOnDisk();
 }
 
 void MainWindow::onEnterTaskCommand()
@@ -660,7 +645,7 @@ void MainWindow::onEnterTaskCommand()
     }
     auto rc = m_task_provider->directCmd(cmd);
     if (rc == 0) {
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     }
     m_task_shell->setText("");
 }
@@ -669,13 +654,13 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
 {
     const auto id_opt = getSelectedTaskId();
     if (!id_opt) {
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
         return;
     }
     const auto &id_str = *id_opt;
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
         return;
     }
 
@@ -684,16 +669,16 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
                      [&](const QString &uuid) {
                          m_task_provider->deleteTask(uuid);
                          m_tasks_view->selectionModel()->clearSelection();
-                         refreshTasksListTableIfNeeded();
+                         m_data_model->refreshIfChangedOnDisk();
                      });
     QObject::connect(dlg, &QDialog::accepted, [this, dlg, id_str]() {
         Q_ASSERT(dlg);
         auto tmp = dlg->getTask();
         m_task_provider->editTask(tmp);
-        refreshTasksListTableIfNeeded();
+        m_data_model->refreshIfChangedOnDisk();
     });
-    QObject::connect(dlg, &QDialog::rejected,
-                     [this]() { refreshTasksListTableIfNeeded(); });
+    QObject::connect(dlg, &QDialog::rejected, m_data_model,
+                     &TasksModel::refreshIfChangedOnDisk);
     QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 
     dlg->open();
@@ -704,19 +689,6 @@ void MainWindow::onEditTaskAction()
     const auto *model = m_tasks_view->selectionModel();
     Q_ASSERT(model->selectedRows().size() == 1);
     showEditTaskDialog(model->selectedRows()[0]);
-}
-
-void MainWindow::refreshTasksListTableIfNeeded()
-{
-    // It may NOT refresh if not needed.
-    m_task_watcher->checkNow();
-}
-
-void ui::MainWindow::refreshTasksListTableEnforced()
-{
-    // It WILL refresh unconditionally (with current filters).
-    m_task_watcher->enforceUpdate();
-    refreshTasksListTableIfNeeded();
 }
 
 void MainWindow::updateTaskToolbar()
@@ -821,6 +793,6 @@ MainWindow::TViewMenuActions::TViewMenuActions(QMenu &parent)
     m_toggle_task_shell_action = new QAction(tr("&Task shell"), &parent);
     m_toggle_task_shell_action->setCheckable(true);
     m_toggle_task_shell_action->setChecked(
-        ConfigManager::config().getShowTaskShell());
+        ConfigManager::config().get(ConfigManager::ShowTaskShell));
     parent.addAction(m_toggle_task_shell_action);
 }

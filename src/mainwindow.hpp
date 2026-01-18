@@ -8,6 +8,7 @@
 #include <QEvent>
 #include <QGridLayout>
 #include <QLineEdit>
+#include <QList>
 #include <QMainWindow>
 #include <QObject>
 #include <QPointer>
@@ -15,14 +16,15 @@
 #include <QSystemTrayIcon>
 #include <QTableView>
 #include <QVariant>
+
 #include <qnamespace.h>
 #include <qtmetamacros.h>
 #include <qtypes.h>
 
 #include "tagsedit.hpp"
+#include "tasksmodel.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
-#include "taskwatcher.hpp"
 #include "trayicon.hpp"
 
 namespace ui
@@ -39,8 +41,6 @@ class MainWindow : public QMainWindow {
     MainWindow &operator=(MainWindow &&) = delete;
 
   private:
-    bool initTaskWatcher();
-
     void initMainWindow();
     void initTasksTable();
     void initTrayIcon();
@@ -73,9 +73,8 @@ class MainWindow : public QMainWindow {
                                    const QByteArray &message);
 
   private slots:
-    void onToggleTaskShell();
+    void onToggleTaskShell(bool checked);
     void onSettingsMenu();
-    void onMuteNotifications(bool isMuted);
     void onAddTask();
     void onDeleteTasks();
     void onSetTasksDone();
@@ -84,11 +83,7 @@ class MainWindow : public QMainWindow {
     void onEditTaskAction();
     void showEditTaskDialog(const QModelIndex &);
 
-    void refreshTasksListTableIfNeeded();
-    void refreshTasksListTableEnforced();
-
     void updateTaskToolbar();
-
   signals:
     void acceptContinueCreatingTasks();
 
@@ -130,8 +125,8 @@ class MainWindow : public QMainWindow {
         explicit TToolbarActionsDefined(QToolBar &parent);
     } const m_toolbar_actions;
 
-    std::unique_ptr<Taskwarrior> m_task_provider;
-    TaskWatcher *m_task_watcher;
+    std::shared_ptr<Taskwarrior> m_task_provider;
+    TasksModel *m_data_model;
 };
 
 } // namespace ui

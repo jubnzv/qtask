@@ -1,52 +1,33 @@
 #include "configmanager.hpp"
 
-#include "iterable_per_string.hpp"
-
-#include <QDebug>
 #include <QDir>
-#include <QObject>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <memory>
-#include <utility>
-#include <vector>
+#include <type_traits>
+#include <variant>
 
-namespace
-{
-const QString s_default_task_bin = "/usr/bin/task";
-
-QString expandHome(const QString &p)
-{
-    if (p.startsWith(QString("~%1").arg(QDir::separator()))) {
-        return QDir::homePath() + p.mid(1);
-    }
-    return p;
-}
-} // namespace
-
-ConfigManager::ConfigManager(QObject *parent)
-    : QObject(parent)
-    , m_is_new(false)
-    , m_config_path("")
-    , m_task_bin(s_default_task_bin)
-    , m_show_task_shell(false)
-    , m_hide_on_startup(false)
-    , m_save_filter_on_exit(false)
-    , m_task_filter({})
+ConfigManager::ConfigManager()
+    : m_config_path("")
+    , m_named_fields_({
+          { TaskBin.name, QString("/usr/bin/task") },
+          { ShowTaskShell.name, false },
+          { HideWindowOnStartup.name, false },
+          { SaveFilterOnExit.name, false },
+          { TaskFilter.name, QStringList{} },
+          { MuteNotifications.name, false },
+      })
+    , m_named_fields_defaults_(m_named_fields_)
 {
 }
 
 ConfigManager &ConfigManager::config()
 {
-    static std::unique_ptr<ConfigManager> lazy_single_inst(new ConfigManager());
-    return *lazy_single_inst;
+    static ConfigManager instance;
+    return instance;
 }
 
 bool ConfigManager::initializeFromFile()
@@ -83,52 +64,42 @@ bool ConfigManager::initializeFromFile()
     QDir const config_dir(existsting_dir.toString());
     m_config_path = config_dir.absoluteFilePath("qtask.ini");
     if (!config_dir.exists("qtask.ini")) {
-        if (!createNewConfigFile()) {
-            return false;
-        }
-        m_is_new = true;
-        return true;
+        m_named_fields_ = m_named_fields_defaults_;
+        return updateConfigFile();
     }
 
     return fillOptionsFromConfigFile();
 }
 
-void ConfigManager::updateConfigFile()
-{
-    QSettings settings(m_config_path, QSettings::IniFormat);
-    if (!settings.isWritable()) {
-        return;
-    }
-    settings.setValue("task_bin", m_task_bin);
-    settings.setValue("show_task_shell", m_show_task_shell);
-    settings.setValue("hide_on_startup", m_hide_on_startup);
-    settings.setValue("save_filter_on_exit", m_save_filter_on_exit);
-    settings.setValue("task_filter", m_task_filter);
-}
-
-bool ConfigManager::createNewConfigFile()
+bool ConfigManager::updateConfigFile()
 {
     QSettings settings(m_config_path, QSettings::IniFormat);
     if (!settings.isWritable()) {
         return false;
     }
-    settings.setValue("task_bin", s_default_task_bin);
-    settings.setValue("show_task_shell", false);
-    settings.setValue("hide_on_startup", false);
-    settings.setValue("save_filter_on_exit", false);
-    settings.setValue("task_filter", {});
-
+    for (const auto &[name, field_variant] : m_named_fields_) {
+        std::visit([&name, &settings](
+                       const auto &value) { settings.setValue(name, value); },
+                   field_variant);
+    }
     return true;
 }
 
 bool ConfigManager::fillOptionsFromConfigFile()
 {
     const QSettings settings(m_config_path, QSettings::IniFormat);
-    m_task_bin = settings.value("task_bin", s_default_task_bin).toString();
-    m_show_task_shell = settings.value("show_task_shell", false).toBool();
-    m_hide_on_startup = settings.value("hide_on_startup", false).toBool();
-    m_save_filter_on_exit =
-        settings.value("save_filter_on_exit", false).toBool();
-    m_task_filter = settings.value("task_filter", "").toStringList();
+
+    for (auto &[name, field_variant] : m_named_fields_) {
+        const QVariant def =
+            std::visit([](const auto &v) { return QVariant::fromValue(v); },
+                       m_named_fields_defaults_.at(name));
+        QVariant val = settings.value(name, def);
+        std::visit(
+            [&val](auto &typed_value) {
+                using T = std::decay_t<decltype(typed_value)>;
+                typed_value = val.value<T>();
+            },
+            field_variant);
+    }
     return true;
 }

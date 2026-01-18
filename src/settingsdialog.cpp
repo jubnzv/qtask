@@ -1,4 +1,9 @@
 #include "settingsdialog.hpp"
+#include "block_guard.hpp"
+#include "configmanager.hpp"
+#include "lambda_visitors.hpp"
+
+#include <variant>
 
 #include <QAbstractButton>
 #include <QCheckBox>
@@ -9,9 +14,8 @@
 #include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QWidget>
-
-#include "configmanager.hpp"
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -19,16 +23,24 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     , m_hide_on_startup_cb(
           new QCheckBox(tr("Hide QTask window on startup"), this))
     , m_save_filter_on_exit(new QCheckBox(tr("Save task filter on exit"), this))
+    , m_mute_notifications_cb(new QCheckBox(tr("Mute notifications"), this))
     , m_buttons(new QDialogButtonBox(QDialogButtonBox::Ok |
                                          QDialogButtonBox::Apply |
                                          QDialogButtonBox::Close,
                                      this))
+    , m_conf_to_widget_binders_{
+        { ConfigManager::TaskBin, m_task_bin_edit },
+        { ConfigManager::HideWindowOnStartup, m_hide_on_startup_cb },
+        { ConfigManager::SaveFilterOnExit, m_save_filter_on_exit },
+        { ConfigManager::MuteNotifications, m_mute_notifications_cb }
+    }
 
 {
     setWindowTitle(tr("Settings"));
     setWindowIcon(QIcon(":/icons/qtask.svg"));
 
     initUI();
+    updateButtonsState();
 }
 
 SettingsDialog::~SettingsDialog() = default;
@@ -36,45 +48,68 @@ SettingsDialog::~SettingsDialog() = default;
 void SettingsDialog::initUI()
 {
     auto *main_layout = new QGridLayout(this);
-    main_layout->setContentsMargins(5, 5, 5, 5);
+    main_layout->setContentsMargins(12, 12, 12, 12);
+    main_layout->setSpacing(10);
 
-    auto *task_bin_label = new QLabel(tr("task executable:"));
+    // Path
+    auto *task_bin_label = new QLabel(tr("Task executable:"));
     main_layout->addWidget(task_bin_label, 0, 0);
-
-    m_task_bin_edit->setText(ConfigManager::config().getTaskBin());
     main_layout->addWidget(m_task_bin_edit, 0, 1);
+    main_layout->addWidget(m_hide_on_startup_cb, 1, 0, 1, 2);
+    main_layout->addWidget(m_save_filter_on_exit, 2, 0, 1, 2);
+    main_layout->addWidget(m_mute_notifications_cb, 3, 0, 1, 2);
 
-    auto *task_data_path_label = new QLabel(tr("Path to task data:"));
-    main_layout->addWidget(task_data_path_label, 1, 0);
+    // Spacer
+    main_layout->setRowMinimumHeight(4, 10);
 
-    m_hide_on_startup_cb->setChecked(
-        ConfigManager::config().getHideWindowOnStartup());
-    main_layout->addWidget(m_hide_on_startup_cb, 2, 0, 1, 2);
-
-    m_save_filter_on_exit->setChecked(
-        ConfigManager::config().getSaveFilterOnExit());
-    main_layout->addWidget(m_save_filter_on_exit, 3, 0, 1, 2);
-
+    // Buttons
     connect(m_buttons, &QDialogButtonBox::clicked, this,
             &SettingsDialog::onButtonBoxClicked);
-    main_layout->addWidget(m_buttons, 4, 0, 1, 2);
+    main_layout->addWidget(m_buttons, 5, 0, 1, 2);
 
     setLayout(main_layout);
+
+    // Tray icon menu could change value.
+    connect(&ConfigManager::config().notifier(), &ConfigEvents::settingsChanged,
+            this, [this]() {
+                auto guard = BlockGuard(m_mute_notifications_cb);
+                m_mute_notifications_cb->setChecked(ConfigManager::config().get(
+                    ConfigManager::MuteNotifications));
+                updateButtonsState();
+            });
+
+    for (const auto &b : m_conf_to_widget_binders_) {
+        const LambdaVisitor visitor{
+            [&b, this](QCheckBox *checkbox) {
+                checkbox->setChecked(
+                    ConfigManager::config().get_as<bool>(b.key));
+                connect(checkbox, &QCheckBox::toggled, this,
+                        &SettingsDialog::updateButtonsState);
+            },
+            [&b, this](QLineEdit *edit) {
+                edit->setText(ConfigManager::config().get_as<QString>(b.key));
+                connect(edit, &QLineEdit::textChanged, this,
+                        &SettingsDialog::updateButtonsState);
+            },
+        };
+        std::visit(visitor, b.widget);
+    }
 }
 
 void SettingsDialog::applySettings()
 {
-    auto task_bin = m_task_bin_edit->text();
-    if (ConfigManager::config().getTaskBin() != task_bin) {
-        ConfigManager::config().setTaskBin(task_bin);
+    auto &cfg = ConfigManager::config();
+    for (const auto &b : m_conf_to_widget_binders_) {
+        const LambdaVisitor visitor{
+            [&b, &cfg](QCheckBox *checkbox) {
+                cfg.set_as(b.key, checkbox->isChecked());
+            },
+            [&b, &cfg](QLineEdit *edit) { cfg.set_as(b.key, edit->text()); },
+        };
+        std::visit(visitor, b.widget);
     }
-
-    ConfigManager::config().setHideWindowOnStartup(
-        m_hide_on_startup_cb->isChecked());
-    ConfigManager::config().setSaveFilterOnExit(
-        m_save_filter_on_exit->isChecked());
-
-    ConfigManager::config().updateConfigFile();
+    cfg.updateConfigFile();
+    updateButtonsState();
 }
 
 void SettingsDialog::onButtonBoxClicked(QAbstractButton *button)
@@ -86,7 +121,33 @@ void SettingsDialog::onButtonBoxClicked(QAbstractButton *button)
     case QDialogButtonBox::Ok:
         applySettings();
         close();
+        break;
     default:
         close();
+        break;
     }
+}
+
+void SettingsDialog::updateButtonsState()
+{
+    bool changed = false;
+    for (const auto &b : m_conf_to_widget_binders_) {
+        changed |= std::visit(
+            LambdaVisitor{
+                [&](QCheckBox *cb) {
+                    return cb->isChecked() !=
+                           ConfigManager::config().get_as<bool>(b.key);
+                },
+                [&](QLineEdit *le) {
+                    return le->text() !=
+                           ConfigManager::config().get_as<QString>(b.key);
+                } },
+            b.widget);
+
+        if (changed) {
+            break;
+        }
+    }
+    m_buttons->button(QDialogButtonBox::Apply)->setEnabled(changed);
+    m_buttons->button(QDialogButtonBox::Ok)->setEnabled(changed);
 }

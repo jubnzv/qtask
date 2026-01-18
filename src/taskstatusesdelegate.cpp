@@ -13,6 +13,25 @@
 #include <QStyledItemDelegate>
 #include <qnamespace.h>
 
+namespace
+{
+[[nodiscard]]
+QString makeAlignedCombinedEmoji(const StatusEmoji &status)
+{
+    static const auto wrap = [](QString src) {
+        if (!src.isEmpty()) {
+            return src;
+        }
+        return QString::fromUtf8("\u2003");
+    };
+
+    // Order is important for UI/UX reason, it should match tooltip & fields in
+    // editor.
+    return wrap(status.schedEmoji()) + wrap(status.dueEmoji()) +
+           wrap(status.waitEmoji());
+}
+} // namespace
+
 TaskStatusesDelegate::TaskStatusesDelegate(QObject *parent)
     : TaskHintProviderDelegate(parent)
 {
@@ -32,7 +51,7 @@ void TaskStatusesDelegate::paint(QPainter *painter,
     initStyleOption(&opt, index);
 
     const auto idText = index.data(Qt::DisplayRole).toString();
-    const auto prefix = StatusEmoji(task).alignedCombinedEmoji();
+    const auto prefix = makeAlignedCombinedEmoji(StatusEmoji{ task });
     const QFontMetrics fm(opt.font);
     const int emojiWidth = fm.horizontalAdvance(prefix);
 

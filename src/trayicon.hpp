@@ -1,6 +1,8 @@
 #ifndef SYSTRAYICON_HPP
 #define SYSTRAYICON_HPP
 
+#include "task_emojies.hpp"
+
 #include <QAction>
 #include <QMenu>
 #include <QObject>
@@ -15,11 +17,10 @@ class SystemTrayIcon : public QSystemTrayIcon {
     Q_OBJECT
 
   public:
-    explicit SystemTrayIcon(bool isMuted, QObject *parent);
-
-    bool isMuted() const;
+    explicit SystemTrayIcon(QObject *parent);
+  public slots:
+    void updateStatusIcon(StatusEmoji::EmojiUrgency urgency);
   signals:
-    void muteNotificationsRequested(bool value);
     void addTaskRequested();
     void exitRequested();
 

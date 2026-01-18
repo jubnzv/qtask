@@ -4,11 +4,6 @@
 #include "task_date_time.hpp"
 
 #include <QDateTime>
-#include <QFontDatabase>
-#include <QFontMetrics>
-#include <QGuiApplication>
-#include <QString>
-
 #include <QFont>
 #include <QFontDatabase>
 #include <QFontMetrics>
@@ -16,25 +11,29 @@
 #include <QString>
 #include <QStringLiteral>
 
+#include <cstdint>
+#include <utility>
+
 class StatusEmoji {
   public:
-    explicit StatusEmoji(const DetailedTaskInfo &task,
+    /// @brief Urgency is used as overall indicator, it should be checked for
+    /// single top task in the list. It can be used for system tray icon.
+    enum class EmojiUrgency : std::uint8_t {
+        None = 0,
+        Future,
+        WaitPast,
+        DueApproaching,
+        SchedApproaching,
+        SchedPast, // 🚀
+        Active,    // 🔵
+        Overdue    // 🔥
+    };
+
+    explicit StatusEmoji(DetailedTaskInfo task,
                          QDateTime now = QDateTime::currentDateTime())
-        : task(task)
+        : task(std::move(task))
         , now(std::move(now))
     {
-    }
-
-    [[nodiscard]]
-    QString alignedCombinedEmoji() const
-    {
-        static const auto wrap = [](QString src) {
-            if (!src.isEmpty()) {
-                return src;
-            }
-            return QString::fromUtf8("\u2003");
-        };
-        return wrap(schedEmoji()) + wrap(dueEmoji()) + wrap(waitEmoji());
     }
 
     [[nodiscard]]
@@ -73,10 +72,74 @@ class StatusEmoji {
         return task.active.get();
     }
 
-  private:
-    const DetailedTaskInfo &task;
-    QDateTime now;
+    [[nodiscard]] EmojiUrgency getMostUrgentLevel() const
+    {
+        // Highest priority - missing deadline.
+        if (task.due.get().has_value() &&
+            task.due.get().relationToNow(now) == DatesRelation::Past) {
+            return EmojiUrgency::Overdue;
+        }
 
+        // Working on something...
+        if (isSpecialSched()) {
+            return EmojiUrgency::Active;
+        }
+
+        // Something was scheduled and it is in the past now.
+        if (task.sched.get().has_value() &&
+            task.sched.get().relationToNow(now) == DatesRelation::Past) {
+            return EmojiUrgency::SchedPast;
+        }
+
+        // Sched approaching
+        if (task.sched.get().has_value() &&
+            task.sched.get().relationToNow(now) == DatesRelation::Approaching) {
+            return EmojiUrgency::SchedApproaching;
+        }
+
+        // Coming soon deadline.
+        if (task.due.get().has_value() &&
+            task.due.get().relationToNow(now) == DatesRelation::Approaching) {
+            return EmojiUrgency::DueApproaching;
+        }
+
+        // Missing WAIT.
+        if (task.wait.get().has_value() &&
+            task.wait.get().relationToNow(now) == DatesRelation::Past) {
+            return EmojiUrgency::WaitPast;
+        }
+
+        // Something set to future...
+        if (task.due.get().has_value() || task.sched.get().has_value()) {
+            return EmojiUrgency::Future;
+        }
+
+        return EmojiUrgency::None;
+    }
+
+    static QString urgencyToEmoji(const EmojiUrgency level)
+    {
+        switch (level) {
+        case EmojiUrgency::Overdue:
+            return QString::fromUtf8("🔥");
+        case EmojiUrgency::Active:
+            return QString::fromUtf8("🔵");
+        case EmojiUrgency::SchedPast:
+            return QString::fromUtf8("🚀");
+        case EmojiUrgency::SchedApproaching:
+            return QString::fromUtf8("⏳");
+        case EmojiUrgency::DueApproaching:
+            return QString::fromUtf8("⚠️");
+        case EmojiUrgency::WaitPast:
+            return QString::fromUtf8("✨");
+        case EmojiUrgency::Future:
+            return QString::fromUtf8("💤");
+        case EmojiUrgency::None:
+            [[fallthrough]];
+        default:
+            return {};
+        }
+    }
     static bool hasEmoji()
     {
         static const bool has_emoji = []() {
@@ -86,6 +149,10 @@ class StatusEmoji {
         }();
         return has_emoji;
     }
+
+  private:
+    DetailedTaskInfo task;
+    QDateTime now;
 
     /// @brief Computes DatesRelation between @p taskDate and @p now and
     /// converts to emoji if supported, to text string otherwise.
@@ -123,7 +190,7 @@ class StatusEmoji {
             }
         } else if constexpr (taRole == ETaskDateTimeRole::Wait) {
             if (rel == DatesRelation::Past) {
-                return hasEmoji() ? QString::fromUtf8("👁️")
+                return hasEmoji() ? QString::fromUtf8("✨")
                                   : QStringLiteral(" * ");
             }
             return hasEmoji() ? QString::fromUtf8("⏸️") : QStringLiteral(" z ");

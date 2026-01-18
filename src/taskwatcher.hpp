@@ -26,12 +26,8 @@ class TaskWatcher : public QObject {
   public slots:
     void checkNow();
 
-    /// @brief Next checkNow() will do update.
-    void enforceUpdate();
-
   private:
     TaskWarriorDbState m_latestDbState;
-    std::chrono::system_clock::time_point last_check_at;
     std::unique_ptr<IPereodicExec> m_pereodic_worker;
 };
 

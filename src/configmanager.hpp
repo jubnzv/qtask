@@ -1,65 +1,84 @@
 #ifndef CONFIGMANAGER_HPP
 #define CONFIGMANAGER_HPP
 
-#include <QDir>
+#include <map>
+#include <type_traits>
+#include <variant>
+
 #include <QObject>
 #include <QString>
+#include <QStringList>
 
-class ConfigManager : public QObject {
-  private:
+class ConfigEvents : public QObject {
     Q_OBJECT
-    ConfigManager(QObject *parent = nullptr);
+  signals:
+    void settingsChanged();
+};
 
+class ConfigManager {
   public:
-    ~ConfigManager() = default;
+    template <typename taValueType>
+    struct Key {
+        using value_type = taValueType;
+        QString name;
+    };
+
+    // It should list all used Key<Type>.
+    using KeyVariant = std::variant<Key<bool>, Key<QString>, Key<QStringList>>;
+
+    static inline const Key<QString> TaskBin{ "task_bin" };
+    static inline const Key<bool> ShowTaskShell{ "show_task_shell" };
+    static inline const Key<bool> HideWindowOnStartup{ "hide_on_startup" };
+    static inline const Key<bool> SaveFilterOnExit{ "save_filter_on_exit" };
+    static inline const Key<QStringList> TaskFilter{ "task_filter" };
+    static inline const Key<bool> MuteNotifications{ "mute_notifications" };
+
     static ConfigManager &config();
+    ConfigEvents &notifier() { return m_events_; }
 
-    bool isNew() const { return m_is_new; }
+    template <typename taValueType>
+    [[nodiscard]] const taValueType &get(const Key<taValueType> &key) const
+    {
+        return std::get<taValueType>(m_named_fields_.at(key.name));
+    }
 
-    const QString &getTaskBin() const { return m_task_bin; }
-    void setTaskBin(const QString &v) { m_task_bin = v; }
+    template <typename taValueType>
+    [[nodiscard]] const taValueType &get_as(const KeyVariant &key) const
+    {
+        return get(std::get<Key<taValueType>>(key));
+    }
 
-    bool getShowTaskShell() const { return m_show_task_shell; }
-    void setShowTaskShell(bool v) { m_show_task_shell = v; }
+    template <typename taValueType>
+    void set(const Key<taValueType> &key, const taValueType &val)
+    {
+        auto &current = std::get<taValueType>(m_named_fields_.at(key.name));
+        if (current != val) {
+            current = val;
+            emit m_events_.settingsChanged();
+        }
+    }
 
-    bool getHideWindowOnStartup() const { return m_hide_on_startup; }
-    void setHideWindowOnStartup(bool v) { m_hide_on_startup = v; }
+    template <typename taValueType>
+    void set_as(const KeyVariant &key, const taValueType &val)
+    {
+        set(std::get<Key<taValueType>>(key), val);
+    }
 
-    bool getSaveFilterOnExit() const { return m_save_filter_on_exit; }
-    void setSaveFilterOnExit(bool v) { m_save_filter_on_exit = v; }
-
-    QStringList getTaskFilter() const { return m_task_filter; }
-    void setTaskFilter(const QStringList &v) { m_task_filter = v; }
-
+    [[nodiscard]]
     bool initializeFromFile();
-
-    void updateConfigFile();
+    bool updateConfigFile();
 
   private:
-    bool createNewConfigFile();
+    using TSettingType = std::variant<bool, QString, QStringList>;
+    ConfigManager();
     bool fillOptionsFromConfigFile();
-
-  private:
-    /// Configuration file was created during initialization
-    bool m_is_new;
 
     /// Path to configuration file
     QString m_config_path;
 
-    /// Path to task binary
-    QString m_task_bin;
-
-    /// Task shell will be shown in the main window
-    bool m_show_task_shell;
-
-    /// QTask window is hidden on startup
-    bool m_hide_on_startup;
-
-    /// QTask will save current task filter on exit and apply it after restart.
-    bool m_save_filter_on_exit;
-
-    /// task filter from the previous launch.
-    QStringList m_task_filter;
+    std::map<QString, TSettingType> m_named_fields_;
+    const std::map<QString, TSettingType> m_named_fields_defaults_;
+    ConfigEvents m_events_;
 };
 
 #endif // CONFIGMANAGER_HPP

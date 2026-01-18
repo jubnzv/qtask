@@ -30,7 +30,7 @@ Taskwarrior::~Taskwarrior() = default;
 
 bool Taskwarrior::init()
 {
-    const auto &binary = ConfigManager::config().getTaskBin();
+    const auto &binary = ConfigManager::config().get(ConfigManager::TaskBin);
     try {
         m_executor = std::make_unique<TaskWarriorExecutor>(binary);
         return true;
