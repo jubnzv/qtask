@@ -58,9 +58,6 @@ class StatusEmoji {
     [[nodiscard]]
     QString schedEmoji() const
     {
-        if (isSpecialSched()) {
-            return hasEmoji() ? QString::fromUtf8("🔵") : "[W]";
-        }
         if (task.sched.get().has_value()) {
             return relationToEmoji(task.sched.get(), now);
         }
@@ -75,6 +72,11 @@ class StatusEmoji {
 
     [[nodiscard]] EmojiUrgency getMostUrgentLevel() const
     {
+        // Working on something...
+        if (isSpecialSched()) {
+            return EmojiUrgency::Active;
+        }
+
         // Highest priority - missing deadline.
         if (task.due.get().has_value() &&
             task.due.get().relationToNow(now) == DatesRelation::Past) {
@@ -91,11 +93,6 @@ class StatusEmoji {
         if (task.sched.get().has_value() &&
             task.sched.get().relationToNow(now) == DatesRelation::Approaching) {
             return EmojiUrgency::SchedApproaching;
-        }
-
-        // Working on something...
-        if (isSpecialSched()) {
-            return EmojiUrgency::Active;
         }
 
         // Coming soon deadline.
