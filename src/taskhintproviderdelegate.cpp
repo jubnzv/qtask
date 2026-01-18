@@ -186,7 +186,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     // ------------------------------------------------
     // TAGS (QStringList)
     // ------------------------------------------------
-    const QStringList &tagsList = task.tags.get();
+    const auto &tagsList = task.tags.get();
     if (!tagsList.isEmpty()) {
         html += "<div class='info-block'><h3>Tags</h3><p>";
         html += tagsList.join(", ");
