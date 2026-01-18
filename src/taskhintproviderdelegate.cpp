@@ -7,6 +7,7 @@
 #include "tasksmodel.hpp"
 
 #include <QAbstractItemView>
+#include <QGuiApplication>
 #include <QHelpEvent>
 #include <QModelIndex>
 #include <QObject>
