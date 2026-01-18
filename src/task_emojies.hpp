@@ -22,11 +22,12 @@ class StatusEmoji {
         None = 0,
         Future,
         WaitPast,
-        DueApproaching,
-        SchedApproaching,
-        SchedPast, // 🚀
-        Active,    // 🔵
-        Overdue    // 🔥
+        DueApproaching,   // We assume Due is something strategical (long time).
+        Active,           // 🔵
+        SchedApproaching, // We assume Sched is something "tactical" (short
+                          // time)
+        SchedPast,        // 🚀
+        Overdue           // 🔥
     };
 
     explicit StatusEmoji(DetailedTaskInfo task,
@@ -80,11 +81,6 @@ class StatusEmoji {
             return EmojiUrgency::Overdue;
         }
 
-        // Working on something...
-        if (isSpecialSched()) {
-            return EmojiUrgency::Active;
-        }
-
         // Something was scheduled and it is in the past now.
         if (task.sched.get().has_value() &&
             task.sched.get().relationToNow(now) == DatesRelation::Past) {
@@ -95,6 +91,11 @@ class StatusEmoji {
         if (task.sched.get().has_value() &&
             task.sched.get().relationToNow(now) == DatesRelation::Approaching) {
             return EmojiUrgency::SchedApproaching;
+        }
+
+        // Working on something...
+        if (isSpecialSched()) {
+            return EmojiUrgency::Active;
         }
 
         // Coming soon deadline.
