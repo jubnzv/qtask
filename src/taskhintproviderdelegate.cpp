@@ -188,7 +188,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     const QStringList &tagsList = task.tags.get();
     if (!tagsList.isEmpty()) {
         html += "<div class='info-block'><h3>Tags</h3><p>";
-        html += tagsList.join(", "); // Просто перечисление через запятую
+        html += tagsList.join(", ");
         html += "</p></div>";
     }
 
