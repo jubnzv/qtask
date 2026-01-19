@@ -16,13 +16,15 @@
 #include <tuple>
 #include <type_traits>
 
+#include "recurrence_instance_data.hpp"
 #include "task_date_time.hpp"
 #include "taskproperty.hpp"
 #include "taskwarriorexecutor.hpp"
 
 // This should contain ALL TaskProperty<> fields in DetailedTaskInfo.
-#define TASK_PROPERTIES_LIST \
-    priority, project, tags, sched, due, wait, description, active
+#define TASK_PROPERTIES_LIST                                        \
+    priority, project, tags, sched, due, wait, description, active, \
+        reccurency_period
 
 /// @note Classes here are responsible to produce proper commands to the
 /// taskwarrior and parse it's results intact with own fields. Actual execution
@@ -49,6 +51,7 @@ class DetailedTaskInfo {
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
     TaskProperty<bool> active;
+    TaskProperty<RecurrentInstancePeriod> reccurency_period;
 
     /// @brief Copies different fields from @p other object. If field was equal,
     /// keeps "modified" state as it was before.

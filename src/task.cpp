@@ -2,6 +2,7 @@
 
 #include "date_time_parser.hpp"
 #include "qtutil.hpp"
+#include "recurrence_instance_data.hpp"
 #include "split_string.hpp"
 #include "task_date_time.hpp"
 #include "taskwarriorexecutor.hpp"
@@ -185,6 +186,7 @@ class InformationResponseSetters {
             { "Waiting", &InformationResponseSetters::handleWaiting },
             { "Scheduled", &InformationResponseSetters::handleScheduled },
             { "Due", &InformationResponseSetters::handleDue },
+            { "Recurrence", &InformationResponseSetters::handleRecurrence },
         };
 
         const auto it = kTagToHandler.find(split_string.key);
@@ -228,6 +230,16 @@ class InformationResponseSetters {
         static const DateTimeParser parser{ 2, 0, 1 };
         task.due =
             parser.parseDateTimeString<ETaskDateTimeRole::Due>(line.value);
+    }
+    void handleRecurrence(const SplitString &line)
+    {
+        // class ReccurentInstancePeriod does not want empty lines.
+        if (!line.value.isEmpty()) {
+            task.reccurency_period.value.modify(
+                [&line](RecurrentInstancePeriod &period) {
+                    period.setRecurrent(line.value);
+                });
+        }
     }
 };
 
@@ -334,6 +346,8 @@ DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     // active has dedicated start/stop commands, it should not be formatted for
     // cmd
     , active("", false)
+    // we do not pass reccurency_period to cmd yet
+    , reccurency_period("", {})
 {
 }
 
@@ -425,6 +439,11 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
         MultilineDescriptionStatus::NotStarted
     };
 
+    // By default task is not reccurent and it is NOT indicated on full read.
+    // If it is reccurent, it will have explicit period mentioned.
+    reccurency_period.value.modify(
+        [](RecurrentInstancePeriod &period) { period.setNonRecurrent(); });
+
     InformationResponseSetters setters(*this);
     std::for_each(
         std::next(stdOut.cbegin(), kHeadersSize),
@@ -452,6 +471,7 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
             description_status = MultilineDescriptionStatus::NotStarted;
             setters.setField(split_string);
         });
+
     // After reading those are "not modified".
     SetPropertiesNotChanged(true, TASK_PROPERTIES_LIST);
     markFullRead();
@@ -460,7 +480,8 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
 
 bool DetailedTaskInfo::isFullRead() const
 {
-    return dataState == ReadAs::FullRead;
+    return dataState == ReadAs::FullRead &&
+           reccurency_period.get().isFullyRead();
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)
