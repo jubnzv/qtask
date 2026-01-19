@@ -5,6 +5,7 @@
 #include "recurrence_instance_data.hpp"
 #include "split_string.hpp"
 #include "task_date_time.hpp"
+#include "task_table_stencil.hpp"
 #include "taskwarriorexecutor.hpp"
 
 #include <QDateTime>
@@ -560,6 +561,18 @@ bool FilteredTasksListReader::readUrgencySortedTaskList(
         tasks.clear();
         return true;
     }
+
+    TableStencil query({
+        "id",
+        "start.active",
+        "project",
+        "priority",
+        "scheduled",
+        "due",
+        "wait",
+        "description",
+    });
+
     // Note, it is important that result will be sorted in this request by
     // taskwarrior.
     auto cmd = QStringList{
