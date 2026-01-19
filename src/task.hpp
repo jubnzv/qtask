@@ -14,7 +14,6 @@
 #include <iterator>
 #include <optional>
 #include <tuple>
-#include <type_traits>
 
 #include "allatoncekeywordsfinder.h"
 #include "recurrence_instance_data.hpp"

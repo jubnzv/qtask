@@ -4,6 +4,7 @@
 #include "qtutil.hpp"
 #include "recurrence_instance_data.hpp"
 #include "split_string.hpp"
+#include "tabular_stencil_base.hpp"
 #include "task_date_time.hpp"
 #include "task_table_stencil.hpp"
 #include "taskwarriorexecutor.hpp"
@@ -122,17 +123,15 @@ bool SetPropertiesNotChanged(const bool wasTaskCallOk, taLeft &leftProperty,
 }
 
 // Expected values in reading TaskWarrior responses.
-constexpr qsizetype kRowIndexOfDividers = 0;
-constexpr qsizetype kHeadersSize = 2;
-constexpr qsizetype kFooterSize = 1;
+constexpr qsizetype kRowIndexOfDividers =
+    TabularStencilBase<void>::kRowIndexOfDividers;
+constexpr qsizetype kHeadersSize = TabularStencilBase<void>::kHeadersSize;
+constexpr qsizetype kFooterSize = TabularStencilBase<void>::kFooterSize;
 
 // returns true if task outputed something except header and footer.
 bool isTaskSentData(const QStringList &task_output)
 {
-    // Empty lines are expected to be removed at all for this function to work.
-    constexpr qsizetype kRowsAmountWhenEmptyResponse =
-        kHeadersSize + kFooterSize;
-    return task_output.size() > kRowsAmountWhenEmptyResponse;
+    return TabularStencilBase<void>::isTaskSentData(task_output);
 }
 
 template <qsizetype taExpectedColumnsAmount>
