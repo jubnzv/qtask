@@ -664,6 +664,8 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
         return;
     }
 
+    // Block editor for recurrent tasks (instances), as console requires
+    // confimation of mass-edit.
     if (task->recurrency_period.get().isRecurrent()) {
         return;
     }
@@ -717,6 +719,8 @@ void MainWindow::updateTaskToolbar()
         return;
     }
 
+    // Block editor for recurrent tasks (instances), as console requires
+    // confimation of mass-edit.
     const auto recurrent_count = std::count_if(
         selectedTasks.begin(), selectedTasks.end(), [](const auto &task) {
             return task.recurrency_period.get().isRecurrent();
