@@ -234,8 +234,8 @@ class InformationResponseSetters {
     }
     void handleRecurrence(const SplitString &line)
     {
-        // class ReccurentInstancePeriod does not want empty lines.
-        if (!line.value.isEmpty()) {
+        // class RecurrentInstancePeriod does not want empty lines.
+        if (!line.value.isEmpty() && !line.value.contains("type")) {
             task.reccurency_period.value.modify(
                 [&line](RecurrentInstancePeriod &period) {
                     period.setRecurrent(line.value);

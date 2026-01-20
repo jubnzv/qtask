@@ -99,6 +99,16 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
                    "  color: #333;"
                    "  font-size: 11px;"
                    "}"
+                   ".read-only-banner {"
+                   "  background: #fff3cd;"
+                   "  border: 1px solid #ffeeba;"
+                   "  color: #856404;"
+                   "  padding: 5px;"
+                   "  margin: 5px 0;"
+                   "  border-radius: 3px;"
+                   "  font-weight: bold;"
+                   "}"
+                   ".period-val { font-style: italic; color: #533f03; }"
                    "</style>";
 
     static const auto getDateCssClass = [](const auto &dt) -> QString {
@@ -119,6 +129,21 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
         html += QString("<h3>%1</h3>").arg(getDescriptionHtml(descriptionStr));
     } else {
         html += QString("<p style='color:#aaa;'>ID: %1</p>").arg(task.task_id);
+    }
+
+    // ------------------------------------------------
+    // RECURRENCE LOCK WARNING
+    // ------------------------------------------------
+    if (task.reccurency_period.get().isRecurrent()) {
+        QString message = "⚠️ Recurring Instance (Read Only)";
+
+        if (auto p = task.reccurency_period.get().period()) {
+            message +=
+                QString("<br/><span class='period-val'>(Period: %1)</span>")
+                    .arg(*p);
+        }
+
+        html += QString("<div class='read-only-banner'>%1</div>").arg(message);
     }
 
     // ------------------------------------------------

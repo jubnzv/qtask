@@ -1,6 +1,7 @@
 #include "filteredtaskslistreader.hpp"
 #include "allatoncekeywordsfinder.hpp"
 #include "lambda_visitors.hpp"
+#include "recurrence_instance_data.hpp"
 #include "task.hpp"
 #include "task_table_stencil.hpp"
 #include "taskwarriorexecutor.hpp"
@@ -62,6 +63,18 @@ FilteredTasksListReader::getSchema() const
             [](const QString &v, Task &t, Mode m) {
                 SKIP_CONTINUATION;
                 LoadTaskField(t.active, !v.trimmed().isEmpty());
+            },
+        },
+        {
+            "recur",
+            [](const QString &v, Task &t, Mode m) {
+                SKIP_CONTINUATION;
+                t.reccurency_period.value.modify([&v](auto &rp) {
+                    if (!v.isEmpty()) {
+                        rp.setRecurrent();
+                    }
+                });
+                t.reccurency_period.value.setNotModified();
             },
         },
         {
