@@ -161,20 +161,6 @@ class BatchTasksManager {
                   const QString &after_ids = {}) const;
 };
 
-struct RecurringTaskTemplate {
-    // Recurring period with date suffix:
-    // https://taskwarrior.org/docs/design/recurrence.html#special-month-handling
-    QString uuid;
-    QString period;
-    QString project;
-    QString description;
-
-    [[nodiscard]]
-    static std::optional<QList<RecurringTaskTemplate>>
-    readAll(const TaskWarriorExecutor &executor);
-};
-// Q_DECLARE_METATYPE(RecurringTaskTemplate);
-
 /// @brief Issues `task stat` and uses some fields of the response to understand
 /// if we must reload data from taskwarrior.
 class TaskWarriorDbState {

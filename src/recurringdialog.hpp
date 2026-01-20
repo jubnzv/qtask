@@ -8,7 +8,7 @@
 #include <QTableView>
 #include <QWidget>
 
-#include "task.hpp"
+#include "recurring_task_template.hpp"
 
 class RecurringDialog : public QDialog {
     Q_OBJECT

@@ -539,53 +539,6 @@ QStringList DetailedTaskInfo::getAddModifyCmdArgsFieldsRepresentation() const
     return result;
 }
 
-std::optional<QList<RecurringTaskTemplate>>
-RecurringTaskTemplate::readAll(const TaskWarriorExecutor &executor)
-{
-    constexpr qsizetype kExpectedColumnsCount = 3;
-    const auto response = executor.execTaskProgramWithDefaults(QStringList{
-        "recurring_full",
-        "rc.report.recurring_full.columns=id,recur,project,description",
-        "rc.report.recurring_full.labels=',|,|,|'",
-        "status:Recurring",
-    });
-
-    const auto &tasks_strs = response.getStdout();
-    if (!response) {
-        return std::nullopt;
-    }
-    if (!isTaskSentData(tasks_strs)) {
-        return QList<RecurringTaskTemplate>{}; // no tasks
-    }
-
-    // Get positions from the labels string
-    // id created mod status recur wait due project description mask
-    const auto opt_positions = findColumnPositions<kExpectedColumnsCount>(
-        tasks_strs.at(kRowIndexOfDividers));
-    if (!opt_positions) {
-        return std::nullopt;
-    }
-    const auto &positions = *opt_positions;
-
-    QList<RecurringTaskTemplate> out_tasks;
-    for (auto line_it = std::next(tasks_strs.begin(), kHeadersSize),
-              last_it = std::prev(tasks_strs.end(), kFooterSize);
-         line_it != last_it; ++line_it) {
-        const auto &line = *line_it;
-
-        RecurringTaskTemplate task;
-        task.uuid = line.mid(0, positions[0]).simplified();
-        task.period =
-            line.mid(positions[0], positions[1] - positions[0]).simplified();
-        task.project =
-            line.mid(positions[1], positions[2] - positions[1]).simplified();
-        task.description = line.right(line.size() - positions[2]).simplified();
-        out_tasks.push_back(task);
-    }
-
-    return out_tasks;
-}
-
 TaskWarriorDbState::Optional
 TaskWarriorDbState::readCurrent(const TaskWarriorExecutor &executor)
 {

@@ -9,6 +9,7 @@
 #include <QVariant>
 
 #include "allatoncekeywordsfinder.hpp"
+#include "recurring_task_template.hpp"
 #include "task.hpp"
 #include "taskwarriorexecutor.hpp"
 

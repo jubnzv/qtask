@@ -117,8 +117,12 @@ FilteredTasksListReader::getSchema() const
                             return;
                         }
                     }
-                    LoadTaskField(t.description,
-                                  t.description.get() + '\n' + d);
+                    if (t.description.get().isEmpty()) {
+                        LoadTaskField(t.description, d);
+                    } else {
+                        LoadTaskField(t.description,
+                                      t.description.get() + '\n' + d);
+                    }
                 }
             },
         }
