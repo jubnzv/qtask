@@ -24,7 +24,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <iterator>
 #include <limits>
 #include <optional>
@@ -62,14 +61,16 @@ QChar priorityToChar(const DetailedTaskInfo::Priority &p)
     throw std::runtime_error("Unset priority cannot be converted.");
 }
 
-QStringList formatTags(const QStringList &tags)
+QString formatTags(const QStringList &tags) // NOLINT
 {
-    return { makeParam("tag", tags.join(" ")) };
+    return makeParam("tag", tags.join(" "));
 }
 
 QString formatDescription(const QString &descr)
 {
-    return { makeParam("description", descr) };
+    QString clean = descr.trimmed();
+    clean.replace(R"(")", "'");
+    return makeParam("description", QString(R"("%1")").arg(clean));
 }
 
 QString formatPriority(const DetailedTaskInfo::Priority pri)
@@ -325,13 +326,6 @@ class StatResponseSetters {
     }
 };
 
-template <typename taProperty, typename taValue>
-void LoadTaskField(taProperty &field, taValue value)
-{
-    field = std::move(value);
-    field.value.setNotModified();
-}
-
 } // namespace
 
 DetailedTaskInfo::DetailedTaskInfo(QString task_id)
@@ -456,12 +450,12 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
                 if (description_status ==
                     MultilineDescriptionStatus::InProgress) {
                     description =
-                        description.get() + "\n" + whole_line.simplified();
+                        description.get() + "\n" + whole_line.trimmed();
                 }
                 return;
             }
             if (split_string.key == "Description") {
-                const auto descr1 = split_string.value.simplified();
+                const auto descr1 = split_string.value.trimmed();
                 if (!descr1.isEmpty()) {
                     description = descr1;
                     description_status = MultilineDescriptionStatus::InProgress;
@@ -543,150 +537,6 @@ QStringList DetailedTaskInfo::getAddModifyCmdArgsFieldsRepresentation() const
     QStringList result;
     AppendPropertiesToCmdList(result, TASK_PROPERTIES_LIST);
     return result;
-}
-
-FilteredTasksListReader::FilteredTasksListReader(AllAtOnceKeywordsFinder filter)
-    : tasks{}
-    , m_filter(std::move(filter))
-{
-}
-
-bool FilteredTasksListReader::readUrgencySortedTaskList(
-    const TaskWarriorExecutor &executor)
-{
-    constexpr qsizetype kExpectedColumnsCount = 7;
-
-    if (m_filter.isNotFound()) {
-        tasks.clear();
-        return true;
-    }
-
-    TableStencil query({
-        "id",
-        "start.active",
-        "project",
-        "priority",
-        "scheduled",
-        "due",
-        "wait",
-        "description",
-    });
-
-    // Note, it is important that result will be sorted in this request by
-    // taskwarrior.
-    auto cmd = QStringList{
-        // clang-format off
-                         "rc.report.minimal.columns=id,start.active,project,priority,scheduled,due,wait,description",
-        // clang-format on
-        "rc.report.minimal.labels=',|,|,|,|,|,|,|'",
-        "rc.report.minimal.sort=urgency-",
-        "rc.print.empty.columns=yes",
-        "rc.dateformat=Y-M-DTH:N:S",
-        "+PENDING",
-        "minimal",
-    };
-    if (m_filter.getIds().has_value()) {
-        cmd << *m_filter.getIds();
-    }
-    const auto res = executor.execTaskProgramWithDefaults(cmd);
-    if (!res) {
-        return false;
-    }
-    QStringList stdOut = res.getStdout();
-    stdOut.removeAll("");
-    if (!isTaskSentData(stdOut)) {
-        return false;
-    }
-    tasks.clear();
-
-    // Get positions from the labels string.
-    const auto opt_positions = findColumnPositions<kExpectedColumnsCount>(
-        stdOut.at(kRowIndexOfDividers));
-    if (!opt_positions) {
-        return false;
-    }
-    const auto &positions = *opt_positions;
-
-    bool found_annotation = false;
-    for (auto line_it = std::next(stdOut.begin(), kHeadersSize),
-              last_it = std::prev(stdOut.end(), kFooterSize);
-         line_it != last_it; ++line_it) {
-        const auto &line = *line_it;
-
-        if (line.size() < positions[3]) {
-            continue;
-        }
-
-        // TODO: it could be simplified too, probably.
-        DetailedTaskInfo task(line.mid(0, positions[0]).simplified());
-        if (!isInteger(task.task_id)) {
-            // It's probably a continuation of the multiline description or
-            // an annotation from the previous task.
-            if (tasks.isEmpty() || found_annotation) {
-                continue;
-            }
-            const QString desc_line =
-                line.right(line.size() - positions[3]).simplified();
-            if (desc_line.isEmpty()) {
-                continue;
-            }
-            // The annotations always start with a timestamp. And they
-            // always follows the description.
-            const QString first_word =
-                line.section(' ', 0, 0, QString::SectionSkipEmpty).simplified();
-            if (QDateTime::fromString(first_word, Qt::ISODate).isValid()) {
-                // We won't handle the annotations at all.
-                found_annotation = true;
-                continue;
-            }
-
-            tasks.back().description =
-                tasks.back().description.get() + '\n' + desc_line;
-            continue;
-        }
-
-        found_annotation = false;
-
-        const QString start_mark =
-            line.mid(positions[0], positions[1] - positions[0]).simplified();
-        LoadTaskField(task.active, start_mark.contains('*'));
-        LoadTaskField(
-            task.project,
-            line.mid(positions[1], positions[2] - positions[1]).simplified());
-        LoadTaskField(task.priority,
-                      DetailedTaskInfo::priorityFromString(
-                          line.mid(positions[2], positions[3] - positions[2])
-                              .simplified()));
-        auto sched = QDateTime::fromString(
-            line.mid(positions[3], positions[4] - positions[3]).simplified(),
-            Qt::ISODate);
-        if (sched.isValid()) {
-            LoadTaskField(task.sched, sched);
-        }
-        auto due = QDateTime::fromString(
-            line.mid(positions[4], positions[5] - positions[4]).simplified(),
-            Qt::ISODate);
-        if (due.isValid()) {
-            LoadTaskField(task.due, due);
-        }
-        auto wait = QDateTime::fromString(
-            line.mid(positions[5], positions[6] - positions[5]).simplified(),
-            Qt::ISODate);
-        if (wait.isValid()) {
-            LoadTaskField(task.wait, wait);
-        }
-        LoadTaskField(task.description,
-                      line.right(line.size() - positions[6]).simplified());
-
-        if constexpr (kExpectedColumnsCount ==
-                      DetailedTaskInfo::propertiesCount()) {
-            task.markFullRead();
-        }
-
-        tasks.emplace_back(std::move(task));
-    }
-
-    return true;
 }
 
 std::optional<QList<RecurringTaskTemplate>>

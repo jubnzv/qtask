@@ -29,7 +29,8 @@ class TabularStencilSpy : public TabularStencilBase<TestTask> {
     }
 
     [[nodiscard]]
-    QStringList createCmdParameters(const TableStencil &) override // NOLINT
+    QStringList
+    createCmdParameters(const TableStencil &) const override // NOLINT
     {
         return {};
     }

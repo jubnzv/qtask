@@ -631,7 +631,7 @@ void MainWindow::onSetTasksDone()
 void MainWindow::onApplyFilter()
 {
     if (m_task_provider->applyFilter(m_task_filter->getTags())) {
-        m_data_model->refreshIfChangedOnDisk();
+        m_data_model->refreshModel();
         return;
     }
     m_data_model->refreshIfChangedOnDisk();

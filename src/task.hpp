@@ -15,16 +15,16 @@
 #include <optional>
 #include <tuple>
 
-#include "allatoncekeywordsfinder.h"
 #include "recurrence_instance_data.hpp"
 #include "task_date_time.hpp"
 #include "taskproperty.hpp"
 #include "taskwarriorexecutor.hpp"
 
 // This should contain ALL TaskProperty<> fields in DetailedTaskInfo.
-#define TASK_PROPERTIES_LIST                                        \
-    priority, project, tags, sched, due, wait, description, active, \
-        reccurency_period
+// Description must be LAST, as it goes multiline sometimes.
+#define TASK_PROPERTIES_LIST                                              \
+    priority, project, tags, sched, due, wait, active, reccurency_period, \
+        description
 
 /// @note Classes here are responsible to produce proper commands to the
 /// taskwarrior and parse it's results intact with own fields. Actual execution
@@ -159,24 +159,6 @@ class BatchTasksManager {
     [[nodiscard]]
     bool execVerb(const QString &verb, const TaskWarriorExecutor &executor,
                   const QString &after_ids = {}) const;
-};
-
-/// @brief Commands to read tasks list. Tasks will have particulary filled data
-/// fields, and they should be read in full later if details are needed.
-class FilteredTasksListReader {
-  public:
-    QList<DetailedTaskInfo> tasks;
-
-  public:
-    explicit FilteredTasksListReader(AllAtOnceKeywordsFinder filter);
-
-    /// @brief Queries taskwarrior for list of the tasks. Result is sorted by
-    /// internal urgency.
-    [[nodiscard]]
-    bool readUrgencySortedTaskList(const TaskWarriorExecutor &executor);
-
-  private:
-    AllAtOnceKeywordsFinder m_filter;
 };
 
 struct RecurringTaskTemplate {

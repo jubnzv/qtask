@@ -106,7 +106,7 @@ class TabularStencilBase {
     /// taskwarrior call. @p stencil must be used to get lists of columns and
     /// labels for it.
     [[nodiscard]] virtual QStringList
-    createCmdParameters(const TableStencil &stencil) = 0;
+    createCmdParameters(const TableStencil &stencil) const = 0;
 
     static QStringList getColumnNames(const ColumnsSchema &schema)
     {
