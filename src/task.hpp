@@ -14,15 +14,17 @@
 #include <iterator>
 #include <optional>
 #include <tuple>
-#include <type_traits>
 
+#include "recurrence_instance_data.hpp"
 #include "task_date_time.hpp"
 #include "taskproperty.hpp"
 #include "taskwarriorexecutor.hpp"
 
 // This should contain ALL TaskProperty<> fields in DetailedTaskInfo.
-#define TASK_PROPERTIES_LIST \
-    priority, project, tags, sched, due, wait, description, active
+// Description must be LAST, as it goes multiline sometimes.
+#define TASK_PROPERTIES_LIST                                              \
+    priority, project, tags, sched, due, wait, active, recurrency_period, \
+        description
 
 /// @note Classes here are responsible to produce proper commands to the
 /// taskwarrior and parse it's results intact with own fields. Actual execution
@@ -49,6 +51,7 @@ class DetailedTaskInfo {
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
     TaskProperty<bool> active;
+    TaskProperty<RecurrentInstancePeriod> recurrency_period;
 
     /// @brief Copies different fields from @p other object. If field was equal,
     /// keeps "modified" state as it was before.
@@ -157,68 +160,6 @@ class BatchTasksManager {
     bool execVerb(const QString &verb, const TaskWarriorExecutor &executor,
                   const QString &after_ids = {}) const;
 };
-
-/// @brief Keywords set by user. `task` finds all IDs which contain ALL
-/// keywords.
-class AllAtOnceKeywordsFinder {
-  public:
-    explicit AllAtOnceKeywordsFinder(QStringList keywords);
-
-    [[nodiscard]]
-    bool readIds(const TaskWarriorExecutor &executor);
-
-    /// @returns std::nullopt if it was no filter applied, empty string if it
-    /// was no task found by keywords, or task ids list.
-    [[nodiscard]]
-    const auto &getIds() const
-    {
-        return m_ids;
-    }
-
-    /// @returns true if nothing was found, i.e. it should be displayed empty
-    /// results.
-    [[nodiscard]]
-    bool isNotFound() const
-    {
-        return getIds().has_value() && getIds()->isEmpty();
-    }
-
-  private:
-    QStringList m_user_keywords;
-    std::optional<QString> m_ids;
-};
-
-/// @brief Commands to read tasks list. Tasks will have particulary filled data
-/// fields, and they should be read in full later if details are needed.
-class FilteredTasksListReader {
-  public:
-    QList<DetailedTaskInfo> tasks;
-
-  public:
-    explicit FilteredTasksListReader(AllAtOnceKeywordsFinder filter);
-
-    /// @brief Queries taskwarrior for list of the tasks. Result is sorted by
-    /// internal urgency.
-    [[nodiscard]]
-    bool readUrgencySortedTaskList(const TaskWarriorExecutor &executor);
-
-  private:
-    AllAtOnceKeywordsFinder m_filter;
-};
-
-struct RecurringTaskTemplate {
-    // Recurring period with date suffix:
-    // https://taskwarrior.org/docs/design/recurrence.html#special-month-handling
-    QString uuid;
-    QString period;
-    QString project;
-    QString description;
-
-    [[nodiscard]]
-    static std::optional<QList<RecurringTaskTemplate>>
-    readAll(const TaskWarriorExecutor &executor);
-};
-// Q_DECLARE_METATYPE(RecurringTaskTemplate);
 
 /// @brief Issues `task stat` and uses some fields of the response to understand
 /// if we must reload data from taskwarrior.

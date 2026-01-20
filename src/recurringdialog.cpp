@@ -11,12 +11,13 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "recurring_task_template.hpp"
 #include "recurringtasksmodel.hpp"
-#include "task.hpp"
 
 #include <utility>
 
-RecurringDialog::RecurringDialog(QList<RecurringTaskTemplate> tasks, QWidget *parent)
+RecurringDialog::RecurringDialog(QList<RecurringTaskTemplate> tasks,
+                                 QWidget *parent)
     : QDialog(parent)
     , m_tasks_view(new QTableView(this))
     , m_btn_box(new QDialogButtonBox(

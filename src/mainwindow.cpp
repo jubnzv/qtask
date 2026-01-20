@@ -15,6 +15,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QModelIndexList>
 #include <QObject>
 #include <QStringList>
 #include <QSystemTrayIcon>
@@ -40,14 +41,15 @@
 #include "task.hpp"
 #include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
+#include "taskhintproviderdelegate.hpp"
 #include "tasksmodel.hpp"
 #include "taskstatusesdelegate.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
-#include "taskwatcher.hpp"
 #include "trayicon.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <map>
 #include <memory>
@@ -532,7 +534,7 @@ QList<DetailedTaskInfo> MainWindow::getSelectedTaskInModel() const
     }
 
     for (const QModelIndex &idx : smodel->selectedRows()) {
-        QVariant var = idx.data(TasksModel::TaskReadRole);
+        const QVariant var = idx.data(TasksModel::TaskReadRole);
         if (var.canConvert<DetailedTaskInfo>()) {
             res << var.value<DetailedTaskInfo>();
         }
@@ -631,7 +633,7 @@ void MainWindow::onSetTasksDone()
 void MainWindow::onApplyFilter()
 {
     if (m_task_provider->applyFilter(m_task_filter->getTags())) {
-        m_data_model->refreshIfChangedOnDisk();
+        m_data_model->refreshModel();
         return;
     }
     m_data_model->refreshIfChangedOnDisk();
@@ -661,6 +663,12 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
     const auto task = m_task_provider->getTask(id_str);
     if (!task) {
         m_data_model->refreshIfChangedOnDisk();
+        return;
+    }
+
+    // Block editor for recurrent tasks (instances), as console requires
+    // confimation of mass-edit.
+    if (task->recurrency_period.get().isRecurrent()) {
         return;
     }
 
@@ -713,10 +721,18 @@ void MainWindow::updateTaskToolbar()
         return;
     }
 
+    // Block editor for recurrent tasks (instances), as console requires
+    // confimation of mass-edit.
+    const auto recurrent_count = std::count_if(
+        selectedTasks.begin(), selectedTasks.end(), [](const auto &task) {
+            return task.recurrency_period.get().isRecurrent();
+        });
+
     m_toolbar_actions.m_done_action->setEnabled(true);
-    m_toolbar_actions.m_edit_action->setEnabled(selectedTasks.size() == 1u);
-    m_toolbar_actions.m_wait_action->setEnabled(true);
-    m_toolbar_actions.m_delete_action->setEnabled(true);
+    m_toolbar_actions.m_edit_action->setEnabled(selectedTasks.size() == 1u &&
+                                                recurrent_count == 0u);
+    m_toolbar_actions.m_wait_action->setEnabled(recurrent_count == 0u);
+    m_toolbar_actions.m_delete_action->setEnabled(recurrent_count == 0u);
 
     const auto actives_count =
         std::count_if(selectedTasks.begin(), selectedTasks.end(),

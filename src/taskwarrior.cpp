@@ -10,6 +10,8 @@
 
 #include "configmanager.hpp"
 #include "date_time_parser.hpp"
+#include "filteredtaskslistreader.hpp"
+#include "recurring_task_template.hpp"
 #include "task.hpp"
 #include "taskwarriorexecutor.hpp"
 

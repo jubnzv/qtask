@@ -6,7 +6,7 @@
 #include <QModelIndex>
 #include <QVariant>
 
-#include "task.hpp"
+#include "recurring_task_template.hpp"
 
 class RecurringTasksModel : public QAbstractTableModel {
     Q_OBJECT

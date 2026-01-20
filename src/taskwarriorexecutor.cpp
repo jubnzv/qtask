@@ -27,7 +27,6 @@ TaskWarriorExecutor::TExecResult execProgram(const QString &binary,
 
     QProcess proc;
     proc.start(binary, all_params);
-
     if (!proc.waitForStarted(kStartDelayMs)) {
         return { TaskWarriorExecutor::TExecError{
             -1, QString("Failed to start: [ %1 ].").arg(proc.errorString()) } };
