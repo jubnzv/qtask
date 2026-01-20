@@ -7,6 +7,7 @@
 #include "tasksmodel.hpp"
 
 #include <QAbstractItemView>
+#include <QGuiApplication>
 #include <QHelpEvent>
 #include <QModelIndex>
 #include <QObject>
@@ -141,6 +142,12 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     const auto &optionalWait = task.wait.get();
     const StatusEmoji status(task);
 
+    if (status.isSpecialSched()) {
+        html += "<div class='info-block'>";
+        html += "<p><span class='date-active'>&nbsp;In Progress</span></p>";
+        html += "</div>";
+    }
+
     const bool hasDates = optionalDue.has_value() ||
                           optionalSched.has_value() || optionalWait.has_value();
     if (hasDates) {
@@ -149,9 +156,7 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
         // SCHED DATE
         if (optionalSched.has_value()) {
             const QString dateStr = toString(optionalSched.value());
-            const QString cssClass = status.isSpecialSched()
-                                         ? "date-active"
-                                         : getDateCssClass(optionalSched);
+            const QString cssClass = getDateCssClass(optionalSched);
             html +=
                 QString("<p><span class='%1'>%3&nbsp;Scheduled: %2</span></p>")
                     .arg(cssClass, dateStr, status.schedEmoji());
@@ -181,10 +186,10 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     // ------------------------------------------------
     // TAGS (QStringList)
     // ------------------------------------------------
-    const QStringList &tagsList = task.tags.get();
+    const auto &tagsList = task.tags.get();
     if (!tagsList.isEmpty()) {
         html += "<div class='info-block'><h3>Tags</h3><p>";
-        html += tagsList.join(", "); // Просто перечисление через запятую
+        html += tagsList.join(", ");
         html += "</p></div>";
     }
 
