@@ -664,6 +664,10 @@ void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
         return;
     }
 
+    if (task->recurrency_period.get().isRecurrent()) {
+        return;
+    }
+
     auto dlg = QPointer<EditTaskDialog>(new EditTaskDialog(*task, this));
     QObject::connect(dlg, &EditTaskDialog::deleteTask, this,
                      [&](const QString &uuid) {
@@ -713,10 +717,16 @@ void MainWindow::updateTaskToolbar()
         return;
     }
 
+    const auto recurrent_count = std::count_if(
+        selectedTasks.begin(), selectedTasks.end(), [](const auto &task) {
+            return task.recurrency_period.get().isRecurrent();
+        });
+
     m_toolbar_actions.m_done_action->setEnabled(true);
-    m_toolbar_actions.m_edit_action->setEnabled(selectedTasks.size() == 1u);
-    m_toolbar_actions.m_wait_action->setEnabled(true);
-    m_toolbar_actions.m_delete_action->setEnabled(true);
+    m_toolbar_actions.m_edit_action->setEnabled(selectedTasks.size() == 1u &&
+                                                recurrent_count == 0u);
+    m_toolbar_actions.m_wait_action->setEnabled(recurrent_count == 0u);
+    m_toolbar_actions.m_delete_action->setEnabled(recurrent_count == 0u);
 
     const auto actives_count =
         std::count_if(selectedTasks.begin(), selectedTasks.end(),

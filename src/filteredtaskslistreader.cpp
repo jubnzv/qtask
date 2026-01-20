@@ -69,12 +69,12 @@ FilteredTasksListReader::getSchema() const
             "recur",
             [](const QString &v, Task &t, Mode m) {
                 SKIP_CONTINUATION;
-                t.reccurency_period.value.modify([&v](auto &rp) {
+                t.recurrency_period.value.modify([&v](auto &rp) {
                     if (!v.isEmpty()) {
                         rp.setRecurrent();
                     }
                 });
-                t.reccurency_period.value.setNotModified();
+                t.recurrency_period.value.setNotModified();
             },
         },
         {

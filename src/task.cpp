@@ -236,7 +236,7 @@ class InformationResponseSetters {
     {
         // class RecurrentInstancePeriod does not want empty lines.
         if (!line.value.isEmpty() && !line.value.contains("type")) {
-            task.reccurency_period.value.modify(
+            task.recurrency_period.value.modify(
                 [&line](RecurrentInstancePeriod &period) {
                     period.setRecurrent(line.value);
                 });
@@ -341,7 +341,7 @@ DetailedTaskInfo::DetailedTaskInfo(QString task_id)
     // cmd
     , active("", false)
     // we do not pass reccurency_period to cmd yet
-    , reccurency_period("", {})
+    , recurrency_period("", {})
 {
 }
 
@@ -435,7 +435,7 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
 
     // By default task is not reccurent and it is NOT indicated on full read.
     // If it is reccurent, it will have explicit period mentioned.
-    reccurency_period.value.modify(
+    recurrency_period.value.modify(
         [](RecurrentInstancePeriod &period) { period.setNonRecurrent(); });
 
     InformationResponseSetters setters(*this);
@@ -475,7 +475,7 @@ bool DetailedTaskInfo::execReadExisting(const TaskWarriorExecutor &executor)
 bool DetailedTaskInfo::isFullRead() const
 {
     return dataState == ReadAs::FullRead &&
-           reccurency_period.get().isFullyRead();
+           recurrency_period.get().isFullyRead();
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)

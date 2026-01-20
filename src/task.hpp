@@ -23,7 +23,7 @@
 // This should contain ALL TaskProperty<> fields in DetailedTaskInfo.
 // Description must be LAST, as it goes multiline sometimes.
 #define TASK_PROPERTIES_LIST                                              \
-    priority, project, tags, sched, due, wait, active, reccurency_period, \
+    priority, project, tags, sched, due, wait, active, recurrency_period, \
         description
 
 /// @note Classes here are responsible to produce proper commands to the
@@ -51,7 +51,7 @@ class DetailedTaskInfo {
     TaskProperty<TaskDateTime<ETaskDateTimeRole::Wait>> wait;
     TaskProperty<Priority> priority;
     TaskProperty<bool> active;
-    TaskProperty<RecurrentInstancePeriod> reccurency_period;
+    TaskProperty<RecurrentInstancePeriod> recurrency_period;
 
     /// @brief Copies different fields from @p other object. If field was equal,
     /// keeps "modified" state as it was before.

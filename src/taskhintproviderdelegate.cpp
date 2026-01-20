@@ -134,10 +134,10 @@ QString generateTooltip(const DetailedTaskInfo &task, const QString &footer)
     // ------------------------------------------------
     // RECURRENCE LOCK WARNING
     // ------------------------------------------------
-    if (task.reccurency_period.get().isRecurrent()) {
+    if (task.recurrency_period.get().isRecurrent()) {
         QString message = "⚠️ Recurring Instance (Read Only)";
 
-        if (auto p = task.reccurency_period.get().period()) {
+        if (auto p = task.recurrency_period.get().period()) {
             message +=
                 QString("<br/><span class='period-val'>(Period: %1)</span>")
                     .arg(*p);
