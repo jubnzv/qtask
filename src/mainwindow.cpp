@@ -15,6 +15,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QModelIndexList>
 #include <QObject>
 #include <QStringList>
 #include <QSystemTrayIcon>
@@ -40,14 +41,15 @@
 #include "task.hpp"
 #include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
+#include "taskhintproviderdelegate.hpp"
 #include "tasksmodel.hpp"
 #include "taskstatusesdelegate.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
-#include "taskwatcher.hpp"
 #include "trayicon.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <map>
 #include <memory>
@@ -532,7 +534,7 @@ QList<DetailedTaskInfo> MainWindow::getSelectedTaskInModel() const
     }
 
     for (const QModelIndex &idx : smodel->selectedRows()) {
-        QVariant var = idx.data(TasksModel::TaskReadRole);
+        const QVariant var = idx.data(TasksModel::TaskReadRole);
         if (var.canConvert<DetailedTaskInfo>()) {
             res << var.value<DetailedTaskInfo>();
         }
