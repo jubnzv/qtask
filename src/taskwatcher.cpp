@@ -29,7 +29,7 @@ TaskWatcher::TaskWatcher(QObject *parent)
     // We need to report that we detected disk change with delay, if it was us,
     // then DB needs time to settle.
     delayedSignalSender.setSingleShot(true);
-    delayedSignalSender.setInterval(750);
+    delayedSignalSender.setInterval(150);
     connect(&delayedSignalSender, &QTimer::timeout, this,
             &TaskWatcher::dataOnDiskWereChanged);
 
