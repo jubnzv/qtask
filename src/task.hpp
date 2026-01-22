@@ -37,9 +37,13 @@ class DetailedTaskInfo {
     enum class Priority : std::uint8_t { Unset, L, M, H }; // TODO: properties
     static Priority priorityFromString(const QString &p);
 
-    // task_id is special, it is always used explicit, so we do not need to
-    // track modification.
+    // task_id and task_uuid are special, it is always used explicit, so we do
+    // not need to track modification.
+    // task_id is numeric ID currently assigned to task, it can be changed by
+    // taskwarriror on ins/del operations.
     QString task_id;
+    // task_uuid is unique long id, it must remain the same always (I guess).
+    QString task_uuid;
 
     // Note, update TASK_PROPERTIES_LIST macros if you add/remove some
     // here.

@@ -59,6 +59,13 @@ FilteredTasksListReader::getSchema() const
             },
         },
         {
+            "uuid",
+            [](const QString &v, Task &t, Mode m) {
+                SKIP_CONTINUATION;
+                t.task_uuid = v.trimmed();
+            },
+        },
+        {
             "start.active",
             [](const QString &v, Task &t, Mode m) {
                 SKIP_CONTINUATION;

@@ -28,7 +28,7 @@ struct SplitString {
             const QRegularExpressionMatch match = kSplitRx.match(line);
             if (match.hasMatch()) {
                 key = match.captured(1).simplified();
-                value = match.captured(2).simplified();
+                value = match.captured(2).trimmed();
             }
         }
     }
