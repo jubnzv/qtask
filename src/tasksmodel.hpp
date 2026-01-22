@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QList>
 #include <QModelIndex>
+#include <QStringList>
 #include <QTimer>
 #include <QVariant>
 #include <QtCore/Qt>

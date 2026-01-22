@@ -6,7 +6,7 @@
 #include "split_string.hpp"
 #include "tabular_stencil_base.hpp"
 #include "task_date_time.hpp"
-#include "task_table_stencil.hpp"
+#include "task_ids_providers.hpp"
 #include "taskwarriorexecutor.hpp"
 
 #include <QDateTime>
@@ -481,7 +481,7 @@ bool DetailedTaskInfo::isFullRead() const
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)
-    : BatchTasksManager(tasksListToIds(tasks))
+    : BatchTasksManager(tasksListToIds(tasks, kTaskIdShortGetter))
 {
 }
 

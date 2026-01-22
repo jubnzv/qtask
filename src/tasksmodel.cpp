@@ -27,6 +27,7 @@
 
 #include "task.hpp"
 #include "task_emojies.hpp"
+#include "task_ids_providers.hpp"
 
 namespace
 {
@@ -257,9 +258,7 @@ void TasksModel::refreshModel()
         if (!task.isValid() || !task.canConvert<DetailedTaskInfo>()) {
             continue;
         }
-        // FIXME: need stable UUID here instead task_id.
-        // TODO:  switch to `task rc.json.array=on export` instead console.
-        const auto taskUuid = task.value<DetailedTaskInfo>().task_id;
+        const auto &taskUuid = kTaskUuidGetter(task.value<DetailedTaskInfo>());
         if (currentlySelectedTaskIds.contains(taskUuid)) {
             indicesToSelect.append(newIndex);
         }

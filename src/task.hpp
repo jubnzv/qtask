@@ -121,15 +121,15 @@ class DetailedTaskInfo {
 
 Q_DECLARE_METATYPE(DetailedTaskInfo)
 
-template <typename taTasksContainer>
-QStringList tasksListToIds(const taTasksContainer &tasks)
+template <typename taTasksContainer, typename taTaskIdGetter>
+QStringList tasksListToIds(const taTasksContainer &tasks,
+                           const taTaskIdGetter &idGetter)
 {
     QStringList ids;
     ids.reserve(static_cast<qsizetype>(
         std::distance(std::begin(tasks), std::end(tasks))));
-    std::transform(
-        std::begin(tasks), std::end(tasks), std::back_inserter(ids),
-        [](const DetailedTaskInfo &task) -> QString { return task.task_id; });
+    std::transform(std::begin(tasks), std::end(tasks), std::back_inserter(ids),
+                   idGetter);
     return ids;
 }
 

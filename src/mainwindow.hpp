@@ -58,8 +58,8 @@ class MainWindow : public QMainWindow {
     void changeEvent(QEvent *) override;
     void closeEvent(QCloseEvent *event) override;
 
-    [[nodiscard]] std::optional<QString> getSelectedTaskId() const;
-    [[nodiscard]] QStringList getSelectedTaskIds() const;
+    [[nodiscard]] std::optional<QString> getSelectedTaskShortId() const;
+    [[nodiscard]] QStringList getSelectedTaskShortIds() const;
     [[nodiscard]] QList<DetailedTaskInfo> getSelectedTaskInModel() const;
   public slots:
     /// Add entry to tags filter
