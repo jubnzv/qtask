@@ -126,13 +126,13 @@ class UpcomingTasksStencil : public TabularStencilBase<DetailedTaskInfo> {
         static const QString waitLimit =
             getLimitString<ETaskDateTimeRole::Wait>();
         static const auto filterStr =
-            QString("(+ACTIVE or (due < now+%1) or (scheduled < now+%2) or "
-                    "(wait < now+%3))")
+            QString("'(+ACTIVE or (due < now+%1) or (scheduled < now+%2) or "
+                    "(wait < now+%3))'")
                 .arg(dueLimit, schedLimit, waitLimit);
         return {
             "status",
             QString("rc.report.status.columns=%1").arg(stencil.getCmdColumns()),
-            QString("rc.report.status.labels=%1").arg(stencil.getCmdLabels()),
+            QString("rc.report.status.labels='%1'").arg(stencil.getCmdLabels()),
             "+PENDING",
             filterStr,
         };

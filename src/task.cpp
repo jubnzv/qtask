@@ -123,11 +123,12 @@ bool SetPropertiesNotChanged(const bool wasTaskCallOk, taLeft &leftProperty,
     return wasTaskCallOk;
 }
 
-// Expected values in reading TaskWarrior responses.
-constexpr qsizetype kRowIndexOfDividers =
-    TabularStencilBase<void>::kRowIndexOfDividers;
-constexpr qsizetype kHeadersSize = TabularStencilBase<void>::kHeadersSize;
-constexpr qsizetype kFooterSize = TabularStencilBase<void>::kFooterSize;
+// Expected values in reading TaskWarrior responses for "information" query
+// (vertical layout). Note, tabular readers (horizontal layout) may have own
+// footers.
+constexpr qsizetype kRowIndexOfDividers = 0;
+constexpr qsizetype kHeadersSize = 2;
+constexpr qsizetype kFooterSize = 1;
 
 // returns true if task outputed something except header and footer.
 bool isTaskSentData(const QStringList &task_output)

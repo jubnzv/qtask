@@ -82,7 +82,8 @@ class TabularStencilBase {
     // Expected values in reading TaskWarrior responses.
     static constexpr qsizetype kRowIndexOfDividers = 0;
     static constexpr qsizetype kHeadersSize = 2;
-    static constexpr qsizetype kFooterSize = 1;
+    static constexpr qsizetype kFooterSize =
+        0; // Adding rc.verbose:label removes footer.
 
   protected:
     struct ColumnDescriptor {

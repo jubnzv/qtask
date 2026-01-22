@@ -25,8 +25,8 @@ TaskWarriorExecutor::TExecResult execProgram(const QString &binary,
     constexpr int kStartDelayMs = 1000;
     constexpr int kFinishDelayMs = 30000;
 
-    std::cout << "PARAMS:[" << all_params.join(" ").toStdString() << "]"
-              << std::endl;
+    // std::cout << "PARAMS:[" << all_params.join(" ").toStdString() << "]"
+    //           << std::endl;
 
     QProcess proc;
     proc.start(binary, all_params);
