@@ -132,10 +132,6 @@ MainWindow::MainWindow()
 
     connect(m_data_model, &TasksModel::globalUrgencyChanged, m_tray_icon,
             &SystemTrayIcon::updateStatusIcon);
-
-    m_data_model->refreshModel();
-
-    QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }

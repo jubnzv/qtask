@@ -111,6 +111,9 @@ TasksModel::TasksModel(std::shared_ptr<Taskwarrior> task_provider,
     connect(&m_urgency_signaler, &QTimer::timeout, this, recomputeUrgency);
     connect(&ConfigManager::config().notifier(), &ConfigEvents::settingsChanged,
             this, recomputeUrgency);
+
+    // Need to trigger watcher at least once.
+    m_task_watcher->checkNow();
 }
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const
