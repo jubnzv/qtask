@@ -192,8 +192,14 @@ UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
             auto responseOrError =
                 UpcomingTasksStencil().readAndParseTable(executor);
             const LambdaVisitor visitor = {
-                [](UpcomingTasksStencil::Response resp) { return resp; },
-                [](auto) { return UpcomingTasksStencil::Response{}; },
+                [](UpcomingTasksStencil::Response resp) {
+                    return resp;
+                    ;
+                },
+                []([[maybe_unused]] auto err) {
+                    return UpcomingTasksStencil::Response{};
+                    ;
+                },
             };
             return std::visit(visitor, std::move(responseOrError));
 
