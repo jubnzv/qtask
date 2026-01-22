@@ -57,7 +57,6 @@ class TasksModel : public QAbstractTableModel {
     /// @note Indexes will be different than it was, as tasks list could be
     /// reordered/resized.
     void restoreSelected(const QModelIndexList &);
-    void globalUrgencyChanged(StatusEmoji::EmojiUrgency);
 
   public slots:
     /// @brief Queries taskwatcher for the fresh/current sorted list of the
@@ -78,10 +77,6 @@ class TasksModel : public QAbstractTableModel {
     TasksStatusesWatcher *m_statuses_watcher;
     SelectionProvider m_selected_provider;
 
-    QTimer m_urgency_signaler;
-    StatusEmoji::EmojiUrgency lastKnownUrgency{
-        StatusEmoji::EmojiUrgency::None
-    };
     void dataUpdated();
 };
 

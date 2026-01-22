@@ -129,9 +129,6 @@ MainWindow::MainWindow()
             });
         }
     });
-
-    connect(m_data_model, &TasksModel::globalUrgencyChanged, m_tray_icon,
-            &SystemTrayIcon::updateStatusIcon);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }

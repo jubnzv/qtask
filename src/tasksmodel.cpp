@@ -81,36 +81,14 @@ TasksModel::TasksModel(std::shared_ptr<Taskwarrior> task_provider,
           this, kRefresheEmojiPeriod))
     , m_selected_provider(std::move(selected_provider))
 {
-    m_urgency_signaler.setSingleShot(true);
-    m_urgency_signaler.setInterval(150);
-
+    // This works with model's list (filtered) and handle re-order of columns
+    // when needed.
     connect(m_statuses_watcher, &TasksStatusesWatcher::statusesWereChanged,
             this, &TasksModel::delayedRefreshModel);
+
+    // This works with externald DB and detects if it had any write operation.
     connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this,
             &TasksModel::refreshModel);
-
-    const auto recomputeUrgency = [this]() {
-        const QDateTime now = QDateTime::currentDateTime();
-        StatusEmoji::EmojiUrgency maxUrgency = StatusEmoji::EmojiUrgency::None;
-        // Optimization
-        if (!ConfigManager::config().get(ConfigManager::MuteNotifications)) {
-            for (const auto &task : std::as_const(m_tasks)) {
-                const StatusEmoji helper(task, now);
-                const auto current = helper.getMostUrgentLevel();
-                if (current > maxUrgency) {
-                    maxUrgency = current;
-                }
-                if (maxUrgency == StatusEmoji::EmojiUrgency::Overdue) {
-                    break;
-                }
-            }
-        }
-        emit globalUrgencyChanged(maxUrgency);
-    };
-
-    connect(&m_urgency_signaler, &QTimer::timeout, this, recomputeUrgency);
-    connect(&ConfigManager::config().notifier(), &ConfigEvents::settingsChanged,
-            this, recomputeUrgency);
 
     // Need to trigger watcher at least once.
     m_task_watcher->checkNow();
@@ -178,8 +156,7 @@ bool TasksModel::setData(const QModelIndex &idx, const QVariant &value,
         break;
     case TaskUpdateRole:
         if (value.canConvert<DetailedTaskInfo>()) {
-            const auto guard = BlockGuard(m_task_watcher, m_statuses_watcher,
-                                          &m_urgency_signaler);
+            const auto guard = BlockGuard(m_task_watcher, m_statuses_watcher);
             auto updatedTask = value.value<DetailedTaskInfo>();
             const QDateTime now = QDateTime::currentDateTime();
 
@@ -238,8 +215,7 @@ QColor TasksModel::rowColor(const int row) const
 
 void TasksModel::refreshModel()
 {
-    const auto guard =
-        BlockGuard(m_task_watcher, m_statuses_watcher, &m_urgency_signaler);
+    const auto guard = BlockGuard(m_task_watcher, m_statuses_watcher);
     const auto currentlySelectedTaskIds = m_selected_provider();
 
     // Load whole tasks list from disk
@@ -287,6 +263,5 @@ void TasksModel::delayedRefreshModel()
 
 void TasksModel::dataUpdated()
 {
-    m_urgency_signaler.start();
     m_statuses_watcher->startWatchingStatusesChange();
 }

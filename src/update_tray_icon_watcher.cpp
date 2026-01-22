@@ -6,8 +6,10 @@
 #include "task.hpp"
 #include "task_date_time.hpp"
 #include "task_emojies.hpp"
+#include "tasksstatuseswatcher.hpp"
 #include "taskwarriorexecutor.hpp"
 
+#include <QDateTime>
 #include <QString>
 #include <QStringList>
 
@@ -33,7 +35,7 @@ constexpr T constexpr_min(const T a, Args... args)
 }
 
 /// @brief Combined refresh interval of how often we will check status below.
-constexpr auto kRefreshInterval = []() {
+constexpr auto kRefreshFromDbInterval = []() {
     static constexpr std::chrono::milliseconds kDefaultRefresh = 5min; // NOLINT
     return constexpr_min(
         kDefaultRefresh,
@@ -41,6 +43,9 @@ constexpr auto kRefreshInterval = []() {
         TaskDateTime<ETaskDateTimeRole::Sched>::warning_interval(),
         TaskDateTime<ETaskDateTimeRole::Wait>::warning_interval());
 }();
+
+constexpr auto kRefreshIconInterval = 7s;
+static_assert(kRefreshIconInterval < kRefreshFromDbInterval);
 
 // Example we want to achieve:
 // task +PENDING "(+ACTIVE or (due < now+%1) or (scheduled < now+%2) or (wait <
@@ -138,8 +143,8 @@ class UpcomingTasksStencil : public TabularStencilBase<DetailedTaskInfo> {
     static QString getLimitString()
     {
         using namespace std::chrono_literals;
-        auto total =
-            TaskDateTime<taRole>::warning_interval() + kRefreshInterval + 1min;
+        auto total = TaskDateTime<taRole>::warning_interval() +
+                     kRefreshFromDbInterval + 1min;
         return QString("%1min").arg(
             std::chrono::duration_cast<std::chrono::minutes>(total).count());
     }
@@ -168,9 +173,13 @@ class UpcomingTasksStencil : public TabularStencilBase<DetailedTaskInfo> {
 
 UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
     : QObject(parent)
+    , m_statuses_watcher(new TasksStatusesWatcher(
+          [this]() -> const QList<DetailedTaskInfo> & { return m_hot_tasks; },
+          this, kRefreshIconInterval))
 {
     static constexpr int kCheckPeriod =
-        std::chrono::duration_cast<std::chrono::milliseconds>(kRefreshInterval)
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            kRefreshFromDbInterval)
             .count();
 
     auto threadBody =
@@ -202,15 +211,47 @@ UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
         // update will be in 5+ minutes later. So "between updates" must be
         // processed too.
         m_hot_tasks = std::move(hotTasks);
+        recomputeUrgency();
+        m_statuses_watcher->startWatchingStatusesChange();
     };
 
+    // Setup async DB poll.
     m_pereodic_worker = createPereodicAsynExec(
         kCheckPeriod, std::move(threadBody), std::move(paramsForThread),
         std::move(receiverFromThread));
+
+    // Setup icon updater based on last poll.
+    connect(&ConfigManager::config().notifier(), &ConfigEvents::settingsChanged,
+            this, &UpdateTrayIconWatcher::recomputeUrgency);
+    connect(m_statuses_watcher, &TasksStatusesWatcher::statusesWereChanged,
+            this, [this]() {
+                recomputeUrgency();
+                m_statuses_watcher->startWatchingStatusesChange();
+            });
 }
 
 void UpdateTrayIconWatcher::checkNow()
 {
     assert(m_pereodic_worker);
     m_pereodic_worker->execNow();
+}
+
+void UpdateTrayIconWatcher::recomputeUrgency()
+{
+    const QDateTime now = QDateTime::currentDateTime();
+    StatusEmoji::EmojiUrgency maxUrgency = StatusEmoji::EmojiUrgency::None;
+    // Optimization
+    if (!ConfigManager::config().get(ConfigManager::MuteNotifications)) {
+        for (const auto &task : std::as_const(m_hot_tasks)) {
+            const StatusEmoji helper(task, now);
+            const auto current = helper.getMostUrgentLevel();
+            if (current > maxUrgency) {
+                maxUrgency = current;
+            }
+            if (maxUrgency == StatusEmoji::EmojiUrgency::Overdue) {
+                break;
+            }
+        }
+    }
+    emit globalUrgencyChanged(maxUrgency);
 }

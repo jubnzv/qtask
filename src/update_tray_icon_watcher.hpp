@@ -3,6 +3,7 @@
 #include "pereodic_async_executor.hpp"
 #include "task.hpp"
 #include "task_emojies.hpp"
+#include "tasksstatuseswatcher.hpp"
 
 #include <QList>
 #include <QObject>
@@ -24,6 +25,8 @@ class UpdateTrayIconWatcher : public QObject {
 
   public slots:
     void checkNow();
+  private slots:
+    void recomputeUrgency();
 
   private:
     /// @brief Queries taskwarrior asynchroniously for "hot tasks".
@@ -31,4 +34,9 @@ class UpdateTrayIconWatcher : public QObject {
     /// @brief Subset of the tasks which will become "hot" in near future (but
     /// could be not yet) or already missed.
     QList<DetailedTaskInfo> m_hot_tasks;
+
+    /// @brief This tracks if status of m_hot_tasks changed because of time
+    /// going, if change was detected, then we can change icon. Otherwise icon
+    /// would be updated too often.
+    TasksStatusesWatcher *m_statuses_watcher;
 };
