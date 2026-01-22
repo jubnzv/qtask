@@ -15,6 +15,7 @@
 #include <QStringList>
 #include <QSystemTrayIcon>
 #include <QTableView>
+#include <QTimer>
 #include <QVariant>
 
 #include <qnamespace.h>
@@ -127,6 +128,8 @@ class MainWindow : public QMainWindow {
 
     std::shared_ptr<Taskwarrior> m_task_provider;
     TasksModel *m_data_model;
+
+    QTimer m_do_not_lock_ui;
 };
 
 } // namespace ui
