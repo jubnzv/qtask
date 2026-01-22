@@ -6,7 +6,7 @@
 #include "split_string.hpp"
 #include "tabular_stencil_base.hpp"
 #include "task_date_time.hpp"
-#include "task_table_stencil.hpp"
+#include "task_ids_providers.hpp"
 #include "taskwarriorexecutor.hpp"
 
 #include <QDateTime>
@@ -180,6 +180,7 @@ class InformationResponseSetters {
             void (InformationResponseSetters::*)(const SplitString &);
         const std::unordered_map<QString, handler_t> kTagToHandler = {
             { "ID", &InformationResponseSetters::handleID },
+            { "UUID", &InformationResponseSetters::handleUUID },
             { "Project", &InformationResponseSetters::handleProject },
             { "Priority", &InformationResponseSetters::handlePriority },
             { "Tags", &InformationResponseSetters::handleTags },
@@ -202,6 +203,7 @@ class InformationResponseSetters {
 
     // Handlers for each key.
     void handleID(const SplitString &line) { task.task_id = line.value; }
+    void handleUUID(const SplitString &line) { task.task_uuid = line.value; }
     void handleProject(const SplitString &line) { task.project = line.value; }
     void handleStart(const SplitString &) { task.active = true; }
     void handlePriority(const SplitString &line)
@@ -479,7 +481,7 @@ bool DetailedTaskInfo::isFullRead() const
 }
 
 BatchTasksManager::BatchTasksManager(const QList<DetailedTaskInfo> &tasks)
-    : BatchTasksManager(tasksListToIds(tasks))
+    : BatchTasksManager(tasksListToIds(tasks, kTaskIdShortGetter))
 {
 }
 

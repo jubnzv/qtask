@@ -39,6 +39,7 @@
 #include "settingsdialog.hpp"
 #include "tagsedit.hpp"
 #include "task.hpp"
+#include "task_ids_providers.hpp"
 #include "taskdescriptiondelegate.hpp"
 #include "taskdialog.hpp"
 #include "taskhintproviderdelegate.hpp"
@@ -85,7 +86,11 @@ MainWindow::MainWindow()
     , m_toolbar_actions(*m_task_toolbar)
     , m_task_provider(std::make_shared<Taskwarrior>())
     , m_data_model(new TasksModel(
-          m_task_provider, [this]() { return getSelectedTaskIds(); }, this))
+          m_task_provider,
+          [this]() {
+              return tasksListToIds(getSelectedTaskInModel(), kTaskUuidGetter);
+          },
+          this))
 
 {
     if (!m_task_provider->init()) {
@@ -127,10 +132,6 @@ MainWindow::MainWindow()
 
     connect(m_data_model, &TasksModel::globalUrgencyChanged, m_tray_icon,
             &SystemTrayIcon::updateStatusIcon);
-
-    m_data_model->refreshModel();
-
-    QTimer::singleShot(5000, this, &MainWindow::onApplyFilter);
 }
 
 MainWindow::~MainWindow() { m_task_provider.reset(); }
@@ -362,7 +363,7 @@ void MainWindow::connectTaskToolbarActions()
             new DateTimeDialog(QDateTime::currentDateTime().addDays(1), this);
         dlg->open();
         QObject::connect(dlg, &QDialog::accepted, [this, dlg]() {
-            if (m_task_provider->waitTask(getSelectedTaskIds(),
+            if (m_task_provider->waitTask(getSelectedTaskShortIds(),
                                           dlg->getDateTime())) {
                 m_data_model->refreshIfChangedOnDisk();
             }
@@ -509,18 +510,18 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 }
 
-std::optional<QString> MainWindow::getSelectedTaskId() const
+std::optional<QString> MainWindow::getSelectedTaskShortId() const
 {
-    const auto sel = getSelectedTaskIds();
+    const auto sel = getSelectedTaskShortIds();
     if (sel.empty()) {
         return std::nullopt;
     }
     return sel.front();
 }
 
-QStringList MainWindow::getSelectedTaskIds() const
+QStringList MainWindow::getSelectedTaskShortIds() const
 {
-    return tasksListToIds(getSelectedTaskInModel());
+    return tasksListToIds(getSelectedTaskInModel(), kTaskIdShortGetter);
 }
 
 QList<DetailedTaskInfo> MainWindow::getSelectedTaskInModel() const
@@ -602,7 +603,7 @@ void MainWindow::onAddTask()
 
 void MainWindow::onDeleteTasks()
 {
-    const auto selectedTasks = getSelectedTaskIds();
+    const auto selectedTasks = getSelectedTaskShortIds();
     const auto selectedCount = selectedTasks.size();
     if (selectedCount == 0) {
         return;
@@ -625,7 +626,7 @@ void MainWindow::onSetTasksDone()
     if (!m_tasks_view->selectionModel()->hasSelection()) {
         return;
     }
-    m_task_provider->setTaskDone(getSelectedTaskIds());
+    m_task_provider->setTaskDone(getSelectedTaskShortIds());
     m_tasks_view->selectionModel()->clearSelection();
     m_data_model->refreshIfChangedOnDisk();
 }
@@ -654,7 +655,7 @@ void MainWindow::onEnterTaskCommand()
 
 void MainWindow::showEditTaskDialog([[maybe_unused]] const QModelIndex &idx)
 {
-    const auto id_opt = getSelectedTaskId();
+    const auto id_opt = getSelectedTaskShortId();
     if (!id_opt) {
         m_data_model->refreshIfChangedOnDisk();
         return;
