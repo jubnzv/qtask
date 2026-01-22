@@ -15,6 +15,7 @@
 #include "tasksstatuseswatcher.hpp"
 #include "taskwarrior.hpp"
 #include "taskwatcher.hpp"
+#include "update_tray_icon_watcher.hpp"
 
 #include <functional>
 #include <memory>
@@ -57,6 +58,7 @@ class TasksModel : public QAbstractTableModel {
     /// @note Indexes will be different than it was, as tasks list could be
     /// reordered/resized.
     void restoreSelected(const QModelIndexList &);
+    void globalUrgencyChanged(StatusEmoji::EmojiUrgency);
 
   public slots:
     /// @brief Queries taskwatcher for the fresh/current sorted list of the
@@ -73,8 +75,15 @@ class TasksModel : public QAbstractTableModel {
     QList<DetailedTaskInfo> m_tasks;
 
     std::shared_ptr<Taskwarrior> m_task_provider;
+
+    /// @brief It watches writes to db from anywhere (including us).
     TaskWatcher *m_task_watcher;
+    /// @brief Tracks real time passing and if needed, queries DB to re-order
+    /// lines in view (probably, filtered).
     TasksStatusesWatcher *m_statuses_watcher;
+    /// @brief Watches full "hot" data in nearest future to update status bar
+    /// icon. It does not use filtered list from this model.
+    UpdateTrayIconWatcher *m_icon_watcher;
     SelectionProvider m_selected_provider;
 
     void dataUpdated();

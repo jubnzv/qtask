@@ -2,7 +2,6 @@
 #define SYSTRAYICON_HPP
 
 #include "task_emojies.hpp"
-#include "update_tray_icon_watcher.hpp"
 
 #include <QAction>
 #include <QMenu>
@@ -30,7 +29,6 @@ class SystemTrayIcon : public QSystemTrayIcon {
     // menu would expect one.
     std::unique_ptr<QMenu> tray_icon_menu_;
     QAction *mute_notifications_action_;
-    UpdateTrayIconWatcher *m_icon_watcher;
 };
 
 } // namespace ui

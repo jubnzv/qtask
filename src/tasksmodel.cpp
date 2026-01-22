@@ -79,6 +79,7 @@ TasksModel::TasksModel(std::shared_ptr<Taskwarrior> task_provider,
               return std::as_const(m_tasks);
           },
           this, kRefresheEmojiPeriod))
+    , m_icon_watcher(new UpdateTrayIconWatcher(this))
     , m_selected_provider(std::move(selected_provider))
 {
     // This works with model's list (filtered) and handle re-order of columns
@@ -90,8 +91,16 @@ TasksModel::TasksModel(std::shared_ptr<Taskwarrior> task_provider,
     connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, this,
             &TasksModel::refreshModel);
 
+    // If user did something we need to refresh tray icon too.
+    connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChanged, m_icon_watcher,
+            &UpdateTrayIconWatcher::checkNow);
+    // Pass signal further that icon should be updated.
+    connect(m_icon_watcher, &UpdateTrayIconWatcher::globalUrgencyChanged, this,
+            &TasksModel::globalUrgencyChanged);
+
     // Need to trigger watcher at least once.
     m_task_watcher->checkNow();
+    m_icon_watcher->checkNow();
 }
 
 int TasksModel::rowCount(const QModelIndex & /*parent*/) const

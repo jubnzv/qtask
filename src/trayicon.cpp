@@ -34,7 +34,6 @@ SystemTrayIcon::SystemTrayIcon(QObject *parent)
     , tray_icon_menu_(new QMenu(nullptr))
     , mute_notifications_action_(
           new QAction(tr("&Mute Notifications"), tray_icon_menu_.get()))
-    , m_icon_watcher(new UpdateTrayIconWatcher(this))
 {
     mute_notifications_action_->setCheckable(true);
     mute_notifications_action_->setChecked(
@@ -67,11 +66,7 @@ SystemTrayIcon::SystemTrayIcon(QObject *parent)
             ConfigManager::config().get(ConfigManager::MuteNotifications));
     });
 
-    connect(m_icon_watcher, &UpdateTrayIconWatcher::globalUrgencyChanged, this,
-            &SystemTrayIcon::updateStatusIcon);
-
     updateStatusIcon(StatusEmoji::EmojiUrgency::None);
-    m_icon_watcher->checkNow();
 }
 
 void SystemTrayIcon::updateStatusIcon(StatusEmoji::EmojiUrgency urgency)
