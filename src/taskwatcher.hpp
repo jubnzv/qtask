@@ -3,7 +3,6 @@
 
 #include <QObject>
 
-#include <chrono>
 #include <memory>
 
 #include "pereodic_async_executor.hpp"

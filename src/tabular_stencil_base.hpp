@@ -46,7 +46,10 @@ class TabularStencilBase {
         }
 
         TableStencil stencil(columnNames);
-        const auto cmdParams = createCmdParameters(stencil);
+        const auto cmdParams = createCmdParameters(stencil)
+                               << "rc.verbose:label"
+                               << "rc.print.empty.columns=yes"
+                               << "rc.dateformat=Y-M-DTH:N:S";
 
         const auto res = executor.execTaskProgramWithDefaults(cmdParams);
         if (!res) {

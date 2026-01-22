@@ -62,12 +62,14 @@ class RecurringTasksReader : public TabularStencilBase<RecurringTaskTemplate> {
 
     QStringList createCmdParameters(const TableStencil &stencil) const override
     {
-        return { "recurring_full",
-                 QString("rc.report.recurring_full.columns=%1")
-                     .arg(stencil.getCmdColumns()),
-                 QString("rc.report.recurring_full.labels=%1")
-                     .arg(stencil.getCmdLabels()),
-                 "status:Recurring", "rc.print.empty.columns=yes" };
+        return {
+            "recurring_full",
+            QString("rc.report.recurring_full.columns=%1")
+                .arg(stencil.getCmdColumns()),
+            QString("rc.report.recurring_full.labels=%1")
+                .arg(stencil.getCmdLabels()),
+            "status:Recurring",
+        };
     }
 };
 #undef SKIP_CONTINUATION

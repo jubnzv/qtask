@@ -1,7 +1,6 @@
 #include "filteredtaskslistreader.hpp"
 #include "allatoncekeywordsfinder.hpp"
 #include "lambda_visitors.hpp"
-#include "recurrence_instance_data.hpp"
 #include "task.hpp"
 #include "task_table_stencil.hpp"
 #include "taskwarriorexecutor.hpp"
@@ -160,13 +159,8 @@ FilteredTasksListReader::createCmdParameters(const TableStencil &stencil) const
         QString("rc.report.minimal.labels=%1").arg(stencil.getCmdLabels());
 
     QStringList cmd = {
-        columnsArg,
-        labelsArg,
-        "rc.report.minimal.sort=urgency-",
-        "rc.print.empty.columns=yes",
-        "rc.dateformat=Y-M-DTH:N:S",
-        "+PENDING",
-        "minimal",
+        columnsArg, labelsArg, "rc.report.minimal.sort=urgency-",
+        "+PENDING", "minimal",
     };
 
     if (m_filter.getIds().has_value()) {
