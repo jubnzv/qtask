@@ -177,11 +177,6 @@ UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
           [this]() -> const QList<DetailedTaskInfo> & { return m_hot_tasks; },
           this, kRefreshIconInterval))
 {
-    static constexpr int kCheckPeriod =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            kRefreshFromDbInterval)
-            .count();
-
     auto threadBody =
         [](QString pathToBinary) -> UpcomingTasksStencil::Response {
         try {
@@ -192,13 +187,9 @@ UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
             auto responseOrError =
                 UpcomingTasksStencil().readAndParseTable(executor);
             const LambdaVisitor visitor = {
-                [](UpcomingTasksStencil::Response resp) {
-                    return resp;
-                    ;
-                },
+                [](UpcomingTasksStencil::Response resp) { return resp; },
                 []([[maybe_unused]] auto err) {
                     return UpcomingTasksStencil::Response{};
-                    ;
                 },
             };
             return std::visit(visitor, std::move(responseOrError));
@@ -222,6 +213,10 @@ UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
     };
 
     // Setup async DB poll.
+    static constexpr int kCheckPeriod =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            kRefreshFromDbInterval)
+            .count();
     m_pereodic_worker = createPereodicAsynExec(
         kCheckPeriod, std::move(threadBody), std::move(paramsForThread),
         std::move(receiverFromThread));
