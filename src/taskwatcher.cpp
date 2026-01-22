@@ -13,8 +13,6 @@
 #include <tuple>
 #include <utility>
 
-#include <qtmetamacros.h>
-
 namespace
 {
 using namespace std::chrono_literals;
@@ -28,6 +26,13 @@ constexpr int kCheckPeriod = 10000;
 TaskWatcher::TaskWatcher(QObject *parent)
     : QObject(parent)
 {
+    // We need to report that we detected disk change with delay, if it was us,
+    // then DB needs time to settle.
+    delayedSignalSender.setSingleShot(true);
+    delayedSignalSender.setInterval(750);
+    connect(&delayedSignalSender, &QTimer::timeout, this,
+            &TaskWatcher::dataOnDiskWereChanged);
+
     auto threadBody = [](QString pathToBinary) -> TaskWarriorDbState::Optional {
         try {
             // This is non-GUI thread.
@@ -46,7 +51,7 @@ TaskWatcher::TaskWatcher(QObject *parent)
         // This is GUI thread.
         if (opt && opt->isDifferent(m_latestDbState)) {
             m_latestDbState = *opt;
-            emit dataOnDiskWereChanged();
+            delayedSignalSender.start();
         }
     };
 

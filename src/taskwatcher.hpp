@@ -2,6 +2,7 @@
 #define TASKWATCHER_HPP
 
 #include <QObject>
+#include <QTimer>
 
 #include <memory>
 
@@ -19,7 +20,6 @@ class TaskWatcher : public QObject {
     explicit TaskWatcher(QObject *parent = nullptr);
 
   signals:
-    // FIXME/TODO: what will happen when we will have 100'000 records in DB?
     void dataOnDiskWereChanged();
 
   public slots:
@@ -28,6 +28,7 @@ class TaskWatcher : public QObject {
   private:
     TaskWarriorDbState m_latestDbState;
     std::unique_ptr<IPereodicExec> m_pereodic_worker;
+    QTimer delayedSignalSender;
 };
 
 #endif // TASKWATCHER_HPP
