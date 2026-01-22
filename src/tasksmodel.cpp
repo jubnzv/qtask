@@ -1,9 +1,9 @@
 #include "tasksmodel.hpp"
 #include "block_guard.hpp"
-#include "configmanager.hpp"
 
 #include <array>
 #include <chrono>
+#include <memory>
 #include <utility>
 
 #include <QAbstractTableModel>
@@ -28,6 +28,9 @@
 #include "task.hpp"
 #include "task_emojies.hpp"
 #include "task_ids_providers.hpp"
+#include "tasksstatuseswatcher.hpp"
+#include "taskwatcher.hpp"
+#include "update_tray_icon_watcher.hpp"
 
 namespace
 {
