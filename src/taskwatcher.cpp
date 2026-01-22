@@ -9,7 +9,6 @@
 #include <QString>
 
 #include <cassert>
-#include <chrono>
 #include <optional>
 #include <tuple>
 #include <utility>

@@ -1,13 +1,20 @@
 #include "update_tray_icon_watcher.hpp"
+#include "configmanager.hpp"
+#include "lambda_visitors.hpp"
+#include "pereodic_async_executor.hpp"
 #include "tabular_stencil_base.hpp"
 #include "task.hpp"
 #include "task_date_time.hpp"
+#include "task_emojies.hpp"
+#include "taskwarriorexecutor.hpp"
 
 #include <QString>
 #include <QStringList>
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <utility>
 
 namespace
 {
@@ -159,4 +166,51 @@ class UpcomingTasksStencil : public TabularStencilBase<DetailedTaskInfo> {
 
 } // namespace
 
-UpdateTrayIconWatcher::UpdateTrayIconWatcher() {}
+UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
+    : QObject(parent)
+{
+    static constexpr int kCheckPeriod =
+        std::chrono::duration_cast<std::chrono::milliseconds>(kRefreshInterval)
+            .count();
+
+    auto threadBody =
+        [](QString pathToBinary) -> UpcomingTasksStencil::Response {
+        try {
+            // This is non-GUI thread.
+            const TaskWarriorExecutor executor(
+                std::move(pathToBinary),
+                TaskWarriorExecutor::TSkipBinaryValidation{});
+            auto responseOrError =
+                UpcomingTasksStencil().readAndParseTable(executor);
+            const LambdaVisitor visitor = {
+                [](UpcomingTasksStencil::Response resp) { return resp; },
+                [](auto) { return UpcomingTasksStencil::Response{}; },
+            };
+            return std::visit(visitor, std::move(responseOrError));
+
+        } catch (...) { // NOLINT
+        }
+        return {};
+    };
+    auto paramsForThread = []() {
+        QString path = ConfigManager::config().get(ConfigManager::TaskBin);
+        return std::make_tuple(std::move(path));
+    };
+    auto receiverFromThread = [this](UpcomingTasksStencil::Response hotTasks) {
+        // This is GUI thread.
+        // hotTasks may require icon change in 1 minute later. However, next
+        // update will be in 5+ minutes later. So "between updates" must be
+        // processed too.
+        m_hot_tasks = std::move(hotTasks);
+    };
+
+    m_pereodic_worker = createPereodicAsynExec(
+        kCheckPeriod, std::move(threadBody), std::move(paramsForThread),
+        std::move(receiverFromThread));
+}
+
+void UpdateTrayIconWatcher::checkNow()
+{
+    assert(m_pereodic_worker);
+    m_pereodic_worker->execNow();
+}
