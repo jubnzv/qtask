@@ -76,7 +76,6 @@ TEST_F(TabularParserTest, HandlesSimpleOutput)
         "ID  Proj Desc",         // Header (skipped by kHeadersSize)
         "1   Work Buy milk",     // Data 1
         "2   Home Clean room",   // Data 2
-        "2 tasks"                // Footer (skipped by kFooterSize)
     };
 
     auto result = spy.parseConsoleOutput(schema, stencil, mockOutput);
@@ -92,14 +91,14 @@ TEST_F(TabularParserTest, HandlesMultilineContinuation)
     TableStencil stencil({ "ID", "Proj", "Desc" });
     ASSERT_TRUE(stencil.processLabelString("----|----|-----------"));
 
-    const QStringList mockOutput = { "----|----|-----------", // labels
-                                     "ID  Proj Desc",         // header
-                                     "1   Work Long task",
-                                     "         description", // continuation 1
-                                     "         part two", // continuation 2 more
-                                     "2   Home Next task",
-
-                                     "1 task" };
+    const QStringList mockOutput = {
+        "----|----|-----------", // labels
+        "ID  Proj Desc",         // header
+        "1   Work Long task",
+        "         description", // continuation 1
+        "         part two",    // continuation 2 more
+        "2   Home Next task",
+    };
 
     auto result = spy.parseConsoleOutput(schema, stencil, mockOutput);
 
@@ -114,13 +113,14 @@ TEST_F(TabularParserTest, SkipsEmptyLines)
     TableStencil stencil({ "ID", "Proj", "Desc" });
     ASSERT_TRUE(stencil.processLabelString("----|----|-----------"));
 
-    const QStringList mockOutput = { "----|----|-----------", // Markers
-                                     "ID  Proj Desc",         // Header
-                                     "1   Work Task 1",
-                                     " ",    // Empty line to ignore
-                                     "    ", // Spaces line to ignore
-                                     "2   Home Task 2",
-                                     "2 tasks" };
+    const QStringList mockOutput = {
+        "----|----|-----------", // Markers
+        "ID  Proj Desc",         // Header
+        "1   Work Task 1",
+        " ",    // Empty line to ignore
+        "    ", // Spaces line to ignore
+        "2   Home Task 2",
+    };
 
     auto result = spy.parseConsoleOutput(schema, stencil, mockOutput);
 
@@ -136,10 +136,12 @@ TEST_F(TabularParserTest, HandlesImpossibleContinuationGracefully)
 
     // Ситуация: вывод начинается сразу с продолжения (ID пуст на первой строке
     // данных)
-    const QStringList mockOutput = { "----|----|-----------", // labels
-                                     "ID  Proj Desc",         // headers
-                                     "         Broken task",  // broken output
-                                     "2   Home Valid task", "1 task" };
+    const QStringList mockOutput = {
+        "----|----|-----------", // labels
+        "ID  Proj Desc",         // headers
+        "         Broken task",  // broken output
+        "2   Home Valid task",
+    };
 
     auto result = spy.parseConsoleOutput(schema, stencil, mockOutput);
 
