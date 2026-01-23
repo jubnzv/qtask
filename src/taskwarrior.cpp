@@ -14,6 +14,7 @@
 #include "recurring_task_template.hpp"
 #include "task.hpp"
 #include "taskwarriorexecutor.hpp"
+#include "undo_tracker.hpp"
 
 #include <exception>
 #include <iostream>
@@ -22,8 +23,8 @@
 #include <utility>
 
 Taskwarrior::Taskwarrior()
-    : m_actions_counter(0ull)
-    , m_executor(nullptr)
+    : m_executor(nullptr)
+    , m_actions_counter(nullptr)
     , m_filter({})
 {
 }
@@ -35,6 +36,8 @@ bool Taskwarrior::init()
     const auto &binary = ConfigManager::config().get(ConfigManager::TaskBin);
     try {
         m_executor = std::make_shared<TaskWarriorExecutor>(binary);
+        m_actions_counter = std::make_unique<UndoTracker>(m_executor);
+        m_actions_counter->startTracking();
         return true;
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -144,17 +147,7 @@ Taskwarrior::getRecurringTasks() const
     return RecurringTaskTemplate::readAll(*m_executor);
 }
 
-bool Taskwarrior::undoTask()
-{
-    if (m_actions_counter == 0) {
-        return true;
-    }
-    if (m_executor && m_executor->execTaskProgramWithDefaults({ "undo" })) {
-        --m_actions_counter;
-        return true;
-    }
-    return false;
-}
+bool Taskwarrior::undoTask() { return m_actions_counter->undo(); }
 
 bool Taskwarrior::applyFilter(QStringList user_keywords)
 {

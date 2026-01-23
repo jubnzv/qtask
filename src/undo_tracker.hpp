@@ -44,6 +44,7 @@ class UndoTracker : public QObject {
     /// @brief Executes UNDO operation DB IF we can.
     /// @returns true if undo was executed.
     bool undo();
+
   signals:
     /// @brief signal UI if it should enable/disable undo controls.
     void undoAvail(bool enabled);

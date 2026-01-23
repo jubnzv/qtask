@@ -49,6 +49,7 @@
 #include "taskwarrior.hpp"
 #include "taskwarriorreferencedialog.hpp"
 #include "trayicon.hpp"
+#include "undo_tracker.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -99,7 +100,12 @@ MainWindow::MainWindow()
             tr("Command 'task version' failed. Please make sure that "
                "taskwarrior is installed correctly and you have the correct "
                "path to the 'task' executable in the settings."));
+
+        onOpenSettings(true);
+        return;
     }
+    // Undo can be used after call to m_task_provider->init()
+    m_data_model->initUndoSupport();
 
     // Tags must be loaded before any events happened so it could setup
     // "modified" tracker.
@@ -349,10 +355,14 @@ void MainWindow::connectTaskToolbarActions()
     connect(m_toolbar_actions.m_add_action, &QAction::triggered, this,
             [&]() { onAddTask(); });
 
+    connect(&m_task_provider->getActionsCounter(), &UndoTracker::undoAvail,
+            m_toolbar_actions.m_undo_action, &QAction::setEnabled);
+
     connect(m_toolbar_actions.m_undo_action, &QAction::triggered, this, [&]() {
+        // It will be enabled back by incoming UndoTracker::undoAvail if
+        // possible. Just ensuring here it will not be fast clicked.
+        m_toolbar_actions.m_undo_action->setEnabled(false);
         m_task_provider->undoTask();
-        m_toolbar_actions.m_undo_action->setEnabled(
-            m_task_provider->getActionsCounter() > 0);
         m_data_model->refreshIfChangedOnDisk();
     });
 
@@ -403,11 +413,16 @@ void MainWindow::toggleMainWindow()
     }
 }
 
-void MainWindow::onOpenSettings()
+void MainWindow::onOpenSettings(const bool exitAppToo = false)
 {
     auto *dlg = new SettingsDialog(this);
+    QObject::connect(dlg, &QDialog::finished, this, [=]() {
+        dlg->deleteLater();
+        if (exitAppToo) {
+            std::exit(0);
+        }
+    });
     dlg->open();
-    QObject::connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 }
 
 void MainWindow::showMainWindow()
@@ -712,10 +727,6 @@ void MainWindow::onEditTaskAction()
 void MainWindow::updateTaskToolbar()
 {
     const auto selectedTasks = getSelectedTaskInModel();
-
-    // Undo
-    m_toolbar_actions.m_undo_action->setEnabled(
-        m_task_provider->getActionsCounter() > 0);
 
     removeShortcutFromToolTip(m_toolbar_actions.m_stop_action);
     removeShortcutFromToolTip(m_toolbar_actions.m_start_action);

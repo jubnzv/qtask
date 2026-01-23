@@ -70,7 +70,8 @@ bool UndoTracker::undo()
 
 void UndoTracker::sendSignalForUi()
 {
-    emit undoAvail(isSyncedCounter() && m_counter > 0);
+    const bool isEnabled = isSyncedCounter() && m_counter > 0;
+    emit undoAvail(isEnabled);
 }
 
 void UndoTracker::setVariablesByReading(std::uint64_t reading)

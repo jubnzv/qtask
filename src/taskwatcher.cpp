@@ -7,6 +7,7 @@
 
 #include <QObject>
 #include <QString>
+#include <qtmetamacros.h>
 
 #include <cassert>
 #include <optional>
@@ -30,8 +31,10 @@ TaskWatcher::TaskWatcher(QObject *parent)
     // then DB needs time to settle.
     delayedSignalSender.setSingleShot(true);
     delayedSignalSender.setInterval(150);
-    connect(&delayedSignalSender, &QTimer::timeout, this,
-            &TaskWatcher::dataOnDiskWereChanged);
+    connect(&delayedSignalSender, &QTimer::timeout, this, [this]() {
+        emit dataOnDiskWereChanged();
+        emit dataOnDiskWereChangedWithUndoCount(m_latestDbState.getUndoCount());
+    });
 
     auto threadBody = [](QString pathToBinary) -> TaskWarriorDbState::Optional {
         try {

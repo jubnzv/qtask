@@ -3,7 +3,9 @@
 
 #include <QObject>
 #include <QTimer>
+#include <qtmetamacros.h>
 
+#include <cstdint>
 #include <memory>
 
 #include "pereodic_async_executor.hpp"
@@ -21,7 +23,7 @@ class TaskWatcher : public QObject {
 
   signals:
     void dataOnDiskWereChanged();
-
+    void dataOnDiskWereChangedWithUndoCount(std::uint64_t currentUndoCount);
   public slots:
     void checkNow();
 

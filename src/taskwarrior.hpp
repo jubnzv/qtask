@@ -12,10 +12,12 @@
 #include "recurring_task_template.hpp"
 #include "task.hpp"
 #include "taskwarriorexecutor.hpp"
+#include "undo_tracker.hpp"
 
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 
 class Taskwarrior {
   public:
@@ -32,9 +34,13 @@ class Taskwarrior {
     bool init();
 
     [[nodiscard]]
-    size_t getActionsCounter() const
+    UndoTracker &getActionsCounter() const
     {
-        return m_actions_counter;
+        if (!m_actions_counter) {
+            throw std::runtime_error(
+                "Taskwarrior object was NOT properly initialized.");
+        }
+        return *m_actions_counter;
     }
 
     [[nodiscard]]
@@ -75,17 +81,15 @@ class Taskwarrior {
     bool execCommandAndAccountUndo(const taCallable &callable)
     {
         if (m_executor && callable()) {
-            ++m_actions_counter;
+            m_actions_counter->addUndo();
             return true;
         }
         return false;
     }
 
   private:
-    /// @brief Counter of changes in the taskwarrior database that can be
-    /// undone.
-    size_t m_actions_counter;
     std::shared_ptr<TaskWarriorExecutor> m_executor;
+    std::unique_ptr<UndoTracker> m_actions_counter;
     AllAtOnceKeywordsFinder m_filter;
 };
 

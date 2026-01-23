@@ -52,6 +52,7 @@ class TasksModel : public QAbstractTableModel {
 
     [[nodiscard]] QColor rowColor(int row) const;
 
+    void initUndoSupport();
   signals:
     /// @brief View can listen this signal if it wants to restore selection
     /// after model reset.
