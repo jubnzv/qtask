@@ -46,7 +46,10 @@ class TabularStencilBase {
         }
 
         TableStencil stencil(columnNames);
-        const auto cmdParams = createCmdParameters(stencil);
+        const auto cmdParams = createCmdParameters(stencil)
+                               << "rc.verbose:label"
+                               << "rc.print.empty.columns=yes"
+                               << "rc.dateformat=Y-M-DTH:N:S";
 
         const auto res = executor.execTaskProgramWithDefaults(cmdParams);
         if (!res) {
@@ -79,7 +82,8 @@ class TabularStencilBase {
     // Expected values in reading TaskWarrior responses.
     static constexpr qsizetype kRowIndexOfDividers = 0;
     static constexpr qsizetype kHeadersSize = 2;
-    static constexpr qsizetype kFooterSize = 1;
+    static constexpr qsizetype kFooterSize =
+        0; // Adding rc.verbose:label removes footer.
 
   protected:
     struct ColumnDescriptor {

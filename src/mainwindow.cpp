@@ -122,9 +122,16 @@ MainWindow::MainWindow()
     ConfigManager::config().get(ConfigManager::HideWindowOnStartup) ? hide()
                                                                     : show();
 
+    m_do_not_lock_ui.setSingleShot(true);
+    m_do_not_lock_ui.setInterval(45000);
+    connect(&m_do_not_lock_ui, &QTimer::timeout, this,
+            [this]() { m_tasks_view->setEnabled(true); });
+
     connect(m_data_model, &TasksModel::modelReset, this, [this]() {
         if (m_tasks_view) {
             QTimer::singleShot(50, m_tasks_view, [this]() {
+                m_do_not_lock_ui.stop();
+                m_tasks_view->setEnabled(true);
                 m_tasks_view->resizeColumnToContents(0);
             });
         }
@@ -616,6 +623,8 @@ void MainWindow::onDeleteTasks()
                               QMessageBox::Yes | QMessageBox::No) ==
         QMessageBox::Yes) {
         m_tasks_view->selectionModel()->clearSelection();
+        m_tasks_view->setEnabled(false);
+        m_do_not_lock_ui.start();
         m_task_provider->deleteTask(selectedTasks);
         m_data_model->refreshIfChangedOnDisk();
     }

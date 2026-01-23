@@ -212,6 +212,7 @@ class TaskDateTime {
         return std::addressof(deref(self));
     }
 
+  public:
     /// @returns warning interval which should be used for this role ( (now() +
     /// warning_interval())).
     static constexpr std::chrono::milliseconds warning_interval()
