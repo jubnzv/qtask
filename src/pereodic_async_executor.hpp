@@ -38,7 +38,8 @@ class PereodicAsynExec : public IPereodicExec {
     using ReturnType = std::decay_t<decltype(std::apply(
         std::declval<taPereodicCallable>(), std::declval<ParamsTuple>()))>;
 
-    PereodicAsynExec(const int kCheckPeriodMs, taPereodicCallable callable,
+    PereodicAsynExec(const std::chrono::milliseconds kCheckPeriod,
+                     taPereodicCallable callable,
                      taPereodicParamsProvider params_provider,
                      taResultReceiver receiver)
         : m_callable(std::move(callable))
@@ -64,7 +65,7 @@ class PereodicAsynExec : public IPereodicExec {
          * databases.
          */
         m_timer.setSingleShot(true);
-        m_timer.setInterval(kCheckPeriodMs);
+        m_timer.setInterval(kCheckPeriod.count());
         QObject::connect(&m_timer, &QTimer::timeout, &m_timer,
                          [this]() { execNow(); });
 
@@ -142,8 +143,8 @@ class PereodicAsynExec : public IPereodicExec {
 /// @brief Factory function for the PereodicAsynExec.
 /// @returns std::unique_ptr<PereodicAsynExec<C, P, R>>
 template <typename C, typename P, typename R>
-auto createPereodicAsynExec(const std::chrono::milliseconds ms, C c, P p, R r)
+auto createPereodicAsynExec(std::chrono::milliseconds ms, C c, P p, R r)
 {
     return std::make_unique<PereodicAsynExec<C, P, R>>(
-        ms.count(), std::move(c), std::move(p), std::move(r));
+        ms, std::move(c), std::move(p), std::move(r));
 }
