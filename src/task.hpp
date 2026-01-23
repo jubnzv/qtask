@@ -196,6 +196,12 @@ class TaskWarriorDbState {
         return this->fields != other.fields;
     }
 
+    [[nodiscard]]
+    ulong getUndoCount() const
+    {
+        return fields.fieldUndo;
+    }
+
     /// @returns std::nullopt if it was error reading stats or current state of
     /// TaskWarrior's data base as TaskWarriorDbState.
     /// @note We select only fields we think can help us to detect modifications

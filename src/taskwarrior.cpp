@@ -34,7 +34,7 @@ bool Taskwarrior::init()
 {
     const auto &binary = ConfigManager::config().get(ConfigManager::TaskBin);
     try {
-        m_executor = std::make_unique<TaskWarriorExecutor>(binary);
+        m_executor = std::make_shared<TaskWarriorExecutor>(binary);
         return true;
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;

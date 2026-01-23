@@ -85,7 +85,7 @@ class Taskwarrior {
     /// @brief Counter of changes in the taskwarrior database that can be
     /// undone.
     size_t m_actions_counter;
-    std::unique_ptr<TaskWarriorExecutor> m_executor;
+    std::shared_ptr<TaskWarriorExecutor> m_executor;
     AllAtOnceKeywordsFinder m_filter;
 };
 
