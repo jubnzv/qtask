@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <tuple>
 #include <type_traits>
 
@@ -141,8 +142,8 @@ class PereodicAsynExec : public IPereodicExec {
 /// @brief Factory function for the PereodicAsynExec.
 /// @returns std::unique_ptr<PereodicAsynExec<C, P, R>>
 template <typename C, typename P, typename R>
-auto createPereodicAsynExec(int ms, C c, P p, R r)
+auto createPereodicAsynExec(const std::chrono::milliseconds ms, C c, P p, R r)
 {
     return std::make_unique<PereodicAsynExec<C, P, R>>(
-        ms, std::move(c), std::move(p), std::move(r));
+        ms.count(), std::move(c), std::move(p), std::move(r));
 }

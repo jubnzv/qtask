@@ -213,13 +213,9 @@ UpdateTrayIconWatcher::UpdateTrayIconWatcher(QObject *parent)
     };
 
     // Setup async DB poll.
-    static constexpr int kCheckPeriod =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            kRefreshFromDbInterval)
-            .count();
     m_pereodic_worker = createPereodicAsynExec(
-        kCheckPeriod, std::move(threadBody), std::move(paramsForThread),
-        std::move(receiverFromThread));
+        kRefreshFromDbInterval, std::move(threadBody),
+        std::move(paramsForThread), std::move(receiverFromThread));
 
     // Setup icon updater based on last poll.
     connect(&ConfigManager::config().notifier(), &ConfigEvents::settingsChanged,
