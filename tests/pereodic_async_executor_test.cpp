@@ -2,6 +2,7 @@
 #include "qt_base_test.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <tuple>
 
 #include <QEventLoop>
@@ -10,6 +11,7 @@
 #include <gtest/gtest.h>
 
 using namespace ::testing;
+using namespace std::chrono_literals;
 
 class PereodicAsynExecTest : public QtBaseTest {};
 
@@ -25,7 +27,7 @@ TEST_F(PereodicAsynExecTest, SimpleExecutionFlow)
         loop.quit();
     };
 
-    PereodicAsynExec exec(1000, callable, provider, receiver);
+    PereodicAsynExec exec(1000ms, callable, provider, receiver);
     exec.execNow();
     loop.exec();
     EXPECT_EQ(callCount, 1);
@@ -49,7 +51,7 @@ TEST_F(PereodicAsynExecTest, PeriodicRestart)
         }
     };
 
-    PereodicAsynExec exec(10, callable, provider, receiver);
+    PereodicAsynExec exec(10ms, callable, provider, receiver);
     exec.execNow();
     loop.exec();
 
@@ -72,7 +74,7 @@ TEST_F(PereodicAsynExecTest, AvoidsOverlapping)
     auto provider = []() { return std::make_tuple(1); };
     auto receiver = [&](int) { loop.quit(); };
 
-    PereodicAsynExec exec(10, callable, provider, receiver);
+    PereodicAsynExec exec(10ms, callable, provider, receiver);
 
     exec.execNow();
     QThread::msleep(100);
@@ -96,7 +98,7 @@ TEST_F(PereodicAsynExecTest, DestructorSafety)
     auto provider = []() { return std::make_tuple(1); };
     auto receiver = [](int) { /* Nothing*/ };
     {
-        PereodicAsynExec exec(100, callable, provider, receiver);
+        PereodicAsynExec exec(100ms, callable, provider, receiver);
         exec.execNow();
 
         // Wait while thread is started.

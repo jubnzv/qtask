@@ -10,6 +10,7 @@
 #include <qtmetamacros.h>
 
 #include <cassert>
+#include <chrono>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -20,7 +21,7 @@ using namespace std::chrono_literals;
 
 ///  @brief How often at most we will check for new data.
 // TODO: add config settings in UI instead.
-constexpr int kCheckPeriod = 10000;
+constexpr std::chrono::milliseconds kCheckPeriod = 10s; // NOLINT
 
 } // namespace
 
