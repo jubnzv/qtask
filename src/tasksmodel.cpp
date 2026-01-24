@@ -29,7 +29,9 @@
 #include "task_emojies.hpp"
 #include "task_ids_providers.hpp"
 #include "tasksstatuseswatcher.hpp"
+#include "taskwarrior.hpp"
 #include "taskwatcher.hpp"
+#include "undo_tracker.hpp"
 #include "update_tray_icon_watcher.hpp"
 
 namespace
@@ -62,12 +64,12 @@ QColor getColorForPriority(DetailedTaskInfo::Priority priority)
         return base;
     }
     const bool isDark = base.value() < 128;
-    const qreal factor = isDark ? 0.15 : 0.25;
+    const float factor = isDark ? 0.15f : 0.25f;
 
     return QColor::fromRgbF(
-        base.redF() * (1.0 - factor) + tint.redF() * factor,
-        base.greenF() * (1.0 - factor) + tint.greenF() * factor,
-        base.blueF() * (1.0 - factor) + tint.blueF() * factor);
+        base.redF() * (1.0f - factor) + tint.redF() * factor,
+        base.greenF() * (1.0f - factor) + tint.greenF() * factor,
+        base.blueF() * (1.0f - factor) + tint.blueF() * factor);
 }
 } // namespace
 
@@ -223,6 +225,12 @@ QColor TasksModel::rowColor(const int row) const
         return getColorForPriority(DetailedTaskInfo::Priority::Unset);
     }
     return getColorForPriority(m_tasks.at(row).priority.get());
+}
+
+void TasksModel::initUndoSupport()
+{
+    connect(m_task_watcher, &TaskWatcher::dataOnDiskWereChangedWithUndoCount,
+            &m_task_provider->getActionsCounter(), &UndoTracker::newDbReading);
 }
 
 void TasksModel::refreshModel()

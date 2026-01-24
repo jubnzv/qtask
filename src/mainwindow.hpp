@@ -23,6 +23,7 @@
 #include <qtypes.h>
 
 #include "tagsedit.hpp"
+#include "task.hpp"
 #include "tasksmodel.hpp"
 #include "tasksview.hpp"
 #include "taskwarrior.hpp"
@@ -52,7 +53,7 @@ class MainWindow : public QMainWindow {
     void initShortcuts();
     void connectTaskToolbarActions();
     void toggleMainWindow();
-    void onOpenSettings();
+    void onOpenSettings(bool exitAppToo);
     void quitApp();
 
     bool eventFilter(QObject *watched, QEvent *event) override;
