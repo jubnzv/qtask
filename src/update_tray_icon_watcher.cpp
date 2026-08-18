@@ -34,9 +34,10 @@ constexpr T constexpr_min(const T a, Args... args)
     return constexpr_min(a, constexpr_min(args...));
 }
 
+constexpr std::chrono::milliseconds kDefaultRefresh = 5min; // NOLINT
+
 /// @brief Combined refresh interval of how often we will check status below.
-constexpr auto kRefreshFromDbInterval = []() {
-    static constexpr std::chrono::milliseconds kDefaultRefresh = 5min; // NOLINT
+constexpr auto kRefreshFromDbInterval = []() constexpr {
     return constexpr_min(
         kDefaultRefresh,
         TaskDateTime<ETaskDateTimeRole::Due>::warning_interval(),
